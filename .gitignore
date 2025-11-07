@@ -1,0 +1,6 @@
+.git
+.env
+dist
+node_modules
+form_data/*
+home

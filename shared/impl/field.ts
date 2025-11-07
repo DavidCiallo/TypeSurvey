@@ -1,0 +1,1 @@
+export type FieldType = "text" | "email" | "password" | "number" | "month" | "date" | "time" | "range" | "color" | "file" | "checkbox" | "select" | "textarea";

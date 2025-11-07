@@ -1,0 +1,29 @@
+@keyframes moveDown {
+  100% {
+    transform: translateY(-40vh);
+  }
+}
+
+/* 移动 */
+.animate-move-down {
+  animation: moveDown 0.7s forwards;
+  position: relative;
+  z-index: 10;
+}
+
+
+@keyframes show {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* 渐显 */
+.animate-fade-in {
+    animation: show 0.7s forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+}
