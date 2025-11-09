@@ -1,6 +1,11 @@
 export interface BaseRequest {
     auth?: string;
 }
+
+export interface BaseResponse {
+    success: boolean;
+}
+
 export type Route = { name: string; path: string; method: string; handler: Function | null; }
 
 export type HTTPMethodConstructor = { name: string; path: string; method: string; handler: Function | null; };

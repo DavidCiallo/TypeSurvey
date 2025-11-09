@@ -1,6 +1,6 @@
 import { FormFieldImpl } from "../impl";
 import { FieldType } from "../impl/field";
-import { BaseRequest, BaseRouterInstance } from "../lib/decorator";
+import { BaseRequest, BaseResponse, BaseRouterInstance } from "../lib/decorator";
 
 export class FormFieldRouterInstance extends BaseRouterInstance {
     base = "/api";
@@ -13,8 +13,14 @@ export class FormFieldRouterInstance extends BaseRouterInstance {
             handler: Function
         },
         {
-            name: "save",
-            path: "/save",
+            name: "create",
+            path: "/create",
+            method: "post",
+            handler: Function
+        },
+        {
+            name: "update",
+            path: "/update",
             method: "post",
             handler: Function
         },
@@ -27,17 +33,20 @@ export class FormFieldRouterInstance extends BaseRouterInstance {
     ]
 
     list: (query: FormFieldListQuery, callback?: Function) => Promise<FormFieldListResponse>
-    save: (request: FormFieldBodyRequest, callback?: Function) => Promise<FormFieldSaveResponse>
+    create: (request: FormFieldCreateRequest, callback?: Function) => Promise<FormFieldCreateResponse>
+    update: (request: FormFieldUpdateRequest, callback?: Function) => Promise<FormFieldUpdateResponse>
     del: (request: FormFieldDeleteRequest, callback?: Function) => Promise<FormFieldDeleteResponse>
 
     constructor(inject: Function, functions?: {
         list: (query: FormFieldListQuery) => Promise<FormFieldListResponse>,
-        save: (request: FormFieldBodyRequest) => Promise<FormFieldSaveResponse>
+        create: (request: FormFieldCreateRequest, callback?: Function) => Promise<FormFieldCreateResponse>
+        update: (request: FormFieldUpdateRequest, callback?: Function) => Promise<FormFieldUpdateResponse>
         del: (request: FormFieldDeleteRequest) => Promise<FormFieldDeleteResponse>
     }) { super(); inject(this, functions); }
 }
 
 export interface FormFieldListQuery extends BaseRequest {
+    FormField_name: string;
     page: number;
 }
 
@@ -46,15 +55,18 @@ export interface FormFieldListResponse {
     total: number;
 }
 
-export interface FormFieldBodyRequest extends BaseRequest {
+export interface FormFieldCreateRequest extends BaseRequest {
     form_name: string;
-    field_name: string;
-    field_type: FieldType;
 }
 
-export interface FormFieldSaveResponse {
-    success: boolean;
+export interface FormFieldCreateResponse extends BaseResponse { }
+
+export interface FormFieldUpdateRequest extends BaseRequest {
+    origin_name: string;
+    new_name: string;
 }
+
+export interface FormFieldUpdateResponse extends BaseResponse { }
 
 export interface FormFieldDeleteRequest extends BaseRequest {
     field_id: string;

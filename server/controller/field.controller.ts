@@ -1,13 +1,17 @@
-import { FormFieldBodyRequest, FormFieldDeleteRequest, FormFieldDeleteResponse, FormFieldListQuery, FormFieldListResponse, FormFieldRouterInstance, FormFieldSaveResponse } from "../../shared/router/FieldRouter";
-import { inject, injectws } from "../lib/inject"; // 假设这是您的注入工具
+import { FormFieldCreateRequest, FormFieldCreateResponse, FormFieldDeleteRequest, FormFieldDeleteResponse, FormFieldListQuery, FormFieldListResponse, FormFieldRouterInstance, FormFieldUpdateRequest, FormFieldUpdateResponse} from "../../shared/router/FieldRouter";
+import { inject, injectws } from "../lib/inject";
 
 async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
 
     return { list: [], total: 0 };
 }
 
+async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateResponse> {
 
-async function save(query: FormFieldBodyRequest): Promise<FormFieldSaveResponse> {
+    return { success: true };
+}
+
+async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {
 
     return { success: true };
 }
@@ -17,4 +21,5 @@ async function del(query: FormFieldDeleteRequest): Promise<FormFieldDeleteRespon
     return { success: true };
 }
 
-export const authController = new FormFieldRouterInstance(inject, { list, save, del });
+
+export const authController = new FormFieldRouterInstance(inject, { list, create, update, del });

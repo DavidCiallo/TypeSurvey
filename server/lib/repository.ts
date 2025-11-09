@@ -122,7 +122,7 @@ class Repository<T> {
         const filteredData = this.filterData(where);
         const start = config?.offset || 0;
         const end = start + (config?.limit || filteredData.length);
-        return JSON.parse(JSON.stringify(filteredData.slice(start, end)));
+        return filteredData.slice(start, end);
     }
 
     /**
@@ -130,11 +130,11 @@ class Repository<T> {
      * @param where An object for filtering.
      * @returns The first matching entity, or undefined.
      */
-    findOne(where: Partial<T>): T | undefined {
+    findOne(where: Partial<T>): T | null {
         this.initialize();
         const entity = this.filterData(where)[0];
-        if (!entity) return undefined;
-        return JSON.parse(JSON.stringify(this.filterData(where)[0]));
+        if (!entity) return null;
+        return this.filterData(where)[0];
     }
 
     /**
@@ -142,9 +142,9 @@ class Repository<T> {
      * @param entity A partial entity object to insert.
      * @returns True if the insertion was successful.
      */
-    insert(entity: Partial<T>): boolean {
+    async insert(entity: Partial<T>): Promise<boolean> {
         this.initialize();
-        const id = Date.now().toString(36) + Math.random().toString(36).substring(4, 10);
+        const id = Math.random().toString(36) + Math.random().toString(36).substring(4, 10);
         const create_time = Date.now();
         const newEntity = { ...entity, id, create_time } as T;
         this.cache.push(newEntity);
@@ -175,14 +175,13 @@ class Repository<T> {
      * @param updateData An object with the new data to apply.
      * @returns True if at least one entity was updated.
      */
-    update(where: Partial<T>, updateData: Partial<T>): boolean {
+    async update(where: Partial<T>, updateData: Partial<T>): Promise<boolean> {
         this.initialize();
         let updatedCount = 0;
         const newCache = this.cache.map(entity => {
             // Check if the entity matches the `where` clause
             if (Object.entries(where).every(([key, value]) => (entity as any)[key] === value)) {
                 updatedCount++;
-                // Create a new object with the updated properties
                 return { ...entity, ...updateData, update_time: Date.now() };
             }
             return entity;
