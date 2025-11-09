@@ -23,8 +23,8 @@ export class FormRouterInstance extends BaseRouterInstance {
             handler: Function
         },
         {
-            name: "delete",
-            path: "/delete",
+            name: "del",
+            path: "/del",
             method: "post",
             handler: Function
         },
@@ -44,7 +44,7 @@ export class FormRouterInstance extends BaseRouterInstance {
 }
 
 export interface FormListQuery extends BaseRequest {
-    form_name: string;
+    page: number;
 }
 
 export interface FormListResponse {
