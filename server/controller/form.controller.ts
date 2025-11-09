@@ -3,7 +3,7 @@ import { inject, injectws } from "../lib/inject";
 import { createField, getFormList, updateFormName } from "../service/field.service";
 
 async function list(query: FormListQuery): Promise<FormListResponse> {
-    if (!query.form_name) return { list: [], total: 0 };
+    if (!query.page) return { list: [], total: 0 };
     const list = await getFormList();
     return { list, total: list.length };
 }
@@ -40,4 +40,4 @@ async function del(query: FormDeleteRequest): Promise<FormDeleteResponse> {
     return { success: false };
 }
 
-export const authController = new FormRouterInstance(inject, { list, create, update, del });
+export const formController = new FormRouterInstance(inject, { list, create, update, del });

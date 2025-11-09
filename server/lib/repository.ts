@@ -144,7 +144,7 @@ class Repository<T> {
      */
     async insert(entity: Partial<T>): Promise<boolean> {
         this.initialize();
-        const id = Math.random().toString(36) + Math.random().toString(36).substring(4, 10);
+        const id = Math.random().toString(36).substring(4, 10) + Math.random().toString(36).substring(4, 10);
         const create_time = Date.now();
         const newEntity = { ...entity, id, create_time } as T;
         this.cache.push(newEntity);

@@ -25,8 +25,8 @@ export class FormFieldRouterInstance extends BaseRouterInstance {
             handler: Function
         },
         {
-            name: "delete",
-            path: "/delete",
+            name: "del",
+            path: "/del",
             method: "post",
             handler: Function
         },
@@ -46,7 +46,7 @@ export class FormFieldRouterInstance extends BaseRouterInstance {
 }
 
 export interface FormFieldListQuery extends BaseRequest {
-    FormField_name: string;
+    form_name: string;
     page: number;
 }
 
@@ -62,8 +62,9 @@ export interface FormFieldCreateRequest extends BaseRequest {
 export interface FormFieldCreateResponse extends BaseResponse { }
 
 export interface FormFieldUpdateRequest extends BaseRequest {
-    origin_name: string;
-    new_name: string;
+    field_id: string;
+    field_name?: string;
+    field_type?: FieldType;
 }
 
 export interface FormFieldUpdateResponse extends BaseResponse { }

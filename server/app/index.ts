@@ -12,13 +12,17 @@ import { WebSocketServer } from 'ws';
 
 // 中间件-各级路由
 import { mounthttp, mountws } from "../lib/mount";
-import { authController } from "../controller/field.controller";
+import { authController } from "../controller/auth.controller";
+import { formController } from "../controller/form.controller";
+import { fieldController } from "../controller/field.controller";
 
 const app = express();
 app.use(bodyParser.json()).use(cors());
 
 mounthttp(app, [
-    authController
+    authController,
+    formController,
+    fieldController
 ]);
 
 const staticPath = path.join(__dirname, '..', '..', 'dist');

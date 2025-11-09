@@ -28,6 +28,7 @@ export class AuthRouterInstance extends BaseRouterInstance {
 }
 
 export interface AuthBody {
+    name?:string;
     email?: string;
     password?: string;
 }

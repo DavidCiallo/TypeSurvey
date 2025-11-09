@@ -1,12 +1,9 @@
 import './App.css';
 
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import StrategyPage from './pages/strategy/StrategyPage';
-import InboxPage from './pages/inbox/InboxPage';
 import AuthPage from './pages/auth/AuthPage';
-import SenderPage from './pages/send/SendPage';
-import { autoRecordLive } from './methods/status';
 import { toast } from './methods/notify';
+import FormPage from './pages/form/FormPage';
 
 const PrivateRoute = ({ redirectPath = '/auth' }) => {
   // 检查 localStorage 中的 token
@@ -16,31 +13,15 @@ const PrivateRoute = ({ redirectPath = '/auth' }) => {
 };
 
 const App = () => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("code") == "444") {
-    // if (["WindowsWechat", "wxwork"].some(i => navigator.userAgent.includes(i))) {
-    localStorage.setItem("isWeCom", "1");
-    toast({
-      title: "您处于企业微信环境",
-      color: "success"
-    });
-    if (!localStorage.getItem("wecom_name")) {
-      localStorage.removeItem("token");
-    }
-    // }
-  }
-  autoRecordLive();
   return (
     <Router>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
 
         <Route element={<PrivateRoute />}>
-          <Route path="/inbox" element={<InboxPage />} />
-          <Route path="/strategy" element={<StrategyPage />} />
-          <Route path="/send" element={<SenderPage />} />
+          <Route path="/form" element={<FormPage />} />
         </Route>
-        <Route path="/" element={<Navigate to="/inbox" replace />} />
+        <Route path="/" element={<Navigate to="/form" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

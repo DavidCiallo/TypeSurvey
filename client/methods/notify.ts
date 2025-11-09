@@ -43,7 +43,8 @@ export function toast({ ...props }: Partial<ToastProps>) {
     const decode = asciiArray.reduce((acc, cur) => acc * 10 + cur, 0).toString(36).slice(0, 8);
     const list: Array<string> = JSON.parse(localStorage.getItem("toast") || "[]");
     if (!list.includes(decode)) {
-        localStorage.setItem("toast", JSON.stringify(list.push(decode)));
+        list.push(decode);
+        localStorage.setItem("toast", JSON.stringify(list));
         setTimeout(() => {
             const nlist = list.filter(item => item !== decode);
             localStorage.setItem("toast", JSON.stringify(nlist));

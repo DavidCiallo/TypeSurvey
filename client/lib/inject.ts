@@ -11,19 +11,23 @@ export function inject(instance: BaseRouterInstance) {
         const url = base + prefix + path;
         if (method === "get") {
             instance[name] = async (query: URLSearchParams, callback?: Function) => {
-                window.addEventListener(name, (event) => {
+                const handler = (event: Event) => {
                     const data = (event as CustomEvent)["detail"];
                     callback && callback(data);
-                })
+                    window.removeEventListener(name, handler);
+                };
+                window.addEventListener(name, handler);
                 http.get(name, url, query);
             }
         }
         else if (method === "post") {
             instance[name] = async (body: Record<string, any>, callback?: Function) => {
-                window.addEventListener(name, (event) => {
+                const handler = (event: Event) => {
                     const data = (event as CustomEvent)["detail"];
                     callback && callback(data);
-                })
+                    window.removeEventListener(name, handler);
+                };
+                window.addEventListener(name, handler);
                 http.post(name, url, body);
             }
         }

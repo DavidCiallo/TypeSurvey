@@ -1,13 +1,13 @@
 import { useRef } from "react";
 import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem } from "@heroui/react";
-import { FormFieldBodyRequest } from "../../../shared/router/FieldRouter";
+import { FormFieldCreateRequest, FormFieldUpdateRequest } from "../../../shared/router/FieldRouter";
 import { toast } from "../../methods/notify";
 import { FieldType } from "../../../shared/impl/field";
 
 interface props {
     isOpen: boolean,
     onOpenChange: any,
-    onSubmit: (data: FormFieldBodyRequest) => void
+    onSubmit: (data: FormFieldCreateRequest | FormFieldUpdateRequest) => void
 }
 
 const FieldEditorModal = ({
@@ -48,7 +48,7 @@ const FieldEditorModal = ({
                         label="表单名"
                         name="form_name"
                         labelPlacement="outside"
-                        placeholder="请输入账号"
+                        placeholder="请选择表单"
                         variant="bordered"
                         className="mb-4"
                     />
