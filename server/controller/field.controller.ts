@@ -1,6 +1,6 @@
 import { FormFieldCreateRequest, FormFieldCreateResponse, FormFieldDeleteRequest, FormFieldDeleteResponse, FormFieldListQuery, FormFieldListResponse, FormFieldRouterInstance, FormFieldUpdateRequest, FormFieldUpdateResponse } from "../../shared/router/FieldRouter";
 import { inject, injectws } from "../lib/inject";
-import { getFieldList } from "../service/field.service";
+import { createField, getFieldList } from "../service/field.service";
 
 async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
     const { form_name } = query;
@@ -10,8 +10,10 @@ async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
 }
 
 async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateResponse> {
-
-    return { success: true };
+    const { form_name, field_name, field_type } = query;
+    if (!form_name || !field_name || !field_type) return { success: false };
+    const success = await createField({ form_name, field_name, field_type })
+    return { success };
 }
 
 async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {

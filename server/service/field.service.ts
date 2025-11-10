@@ -29,6 +29,11 @@ export async function getFieldList(form_name: string): Promise<FormFieldImpl[]> 
 }
 
 export async function createField(field: Omit<FormFieldImpl, "id">): Promise<boolean> {
+    const { form_name, field_name } = field;
+    const exist = await FieldRepository.findOne({ form_name, field_name });
+    if (exist) {
+        return false;
+    }
     const result = await FieldRepository.insert(field);
     return result;
 }

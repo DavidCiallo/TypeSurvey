@@ -1,6 +1,6 @@
 import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
-import { Button, Form, Pagination, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
+import { Button, Form, Input, Pagination, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FormFieldCreateResponse, FormFieldListResponse } from "../../../shared/router/FieldRouter";
 import { FormRouter, FormFieldRouter } from "../../api/instance";
@@ -8,6 +8,7 @@ import FormEditor from "./FormEditor";
 import FieldEditor from "./FormFieldEditor";
 import { toast } from "../../methods/notify";
 import { FormListResponse } from "../../../shared/router/FormRouter";
+import { FieldTypeList } from "./types";
 
 const Component = () => {
     const [formName, setFormName] = useState<string>("");
@@ -73,7 +74,7 @@ const Component = () => {
                     <div className="flex flex-row">
                         <Select
                             aria-label="formname"
-                            className="mr-2 w-80" variant="bordered"
+                            className="mr-2 w-32 md:w-80" variant="bordered"
                             selectedKeys={[formName]}
                             onSelectionChange={(keys) => chooseForm(keys.currentKey || null)}
                         >
@@ -95,22 +96,52 @@ const Component = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full flex flex-col flex-wrap px-[5vw] py-2">
-                <Table aria-label="table">
+            <div className="w-full flex flex-row flex-wrap px-[5vw] py-2 justify-between">
+                <Table className="w-full" aria-label="table">
                     <TableHeader>
-                        <TableColumn>字段名称</TableColumn>
-                        <TableColumn>字段类型</TableColumn>
-                        <TableColumn>操作</TableColumn>
+                        <TableColumn align="center">字段名称</TableColumn>
+                        <TableColumn align="center">字段类型</TableColumn>
+                        <TableColumn align="center">可选择项</TableColumn>
+                        <TableColumn align="center">备注（用户可见）</TableColumn>
+                        <TableColumn align="center">操作</TableColumn>
                     </TableHeader>
                     <TableBody
                         isLoading={isLoading}
                         loadingContent={<div className="w-full h-full bg-[rgba(0,0,0,0.1)]"><Spinner /></div>}
                     >
-                        {formFieldList.map((i) => (
-                            <TableRow key={i.id}>
-                                <TableCell>{i.field_name}</TableCell>
-                                <TableCell>{i.field_type}</TableCell>
-                                <TableCell><Button onClick={() => setFocusFormField(i)} /></TableCell>
+                        {formFieldList.map((field) => (
+                            <TableRow key={field.id}>
+                                <TableCell className="w-48" align="center">
+                                    <Input variant="bordered" defaultValue={field.field_name} />
+                                </TableCell>
+                                <TableCell className="w-32">
+                                    <Select
+                                        variant="bordered" aria-label="select"
+                                        defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
+                                    >
+                                        {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                    <Select
+                                        variant="bordered" aria-label="select" selectionMode="multiple"
+                                        renderValue={(selectedKeys) => `已设置 ${selectedKeys.length} 项`}
+                                        defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
+                                    >
+                                        {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                    <Input placeholder="无备注" variant="bordered" defaultValue={""} />
+                                </TableCell>
+                                <TableCell className="w-60">
+                                    <Button className="mr-1" variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
+                                        上升
+                                    </Button>
+                                    <Button variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
+                                        下降
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -143,11 +174,29 @@ const Component = () => {
             }
             {
                 <FieldEditor
+                    form_name={formName}
                     isOpen={isFieldEditorOpen}
                     onOpenChange={(v: boolean) => {
                         setFieldEditorOpen(v);
                     }}
-                    onSubmit={() => {
+                    onSubmit={(data) => {
+                        if ("form_name" in data) {
+                            const form_name = data.form_name;
+                            const field_name = data.field_name!;
+                            const field_type = data.field_type!;
+                            FormFieldRouter.create(
+                                { form_name, field_name, field_type },
+                                ({ success }: FormFieldCreateResponse) => {
+                                    if (success) {
+                                        setFieldEditorOpen(false);
+                                        setPage(1);
+                                        setIsLoading(true);
+                                        FormFieldRouter.list({ form_name, page: 1 }, renderFormField);
+                                    } else {
+                                        toast({ title: "同名字段已存在", color: "danger" });
+                                    }
+                                });
+                        }
                     }}
                 />
             }
