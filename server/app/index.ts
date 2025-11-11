@@ -15,6 +15,7 @@ import { mounthttp, mountws } from "../lib/mount";
 import { authController } from "../controller/auth.controller";
 import { formController } from "../controller/form.controller";
 import { fieldController } from "../controller/field.controller";
+import { radioController } from "../controller/radio.controller";
 
 const app = express();
 app.use(bodyParser.json()).use(cors());
@@ -22,7 +23,8 @@ app.use(bodyParser.json()).use(cors());
 mounthttp(app, [
     authController,
     formController,
-    fieldController
+    fieldController,
+    radioController
 ]);
 
 const staticPath = path.join(__dirname, '..', '..', 'dist');

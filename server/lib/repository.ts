@@ -130,7 +130,7 @@ class Repository<T> {
      * @param where An object for filtering.
      * @returns The first matching entity, or undefined.
      */
-    findOne(where: Partial<T>): T | null {
+    async findOne(where: Partial<T>): Promise<T | null> {
         this.initialize();
         const entity = this.filterData(where)[0];
         if (!entity) return null;

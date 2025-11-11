@@ -16,7 +16,7 @@ export async function getFieldList(form_name: string): Promise<FormFieldImpl[]> 
     const fieldsData = await FieldRepository.find({ form_name });
     const radiosData = await RadioRepository.find();
     const fields = fieldsData.map(fieldData => {
-        if (fieldData.field_type == "select") {
+        if (fieldData.field_type == "select" || fieldData.field_type == "mulselect" || fieldData.field_type == "checkbox") {
             const radios = radiosData
                 .filter(radioData => radioData.field_id === fieldData.id)
                 .map(radioData => new FormFieldRadioImpl(radioData));
@@ -29,16 +29,49 @@ export async function getFieldList(form_name: string): Promise<FormFieldImpl[]> 
 }
 
 export async function createField(field: Omit<FormFieldImpl, "id">): Promise<boolean> {
+    const { form_name, field_name } = field;
+    const exist = await FieldRepository.findOne({ form_name, field_name });
+    if (exist) {
+        return false;
+    }
     const result = await FieldRepository.insert(field);
     return result;
 }
 
-export async function updateSingleField(field: FormFieldImpl): Promise<boolean> {
-    const result = await FieldRepository.update({ id: field.id }, field);
+export async function updateSingleField(id: string, key: string, value: string): Promise<boolean> {
+    const exist = await FieldRepository.findOne({ id });
+    if (!exist) {
+        return false;
+    }
+    const result = await FieldRepository.update({ id }, { [key]: value });
     return result;
 }
 
 export async function updateFormName(origin_name: string, new_name: string): Promise<boolean> {
+    const exist = await FieldRepository.findOne({ form_name: origin_name });
+    if (!exist) {
+        return false;
+    }
     const result = await FieldRepository.update({ form_name: origin_name }, { form_name: new_name });
+    return result;
+}
+
+
+export async function createRadio(radio: Omit<FormFieldRadioImpl, "id">): Promise<boolean> {
+    const { field_id, radio_name } = radio;
+    const exist = await RadioRepository.findOne({ field_id, radio_name });
+    if (exist) {
+        return false;
+    }
+    const result = await RadioRepository.insert({ radio_name, field_id, useful: true });
+    return result;
+}
+
+export async function updateRadio(id: string, key: string, value: boolean | string): Promise<boolean> {
+    const exist = await RadioRepository.findOne({ id });
+    if (!exist) {
+        return false;
+    }
+    const result = await RadioRepository.update({ id }, { [key]: value });
     return result;
 }

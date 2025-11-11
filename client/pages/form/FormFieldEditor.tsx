@@ -3,14 +3,17 @@ import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, Modal
 import { FormFieldCreateRequest, FormFieldUpdateRequest } from "../../../shared/router/FieldRouter";
 import { toast } from "../../methods/notify";
 import { FieldType } from "../../../shared/impl/field";
+import { FieldTypeList } from "./types";
 
 interface props {
+    form_name: string;
     isOpen: boolean,
     onOpenChange: any,
     onSubmit: (data: FormFieldCreateRequest | FormFieldUpdateRequest) => void
 }
 
 const FieldEditorModal = ({
+    form_name,
     isOpen,
     onOpenChange,
     onSubmit
@@ -26,7 +29,6 @@ const FieldEditorModal = ({
         if (!form_name || !field_name || !field_type) {
             return toast({ title: "格式错误", color: "danger" })
         }
-
         onSubmit({
             form_name: form_name.toString(),
             field_name: field_name.toString(),
@@ -48,6 +50,8 @@ const FieldEditorModal = ({
                         label="表单名"
                         name="form_name"
                         labelPlacement="outside"
+                        isReadOnly
+                        value={form_name}
                         placeholder="请选择表单"
                         variant="bordered"
                         className="mb-4"
@@ -56,7 +60,7 @@ const FieldEditorModal = ({
                         label="字段名"
                         name="field_name"
                         labelPlacement="outside"
-                        placeholder=""
+                        placeholder="请输入字段名"
                         variant="bordered"
                         className="mb-4"
                     />
@@ -64,12 +68,13 @@ const FieldEditorModal = ({
                         label="字段类型"
                         name="field_type"
                         labelPlacement="outside"
+                        placeholder="请选择字段类型"
                         variant="bordered"
                         className="mb-4"
                     >
                         {
-                            ["文本"].map(item => (
-                                <SelectItem key={item} textValue={item}>{item}</SelectItem>
+                            FieldTypeList.map(({ name, type }) => (
+                                <SelectItem key={type}>{name}</SelectItem>
                             ))
                         }
                     </Select>
@@ -82,7 +87,7 @@ const FieldEditorModal = ({
             <ModalContent className="md:min-w-[800px] max-h-[80vh]">
                 {(onClose) => (
                     <>
-                        <ModalHeader className="flex flex-col">编辑字段</ModalHeader>
+                        <ModalHeader className="flex flex-col">新增字段</ModalHeader>
                         <ModalBody className="overflow-y-auto">
                             <ModalBodyContent />
                         </ModalBody>
