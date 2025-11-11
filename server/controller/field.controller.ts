@@ -1,6 +1,6 @@
 import { FormFieldCreateRequest, FormFieldCreateResponse, FormFieldDeleteRequest, FormFieldDeleteResponse, FormFieldListQuery, FormFieldListResponse, FormFieldRouterInstance, FormFieldUpdateRequest, FormFieldUpdateResponse } from "../../shared/router/FieldRouter";
 import { inject, injectws } from "../lib/inject";
-import { createField, getFieldList } from "../service/field.service";
+import { createField, getFieldList, updateSingleField } from "../service/field.service";
 
 async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
     const { form_name } = query;
@@ -17,7 +17,18 @@ async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateRes
 }
 
 async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {
-
+    const { field_id, field_name, field_type } = query;
+    if (!field_id) {
+        return { success: false };
+    }
+    if (field_name) {
+        const success = await updateSingleField(field_id, "field_name", field_name);
+        if (!success) return { success: false };
+    }
+    if (field_type) {
+        const success = await updateSingleField(field_id, "field_type", field_type);
+        if (!success) return { success: false };
+    }
     return { success: true };
 }
 

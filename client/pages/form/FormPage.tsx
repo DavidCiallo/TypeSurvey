@@ -3,12 +3,15 @@ import { useEffect, useState } from "react";
 import { Button, Form, Input, Pagination, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FormFieldCreateResponse, FormFieldListResponse } from "../../../shared/router/FieldRouter";
-import { FormRouter, FormFieldRouter } from "../../api/instance";
+import { FormRouter, FormFieldRouter, FormFieldRadioRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
 import FieldEditor from "./FormFieldEditor";
+import RadioEditor from "./FormFieldRadioEditor";
 import { toast } from "../../methods/notify";
 import { FormListResponse } from "../../../shared/router/FormRouter";
 import { FieldTypeList } from "./types";
+import { FieldType } from "../../../shared/impl/field";
+import { FormFieldRadioCreateResponse } from "../../../shared/router/RadioRouter";
 
 const Component = () => {
     const [formName, setFormName] = useState<string>("");
@@ -21,6 +24,7 @@ const Component = () => {
     const [focusFormField, setFocusFormField] = useState<FormFieldImpl | null>(null);
     const [isFormEditorOpen, setFormEditorOpen] = useState(false);
     const [isFieldEditorOpen, setFieldEditorOpen] = useState(false);
+    const [isRadioEditorOpen, setRadioEditorOpen] = useState(false);
 
     function chooseForm(name: string | null) {
         if (!name || !formList.includes(name)) return;
@@ -32,6 +36,10 @@ const Component = () => {
 
     function openFormEditor(formname?: string) {
         setFormEditorOpen(true);
+    }
+
+    function openRadioEditor(field_id?: string) {
+        setRadioEditorOpen(true);
     }
 
     function renderFormField(data: FormFieldListResponse) {
@@ -109,41 +117,77 @@ const Component = () => {
                         isLoading={isLoading}
                         loadingContent={<div className="w-full h-full bg-[rgba(0,0,0,0.1)]"><Spinner /></div>}
                     >
-                        {formFieldList.map((field) => (
-                            <TableRow key={field.id}>
-                                <TableCell className="w-48" align="center">
-                                    <Input variant="bordered" defaultValue={field.field_name} />
-                                </TableCell>
-                                <TableCell className="w-32">
-                                    <Select
-                                        variant="bordered" aria-label="select"
-                                        defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
-                                    >
-                                        {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                    <Select
-                                        variant="bordered" aria-label="select" selectionMode="multiple"
-                                        renderValue={(selectedKeys) => `已设置 ${selectedKeys.length} 项`}
-                                        defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
-                                    >
-                                        {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                    <Input placeholder="无备注" variant="bordered" defaultValue={""} />
-                                </TableCell>
-                                <TableCell className="w-60">
-                                    <Button className="mr-1" variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
-                                        上升
-                                    </Button>
-                                    <Button variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
-                                        下降
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {formFieldList.map((field) => {
+                            if (!field.radios) field.radios = [];
+                            const TypeSelect = (
+                                <Select
+                                    variant="bordered" aria-label="select" className="w-28 mx-auto"
+                                    defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
+                                    onSelectionChange={(key) => {
+                                        if (!key.currentKey) return;
+                                        FormFieldRouter.update({ field_id: field.id, field_type: key.currentKey as FieldType })
+                                    }}
+                                >
+                                    {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
+                                </Select>
+                            );
+                            const RadioSelect = (
+                                <Select
+                                    variant="bordered" aria-label="select" selectionMode="multiple"
+                                    className="w-36 mx-auto"
+                                    renderValue={(selectedKeys) => `已设置 ${selectedKeys.length} 项`}
+                                    defaultSelectedKeys={
+                                        field.radios
+                                            .filter((radio) => radio.useful)
+                                            .map((radio) => radio.radio_name)
+                                    }
+                                    listboxProps={{
+                                        emptyContent: (<div hidden></div>),
+                                        bottomContent: (
+                                            <div
+                                                className="text-center cursor-pointer"
+                                                onClick={() => { setFocusFormField(field); openRadioEditor() }}
+                                            >
+                                                +
+                                            </div>
+                                        )
+                                    }}
+                                >
+                                    {
+                                        field.radios
+                                            .filter((radio) => radio.useful)
+                                            .map(({ radio_name }) => (
+                                                <SelectItem key={radio_name}>{radio_name}</SelectItem>
+                                            ))
+                                    }
+                                </Select>
+                            )
+                            return (
+                                <TableRow key={field.id}>
+                                    <TableCell className="w-48" align="center">
+                                        <Input
+                                            variant="bordered" defaultValue={field.field_name}
+                                            onValueChange={(field_name) => {
+                                                FormFieldRouter.update({ field_id: field.id, field_name })
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <TableCell align="center" className="w-28">{TypeSelect}</TableCell>
+                                    <TableCell align="center" >{RadioSelect}</TableCell>
+                                    <TableCell align="center" className="w-1/2">
+                                        <Input placeholder="无备注" variant="bordered" defaultValue={""} />
+                                    </TableCell>
+                                    <TableCell className="w-60">
+                                        <Button className="mr-1" variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
+                                            上升
+                                        </Button>
+                                        <Button variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
+                                            下降
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                 </Table>
             </div>
@@ -196,6 +240,25 @@ const Component = () => {
                                         toast({ title: "同名字段已存在", color: "danger" });
                                     }
                                 });
+                        }
+                    }}
+                />
+            }
+            {
+                focusFormField && <RadioEditor
+                    field_id={focusFormField.id}
+                    isOpen={isRadioEditorOpen}
+                    onOpenChange={(v: boolean) => {
+                        setRadioEditorOpen(v);
+                    }}
+                    onSubmit={(data) => {
+                        if ("radio_name" in data) {
+                            FormFieldRadioRouter.create({
+                                field_id: focusFormField.id,
+                                radio_name: data.radio_name!,
+                            }, ({ success }: FormFieldRadioCreateResponse) => {
+
+                            })
                         }
                     }}
                 />
