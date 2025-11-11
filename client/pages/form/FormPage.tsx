@@ -28,10 +28,14 @@ const Component = () => {
 
     function chooseForm(name: string | null) {
         if (!name || !formList.includes(name)) return;
-        setFormName(name);
-        setPage(1);
-        setIsLoading(true);
-        FormFieldRouter.list({ form_name: name, page: 1 }, renderFormField);
+        if (formName !== name) {
+            setFormName(name);
+            setIsLoading(true);
+            setPage(1);
+            FormFieldRouter.list({ form_name: name, page: 1 }, renderFormField);
+        } else {
+            FormFieldRouter.list({ form_name: name, page: page }, renderFormField);
+        }
     }
 
     function openFormEditor(formname?: string) {
@@ -125,7 +129,10 @@ const Component = () => {
                                     defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
                                     onSelectionChange={(key) => {
                                         if (!key.currentKey) return;
-                                        FormFieldRouter.update({ field_id: field.id, field_type: key.currentKey as FieldType })
+                                        FormFieldRouter.update(
+                                            { field_id: field.id, field_type: key.currentKey as FieldType },
+                                            () => chooseForm(formName)
+                                        )
                                     }}
                                 >
                                     {FieldTypeList.map(({ name, type }) => (<SelectItem key={type}>{name}</SelectItem>))}
@@ -133,10 +140,11 @@ const Component = () => {
                             );
                             const RadioSelect = (
                                 <Select
-                                    variant="bordered" aria-label="select" selectionMode="multiple"
-                                    className="w-36 mx-auto"
+                                    isOpen={!isRadioEditorOpen && field.id === focusFormField?.id}
+                                    onOpenChange={(e) => { setFocusFormField(e ? field : null); setRadioEditorOpen(!e) }}
+                                    className="w-36 mx-auto" variant="bordered" aria-label="select" selectionMode="multiple"
                                     renderValue={(selectedKeys) => `已设置 ${selectedKeys.length} 项`}
-                                    defaultSelectedKeys={
+                                    selectedKeys={
                                         field.radios
                                             .filter((radio) => radio.useful)
                                             .map((radio) => radio.radio_name)
@@ -146,10 +154,8 @@ const Component = () => {
                                         bottomContent: (
                                             <div
                                                 className="text-center cursor-pointer"
-                                                onClick={() => { setFocusFormField(field); openRadioEditor() }}
-                                            >
-                                                +
-                                            </div>
+                                                onClick={() => openRadioEditor()}
+                                            >+</div>
                                         )
                                     }}
                                 >
@@ -168,7 +174,10 @@ const Component = () => {
                                         <Input
                                             variant="bordered" defaultValue={field.field_name}
                                             onValueChange={(field_name) => {
-                                                FormFieldRouter.update({ field_id: field.id, field_name })
+                                                FormFieldRouter.update(
+                                                    { field_id: field.id, field_name },
+                                                    () => chooseForm(formName)
+                                                )
                                             }}
                                         />
                                     </TableCell>
@@ -204,10 +213,7 @@ const Component = () => {
                                 if (success) {
                                     setFormEditorOpen(false);
                                     setFormList([...formList, form_name]);
-                                    setFormName(form_name);
-                                    setPage(1);
-                                    setIsLoading(true);
-                                    FormFieldRouter.list({ form_name, page: 1 }, renderFormField);
+                                    chooseForm(form_name);
                                 } else {
                                     toast({ title: "同名表单已存在", color: "danger" });
                                 }
@@ -233,9 +239,7 @@ const Component = () => {
                                 ({ success }: FormFieldCreateResponse) => {
                                     if (success) {
                                         setFieldEditorOpen(false);
-                                        setPage(1);
-                                        setIsLoading(true);
-                                        FormFieldRouter.list({ form_name, page: 1 }, renderFormField);
+                                        chooseForm(form_name);
                                     } else {
                                         toast({ title: "同名字段已存在", color: "danger" });
                                     }
@@ -257,7 +261,12 @@ const Component = () => {
                                 field_id: focusFormField.id,
                                 radio_name: data.radio_name!,
                             }, ({ success }: FormFieldRadioCreateResponse) => {
-
+                                if (success) {
+                                    setRadioEditorOpen(false);
+                                    chooseForm(formName);
+                                } else {
+                                    toast({ title: "同名选项已存在", color: "danger" });
+                                }
                             })
                         }
                     }}
