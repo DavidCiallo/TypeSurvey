@@ -19,7 +19,7 @@ async function update(query: FormFieldRadioUpdateRequest): Promise<FormFieldRadi
         const success = await updateRadio(radio_id, "radio_name", radio_name);
         if (!success) return { success: false };
     }
-    if (useful) {
+    if (useful === true || useful === false) {
         const success = await updateRadio(radio_id, "useful", useful);
         if (!success) return { success: false };
     }

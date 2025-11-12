@@ -140,17 +140,26 @@ const Component = () => {
                             );
                             const RadioSelect = (
                                 <Select
+                                    hidden={!["checkbox", "select", "mulselect"].some(i => i == field.field_type)}
                                     isOpen={!isRadioEditorOpen && field.id === focusFormField?.id}
                                     onOpenChange={(e) => { setFocusFormField(e ? field : null); setRadioEditorOpen(!e) }}
                                     className="w-36 mx-auto" variant="bordered" aria-label="select" selectionMode="multiple"
-                                    renderValue={(selectedKeys) => `已设置 ${selectedKeys.length} 项`}
-                                    selectedKeys={
+                                    renderValue={(selectedKeys) => {
+                                        if (selectedKeys.length === 0) {
+                                            return null;
+                                        }
+                                        return `已设置 ${selectedKeys.length} 项`;
+                                    }}
+                                    placeholder="已设置 0 项"
+                                    defaultSelectedKeys={
                                         field.radios
                                             .filter((radio) => radio.useful)
                                             .map((radio) => radio.radio_name)
                                     }
                                     listboxProps={{
-                                        emptyContent: (<div hidden></div>),
+                                        emptyContent: (
+                                            <div className="text-center">无选项可用</div>
+                                        ),
                                         bottomContent: (
                                             <div
                                                 className="text-center cursor-pointer"
@@ -160,17 +169,25 @@ const Component = () => {
                                     }}
                                 >
                                     {
-                                        field.radios
-                                            .filter((radio) => radio.useful)
-                                            .map(({ radio_name }) => (
-                                                <SelectItem key={radio_name}>{radio_name}</SelectItem>
-                                            ))
+                                        field.radios.map(({ id: radio_id, radio_name, useful }) => (
+                                            <SelectItem
+                                                key={radio_name}
+                                                onClick={() => {
+                                                    FormFieldRadioRouter.update(
+                                                        { radio_id, useful: !useful },
+                                                        () => chooseForm(formName)
+                                                    )
+                                                }}
+                                            >
+                                                {radio_name}
+                                            </SelectItem>
+                                        ))
                                     }
                                 </Select>
                             )
                             return (
                                 <TableRow key={field.id}>
-                                    <TableCell className="w-48" align="center">
+                                    <TableCell className="min-w-48" align="center">
                                         <Input
                                             variant="bordered" defaultValue={field.field_name}
                                             onValueChange={(field_name) => {
