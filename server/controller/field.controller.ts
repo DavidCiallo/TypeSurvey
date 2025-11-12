@@ -17,7 +17,7 @@ async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateRes
 }
 
 async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {
-    const { field_id, field_name, field_type } = query;
+    const { field_id, field_name, field_type, comment } = query;
     if (!field_id) {
         return { success: false };
     }
@@ -27,6 +27,10 @@ async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateRes
     }
     if (field_type) {
         const success = await updateSingleField(field_id, "field_type", field_type);
+        if (!success) return { success: false };
+    }
+    if (comment) {
+        const success = await updateSingleField(field_id, "comment", comment);
         if (!success) return { success: false };
     }
     return { success: true };

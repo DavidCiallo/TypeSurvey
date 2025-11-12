@@ -184,9 +184,14 @@ const Component = () => {
                                     <TableCell align="center" className="w-28">{TypeSelect}</TableCell>
                                     <TableCell align="center" >{RadioSelect}</TableCell>
                                     <TableCell align="center" className="w-1/2">
-                                        <Input placeholder="无备注" variant="bordered" defaultValue={""} />
+                                        <Input
+                                            placeholder="无备注" variant="bordered" defaultValue={field.comment}
+                                            onValueChange={(comment) => {
+                                                FormFieldRouter.update({ field_id: field.id, comment })
+                                            }}
+                                        />
                                     </TableCell>
-                                    <TableCell className="w-60">
+                                    <TableCell className="min-w-40">
                                         <Button className="mr-1" variant="bordered" color="primary" size="sm" onClick={() => setFocusFormField(field)}>
                                             上升
                                         </Button>
