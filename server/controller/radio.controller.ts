@@ -1,12 +1,19 @@
-import { FormFieldRadioCreateRequest, FormFieldRadioCreateResponse, FormFieldRadioDeleteRequest, FormFieldRadioDeleteResponse, FormFieldRadioRouterInstance, FormFieldRadioUpdateRequest, FormFieldRadioUpdateResponse } from "../../shared/router/RadioRouter";
+import {
+    FormFieldRadioCreateRequest,
+    FormFieldRadioCreateResponse,
+    FormFieldRadioDeleteRequest,
+    FormFieldRadioDeleteResponse,
+    FormFieldRadioRouterInstance,
+    FormFieldRadioUpdateRequest,
+    FormFieldRadioUpdateResponse,
+} from "../../shared/router/RadioRouter";
 import { inject, injectws } from "../lib/inject";
-import { createRadio, updateRadio } from "../service/field.service";
-
+import { createRadio, updateRadio } from "../service/radio.service";
 
 async function create(query: FormFieldRadioCreateRequest): Promise<FormFieldRadioCreateResponse> {
     const { field_id, radio_name } = query;
     if (!field_id || !radio_name) return { success: false };
-    const success = await createRadio({ field_id, radio_name, useful: false })
+    const success = await createRadio({ field_id, radio_name, useful: false });
     return { success };
 }
 
@@ -27,9 +34,7 @@ async function update(query: FormFieldRadioUpdateRequest): Promise<FormFieldRadi
 }
 
 async function del(query: FormFieldRadioDeleteRequest): Promise<FormFieldRadioDeleteResponse> {
-
     return { success: true };
 }
-
 
 export const radioController = new FormFieldRadioRouterInstance(inject, { create, update, del });

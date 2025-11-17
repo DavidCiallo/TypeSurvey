@@ -8,23 +8,36 @@ const RadioRepository = Repository.instance(FormFieldRadioEntity);
 
 export async function getFormList(): Promise<string[]> {
     const fields = await FieldRepository.find();
-    const formSet = new Set(fields.map(item => item.form_name));
+    const formSet = new Set(fields.map((item) => item.form_name));
     return Array.from(formSet);
+}
+
+export async function getFormNameByField(field_id: string): Promise<string> {
+    const field = await FieldRepository.findOne({ id: field_id });
+    if (field) {
+        return field.form_name;
+    } else {
+        return "";
+    }
 }
 
 export async function getFieldList(form_name: string): Promise<FormFieldImpl[]> {
     const fieldsData = await FieldRepository.find({ form_name });
     const radiosData = await RadioRepository.find();
-    const fields = fieldsData.map(fieldData => {
-        if (fieldData.field_type == "select" || fieldData.field_type == "mulselect" || fieldData.field_type == "checkbox") {
+    const fields = fieldsData.map((fieldData) => {
+        if (
+            fieldData.field_type == "select" ||
+            fieldData.field_type == "mulselect" ||
+            fieldData.field_type == "checkbox"
+        ) {
             const radios = radiosData
-                .filter(radioData => radioData.field_id === fieldData.id)
-                .map(radioData => new FormFieldRadioImpl(radioData));
+                .filter((radioData) => radioData.field_id === fieldData.id)
+                .map((radioData) => new FormFieldRadioImpl(radioData));
             return new FormFieldImpl(fieldData, radios);
         } else {
             return new FormFieldImpl(fieldData);
         }
-    })
+    });
     return fields;
 }
 
@@ -36,7 +49,7 @@ export async function createField(field: Omit<FormFieldImpl, "id" | "comment" | 
     }
     const result = await FieldRepository.insert({
         ...field,
-        placeholder: ""
+        placeholder: "",
     });
     return result;
 }
@@ -56,25 +69,5 @@ export async function updateFormName(origin_name: string, new_name: string): Pro
         return false;
     }
     const result = await FieldRepository.update({ form_name: origin_name }, { form_name: new_name });
-    return result;
-}
-
-
-export async function createRadio(radio: Omit<FormFieldRadioImpl, "id">): Promise<boolean> {
-    const { field_id, radio_name } = radio;
-    const exist = await RadioRepository.findOne({ field_id, radio_name });
-    if (exist) {
-        return false;
-    }
-    const result = await RadioRepository.insert({ radio_name, field_id, useful: true });
-    return result;
-}
-
-export async function updateRadio(id: string, key: string, value: boolean | string): Promise<boolean> {
-    const exist = await RadioRepository.findOne({ id });
-    if (!exist) {
-        return false;
-    }
-    const result = await RadioRepository.update({ id }, { [key]: value });
     return result;
 }
