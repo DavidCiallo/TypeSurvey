@@ -1,10 +1,10 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
+import { nanoid } from "nanoid";
 
+type Constructor<T> = { new (...args: any[]): T };
 
-type Constructor<T> = { new(...args: any[]): T };
-
-const DB_PATH = "form_data"
+const DB_PATH = "form_data";
 
 class Repository<T> {
     public name: string;
@@ -21,9 +21,7 @@ class Repository<T> {
         this.filePath = path.join(`./${DB_PATH}`, `${this.name}.json`);
     }
 
-    public static instance<T>(
-        entityClass: Constructor<T>,
-    ): Repository<T> {
+    public static instance<T>(entityClass: Constructor<T>): Repository<T> {
         const entityName = entityClass.name.toLowerCase();
         if (!Repository.instances.has(entityName)) {
             Repository.instances.set(entityName, new Repository(entityClass));
@@ -40,7 +38,7 @@ class Repository<T> {
                 fs.mkdirSync(`./${DB_PATH}`);
             }
             if (!fs.existsSync(this.filePath)) {
-                fs.writeFileSync(this.filePath, '[]');
+                fs.writeFileSync(this.filePath, "[]");
             }
             this.loadData();
         } catch (error) {
@@ -89,7 +87,7 @@ class Repository<T> {
             return this.cache;
         }
 
-        return this.cache.filter(entity => {
+        return this.cache.filter((entity) => {
             return Object.entries(where).every(([key, value]) => {
                 // Handle cases where the value in `where` is null or undefined
                 const entityValue = (entity as any)[key];
@@ -117,7 +115,7 @@ class Repository<T> {
      * @param config An optional object for limiting and offsetting results.
      * @returns An array of matching entities.
      */
-    async find(where?: Partial<T>, config?: { limit?: number, offset?: number }): Promise<T[]> {
+    async find(where?: Partial<T>, config?: { limit?: number; offset?: number }): Promise<T[]> {
         this.initialize();
         const filteredData = this.filterData(where);
         const start = config?.offset || 0;
@@ -144,7 +142,7 @@ class Repository<T> {
      */
     async insert(entity: Partial<T>): Promise<boolean> {
         this.initialize();
-        const id = Math.random().toString(36).substring(4, 10) + Math.random().toString(36).substring(4, 10);
+        const id = nanoid(6);
         const create_time = Date.now();
         const newEntity = { ...entity, id, create_time } as T;
         this.cache.push(newEntity);
@@ -160,11 +158,11 @@ class Repository<T> {
     async insertMany(entities: Partial<T>[]): Promise<boolean> {
         this.initialize();
         const create_time = Date.now();
-        const newEntities = entities.map(entity => {
-            const id = Date.now().toString(36) + Math.random().toString(36).substring(4, 10);
+        const newEntities = entities.map((entity, index) => {
+            const id = nanoid(6);
             return { ...entity, id, create_time } as T;
         });
-        this.cache.push(...newEntities as Array<T>);
+        this.cache.push(...(newEntities as Array<T>));
         this.saveData();
         return true;
     }
@@ -178,7 +176,7 @@ class Repository<T> {
     async update(where: Partial<T>, updateData: Partial<T>): Promise<boolean> {
         this.initialize();
         let updatedCount = 0;
-        const newCache = this.cache.map(entity => {
+        const newCache = this.cache.map((entity) => {
             // Check if the entity matches the `where` clause
             if (Object.entries(where).every(([key, value]) => (entity as any)[key] === value)) {
                 updatedCount++;
@@ -202,7 +200,7 @@ class Repository<T> {
     delete(where: Partial<T>): boolean {
         this.initialize();
         const initialCount = this.cache.length;
-        const newCache = this.cache.filter(entity => {
+        const newCache = this.cache.filter((entity) => {
             return !Object.entries(where).every(([key, value]) => (entity as any)[key] === value);
         });
         const deletedCount = initialCount - newCache.length;

@@ -1,34 +1,70 @@
 import { useEffect, useState } from "react";
 import { Input, Pagination, Select, SelectItem } from "@heroui/react";
-import { FormFieldImpl } from "../../../shared/impl";
-import { FormFieldListResponse } from "../../../shared/router/FieldRouter";
-import { FormFieldRouter, FormRouter } from "../../api/instance";
-import { FormListResponse } from "../../../shared/router/FormRouter";
+import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
+import { RecordRouter } from "../../api/instance";
+import { RecordGetResponse } from "../../../shared/router/RecordRouter";
+import CheckModal from "./CheckModal";
+import { toast } from "../../methods/notify";
+import { useNavigate } from "react-router-dom";
 
 const Component = () => {
+    const navigate = useNavigate();
+    const reqpath = new URLSearchParams(window.location.search);
+    let id = reqpath.get("t");
+
     const [formName, setFormName] = useState<string>("");
-    const [formFieldList, setFormFieldList] = useState<FormFieldImpl[]>([]);
+    const [fieldList, setFieldList] = useState<FormFieldImpl[]>([]);
+    const [records, setRecords] = useState<RecordImpl[]>([]);
+
+    const [pass, setPass] = useState(true);
+    const [code, setCode] = useState(localStorage.getItem("code") || "");
+
+    function changeCode(code: string) {
+        if (code.length > 4) return;
+        setCode(code);
+        if (code.length === 4) {
+            loadRecord(code);
+        }
+    }
+
     const [total, setTotal] = useState<number>(0);
     const [page, setPage] = useState(1);
 
-    function chooseForm(name: string) {
-        if (formName !== name) {
-            setFormName(name);
-            setPage(1);
-            FormFieldRouter.list({ form_name: name, page: 1 }, renderFormField);
-        } else {
-            FormFieldRouter.list({ form_name: name, page: page }, renderFormField);
-        }
+    function setAuthData(form_name: string, fields: FormFieldImpl[], records: RecordImpl[]) {
+        setFormName(form_name);
+        setFieldList(fields);
+        setTotal(fields.length);
+        setRecords(records);
+        setPass(true);
     }
-    function renderFormField(data: FormFieldListResponse) {
-        setTotal(data.total);
-        setFormFieldList(data.list);
+
+    async function loadRecord(code: string) {
+        if (!id) return toast({ title: "非法参数", color: "danger" });
+        await RecordRouter.get(
+            { id, code },
+            async ({ form_name, fields, records, item_id, code, check }: RecordGetResponse) => {
+                if (!check) {
+                    toast({ title: "需要正确的验证码" });
+                    setCode("");
+                    setPass(false);
+                    return;
+                }
+                setAuthData(form_name, fields, records);
+                localStorage.setItem("item_id", item_id);
+                localStorage.setItem("code", code);
+            },
+        );
+    }
+
+    async function submitRecord(field_id: string, field_value: string) {
+        const item_id = localStorage.getItem("item_id");
+        if (!item_id) return toast({ title: "错误提交", color: "danger" });
+        await RecordRouter.submit({ item_id, field_id, field_value });
+        navigate("/fill?t=" + item_id);
     }
 
     useEffect(() => {
-        FormRouter.list({ page: 1 }, ({ list }: FormListResponse) => {
-            list.length && chooseForm(list[0]);
-        });
+        loadRecord(code);
     }, []);
 
     const pagination = (
@@ -37,7 +73,6 @@ const Component = () => {
             total={Math.ceil(total / 10)}
             onChange={(page: number) => {
                 setPage(page);
-                formName && FormFieldRouter.list({ form_name: formName, page }, renderFormField);
             }}
         />
     );
@@ -52,6 +87,8 @@ const Component = () => {
                         variant="bordered"
                         labelPlacement="outside"
                         placeholder={field.placeholder || " "}
+                        defaultValue={records.find((r) => r.field_id === field.id)?.field_value}
+                        onValueChange={(text) => submitRecord(field.id, text)}
                         className="w-full"
                     />
                 );
@@ -90,7 +127,7 @@ const Component = () => {
             <div className="w-full flex flex-col px-2 py-2">
                 <div className="text-lg mx-auto font-bold py-4">{formName}</div>
                 <div className="flex flex-col">
-                    {formFieldList.map((field, index) => {
+                    {fieldList.map((field, index) => {
                         return (
                             <div className="w-full flex flex-row flex-wrap pt-2" key={index}>
                                 {renderControl(field)}
@@ -105,6 +142,7 @@ const Component = () => {
                     <div className="flex flex-row"></div>
                 </div>
             </div>
+            {!pass && <CheckModal value={code} change={changeCode} />}
         </div>
     );
 };

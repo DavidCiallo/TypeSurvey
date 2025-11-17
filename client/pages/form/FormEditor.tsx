@@ -1,19 +1,15 @@
 import { useRef } from "react";
-import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@heroui/react";
+import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import { FormCreateRequest, FormUpdateRequest } from "../../../shared/router/FormRouter";
 import { toast } from "../../methods/notify";
 
 interface props {
-    isOpen: boolean,
-    onOpenChange: any,
-    onSubmit: (data: FormCreateRequest | FormUpdateRequest) => void
+    isOpen: boolean;
+    onOpenChange: any;
+    onSubmit: (data: FormCreateRequest | FormUpdateRequest) => void;
 }
 
-const FieldEditorModal = ({
-    isOpen,
-    onOpenChange,
-    onSubmit
-}: props) => {
+const FieldEditorModal = ({ isOpen, onOpenChange, onSubmit }: props) => {
     const formRef = useRef<HTMLFormElement>(null);
 
     const handleCustomSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
@@ -23,10 +19,10 @@ const FieldEditorModal = ({
         }
         const { form_name } = Object.fromEntries(new FormData(formRef.current!).entries());
         if (!form_name) {
-            return toast({ title: "请填写表单名", color: "danger" })
+            return toast({ title: "请填写表单名", color: "danger" });
         }
 
-        onSubmit({ form_name: form_name.toString() })
+        onSubmit({ form_name: form_name.toString() });
     };
 
     const triggerSubmit = () => {
@@ -42,13 +38,14 @@ const FieldEditorModal = ({
                         label="表单名"
                         name="form_name"
                         labelPlacement="outside"
+                        placeholder=" "
                         variant="bordered"
                         className="mb-4"
                     />
                 </Form>
             </div>
-        )
-    }
+        );
+    };
     return (
         <Modal isOpen={isOpen} onOpenChange={onOpenChange} className="w-full">
             <ModalContent className="md:min-w-[400px] max-h-[60vh]">
@@ -70,8 +67,7 @@ const FieldEditorModal = ({
                 )}
             </ModalContent>
         </Modal>
-    )
+    );
 };
-
 
 export default FieldEditorModal;

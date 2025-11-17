@@ -1,3 +1,4 @@
+import { FormFieldImpl, RecordImpl } from "../impl";
 import { BaseRequest, BaseResponse, BaseRouterInstance } from "../lib/decorator";
 
 export class RecordRouterInstance extends BaseRouterInstance {
@@ -34,15 +35,23 @@ export class RecordRouterInstance extends BaseRouterInstance {
 }
 
 export interface RecordGetQuery extends BaseRequest {
-    item_id: string;
+    id: string;
+    code?: string;
 }
 
 export interface RecordGetResponse extends BaseResponse {
-    data: Record<string, any>;
+    check: boolean;
+    item_id: string;
+    code: string;
+    form_name: string;
+    fields: FormFieldImpl[];
+    records: RecordImpl[];
 }
 
 export interface RecordUpdateRequest extends BaseRequest {
     item_id: string;
+    field_id: string;
+    field_value: string;
 }
 
 export interface RecordUpdateResponse extends BaseResponse {}

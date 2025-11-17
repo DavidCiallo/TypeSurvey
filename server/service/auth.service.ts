@@ -9,7 +9,7 @@ export async function loginUser(email: string, password: string): Promise<LoginT
     password = hashGenerate(password);
     const emailItem = await accountRepository.findOne({ email, password });
     if (emailItem) {
-        return { token: gentoken(email), success: true };
+        return { token: genTokenForIdentify(email), success: true };
     } else {
         return { token: "", success: false };
     }
@@ -27,19 +27,16 @@ export async function registerUser(name: string, email: string, password: string
 
 registerUser("管理员", "plumend@yeah.net", "wdc20140772");
 
-export function gentoken(item: string, expried: number = 1000 * 60 * 60 * 24): string {
+export function genTokenForIdentify(identity: string, expried: number = 1000 * 60 * 60 * 24): string {
     expried = Date.now() + expried;
-    const token = [item, expried.toString()].join("|-|");
+    const token = [identity, expried.toString()].join("|-|");
     return aesEncrypt(token);
 }
 
 export function getIdentifyByVerify(token: string): string | false {
     const dt = aesDecrypt(token);
     if (!dt) return false;
-    const [email, expried] = dt.split("|-|");
+    const [identity, expried] = dt.split("|-|");
     if (Date.now() > Number(expried)) return false;
-    return email;
+    return identity;
 }
-
-const testform = gentoken("32132382138213", 1000 * 60 * 60 * 24 * 365);
-console.log("test token:", testform);

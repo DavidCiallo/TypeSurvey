@@ -17,13 +17,13 @@ export default function Component() {
             const loginResult = (e as CustomEvent).detail as LoginToken;
             if (loginResult.success) {
                 toast({ title: "登录成功", color: "success" });
-                await new Promise(r => setTimeout(r, 1000));
-                navigate("/email");
+                await new Promise((r) => setTimeout(r, 1000));
+                navigate("/form");
                 localStorage.setItem("token", email.toString());
             } else {
                 toast({ title: "登录失败，请检查密码", color: "danger" });
             }
-        })
+        });
     };
 
     return (
@@ -31,9 +31,9 @@ export default function Component() {
             <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-[20vh]">
                 <p className="pb-4 text-left text-3xl font-semibold">
                     <span aria-label="emoji" className="mr-4" role="img">
-                        📮
+                        📝
                     </span>
-                    多邮箱系统
+                    快速表单
                 </p>
                 <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleSubmit}>
                     <Input
@@ -44,7 +44,7 @@ export default function Component() {
                         placeholder="请输入账号"
                         type="email"
                         variant="bordered"
-                        errorMessage={() => "是的这有些滑稽，你需要先有个邮箱才能使用更多邮箱"}
+                        errorMessage={() => "这有些滑稽"}
                     />
                     <Input
                         isRequired
@@ -57,9 +57,11 @@ export default function Component() {
                         errorMessage={() => "显然这是必填项"}
                     />
                     <div className="flex w-full items-center justify-end px-1 py-2">
-                        <Link className="text-default-500 cursor-pointer" size="sm" onClick={
-                            () => toast({ title: "请联系管理员🙁", color: "danger" })
-                        }>
+                        <Link
+                            className="text-default-500 cursor-pointer"
+                            size="sm"
+                            onClick={() => toast({ title: "请联系管理员🙁", color: "danger" })}
+                        >
                             忘记密码？
                         </Link>
                     </div>
