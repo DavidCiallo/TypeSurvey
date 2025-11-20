@@ -1,7 +1,9 @@
 import { RecordImpl } from "../../shared/impl";
+import { FormFieldEntity } from "../../shared/types/FormField";
 import { RecordEntity } from "../../shared/types/Record";
 import Repository from "../lib/repository";
 
+const FieldRepository = Repository.instance(FormFieldEntity);
 const RecordRepository = Repository.instance(RecordEntity);
 
 export async function getRecords(item_id?: string): Promise<Array<RecordImpl>> {
@@ -17,7 +19,7 @@ export async function getRecords(item_id?: string): Promise<Array<RecordImpl>> {
     return records;
 }
 
-export async function submitRecord(record: Omit<RecordImpl, "id">): Promise<boolean> {
+export async function submitRecord(record: Omit<RecordImpl, "id" | "create_time" | "update_time">): Promise<boolean> {
     const { item_id, field_id, field_value } = record;
     const exist = await RecordRepository.findOne({ item_id, field_id });
     if (exist) {
@@ -26,4 +28,11 @@ export async function submitRecord(record: Omit<RecordImpl, "id">): Promise<bool
     }
     const result = await RecordRepository.insert({ item_id, field_id, field_value });
     return result;
+}
+
+export async function getAllRecord(form_name: string) {
+    const fields = await FieldRepository.find({ form_name });
+    const recordData = await Promise.all(fields.map(({ id: field_id }) => RecordRepository.find({ field_id })));
+    const records = recordData.flat().map((r) => new RecordImpl(r));
+    return records;
 }

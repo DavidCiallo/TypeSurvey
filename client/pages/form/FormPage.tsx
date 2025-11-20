@@ -101,7 +101,7 @@ const Component = () => {
             toast({ title: "参数错误", color: "danger" });
             return;
         }
-        RecordRouter.get({ id: field_id }, async ({ item_id, code }: RecordGetResponse) => {
+        RecordRouter.history({ id: field_id }, async ({ item_id, code }: RecordGetResponse) => {
             RecordRouter.submit({ field_id, field_value, item_id });
             const url = `${baseurl + item_id}#code:${code}`;
             navigator.clipboard.writeText(url);
@@ -137,7 +137,7 @@ const Component = () => {
                         const subtitle = (
                             <div className="flex flex-row gap-3">
                                 <div>共{records_num}条记录 </div>
-                                {!!last_submit && <div>{new Date(last_submit).toLocaleString()}</div>}
+                                {last_submit && <div>{new Date(last_submit).toLocaleString()}</div>}
                                 {!last_submit && <div>暂无记录</div>}
                             </div>
                         );

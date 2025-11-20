@@ -29,7 +29,7 @@ const CreateRecordEditor = ({ isOpen, fields, onOpenChange, onCreate }: Prop) =>
         <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
             <ModalContent>
                 <ModalBody className="flex flex-col items-center p-6">
-                    <div className="my-3 text-center font-bold text-xl">
+                    <div className="mb-4 text-center font-bold text-xl">
                         {selectedType === null ? "请选择表单类型" : ""}
                         {selectedType === "submit" ? "普通表单" : ""}
                         {selectedType === "collect" ? "记名表单" : ""}

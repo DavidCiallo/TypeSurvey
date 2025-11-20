@@ -6,8 +6,8 @@ export class RecordRouterInstance extends BaseRouterInstance {
     prefix = "/record";
     router = [
         {
-            name: "get",
-            path: "/get",
+            name: "history",
+            path: "/history",
             method: "get",
             handler: Function,
         },
@@ -17,16 +17,24 @@ export class RecordRouterInstance extends BaseRouterInstance {
             method: "post",
             handler: Function,
         },
+        {
+            name: "all",
+            path: "/all",
+            method: "post",
+            handler: Function,
+        },
     ];
 
-    get: (query: RecordGetQuery, callback?: Function) => Promise<RecordGetResponse>;
+    history: (query: RecordGetQuery, callback?: Function) => Promise<RecordGetResponse>;
     submit: (request: RecordUpdateRequest, callback?: Function) => Promise<RecordUpdateResponse>;
+    all: (request: RecordAllQuery, callback?: Function) => Promise<RecordAllResponse>;
 
     constructor(
         inject: Function,
         functions?: {
-            get: (query: RecordGetQuery) => Promise<RecordGetResponse>;
+            history: (query: RecordGetQuery) => Promise<RecordGetResponse>;
             submit: (request: RecordUpdateRequest) => Promise<RecordUpdateResponse>;
+            all: (request: RecordAllQuery) => Promise<RecordAllResponse>;
         },
     ) {
         super();
@@ -37,6 +45,19 @@ export class RecordRouterInstance extends BaseRouterInstance {
 export interface RecordGetQuery extends BaseRequest {
     id: string;
     code?: string;
+}
+
+export interface RecordAllQuery extends BaseRequest {
+    form_name: string;
+    page: number;
+}
+
+export interface RecordAllResponse extends BaseResponse {
+    data: Array<{
+        item_id: string;
+        records: Array<RecordImpl>;
+    }>;
+    total: number;
 }
 
 export interface RecordGetResponse extends BaseResponse {
