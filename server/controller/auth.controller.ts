@@ -1,13 +1,13 @@
-import { AuthBody, AuthRouterInstance, CodeLogin, LoginToken, RegisterResult } from "../../shared/router/AuthRouter";
+import { AuthBody, AuthRouterInstance, CodeLogin, LoginResult, RegisterResult } from "../../shared/router/AuthRouter";
 import { inject, injectws } from "../lib/inject";
 import { loginUser, registerUser } from "../service/auth.service";
 
-async function login(request: AuthBody): Promise<LoginToken> {
+async function login(request: AuthBody): Promise<LoginResult> {
     const { email, password } = request;
     if (email && password) {
         return await loginUser(email, password);
     }
-    return { token: "", success: false };
+    return { success: false, message: "账号或密码错误" };
 }
 
 async function register(request: AuthBody): Promise<RegisterResult> {
@@ -18,7 +18,7 @@ async function register(request: AuthBody): Promise<RegisterResult> {
     return result;
 }
 
-async function code(request: CodeLogin): Promise<LoginToken> {
+async function code(request: CodeLogin): Promise<LoginResult> {
     return await loginUser(request.code, "");
 }
 

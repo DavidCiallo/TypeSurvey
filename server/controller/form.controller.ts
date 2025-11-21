@@ -13,9 +13,9 @@ import { inject, injectws } from "../lib/inject";
 import { createField, getFormBriefList, getFormList, updateFormName } from "../service/field.service";
 
 async function list(query: FormListQuery): Promise<FormListResponse> {
-    if (!query.page) return { list: [], total: 0, success: false };
+    if (!query.page) return { success: false, message: "参数错误" };
     const list = await getFormBriefList();
-    return { list, total: list.length, success: true };
+    return { success: true, data: { list, total: list.length } };
 }
 
 async function create(query: FormCreateRequest): Promise<FormCreateResponse> {
