@@ -72,7 +72,12 @@ const Component = () => {
                             return <SelectItem key={f.id}>{f.field_name}</SelectItem>;
                         })}
                     </Select>
-                    <Button color="default" variant="bordered" className="text-black-500">
+                    <Button
+                        color="default"
+                        variant="bordered"
+                        className="text-black-500"
+                        onClick={() => loadPage(page)}
+                    >
                         刷新
                     </Button>
                 </div>
@@ -131,7 +136,7 @@ const Component = () => {
                             <TableBody className="h-full" emptyContent={<div>请选择用户</div>}>
                                 {fieldList
                                     .filter(() => itemChoose)
-                                    .map(({ id: field_id, field_name }) => {
+                                    .map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.records.find((r) => r.field_id == field_id);
@@ -141,7 +146,9 @@ const Component = () => {
                                                     {field_name}
                                                 </TableCell>
                                                 <TableCell className="min-w-32" align="center">
-                                                    {record?.field_value}
+                                                    {radios?.length
+                                                        ? radios.find((r) => r.id === record?.field_value)?.radio_name
+                                                        : record?.field_value}
                                                 </TableCell>
                                             </TableRow>
                                         );

@@ -59,7 +59,6 @@ const Component = () => {
         const item_id = localStorage.getItem("item_id");
         if (!item_id) return toast({ title: "错误提交", color: "danger" });
         await RecordRouter.submit({ item_id, field_id, field_value });
-        // navigate("/fill?t=" + item_id);
     }
 
     useEffect(() => {
@@ -106,6 +105,8 @@ const Component = () => {
                         variant="bordered"
                         labelPlacement="outside"
                         placeholder={field.placeholder || "mail@example.com"}
+                        defaultValue={records.find((r) => r.field_id === field.id)?.field_value}
+                        onValueChange={(text) => submitRecord(field.id, text)}
                         className="w-full"
                     />
                 );
@@ -117,10 +118,12 @@ const Component = () => {
                         variant="bordered"
                         labelPlacement="outside"
                         className="w-full"
+                        defaultSelectedKeys={[records.find((r) => r.field_id === field.id)?.field_value || ""]}
+                        onSelectionChange={({ currentKey }) => currentKey && submitRecord(field.id, currentKey)}
                         placeholder={field.placeholder || "请选择"}
                     >
-                        {(field.radios || []).map((radio, index) => (
-                            <SelectItem key={index}>{radio.radio_name}</SelectItem>
+                        {(field.radios || []).map((radio) => (
+                            <SelectItem key={radio.id}>{radio.radio_name}</SelectItem>
                         ))}
                     </Select>
                 );
