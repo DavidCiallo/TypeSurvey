@@ -8,11 +8,13 @@ import FormFieldPage from "./pages/field/FormFieldPage";
 import FillPage from "./pages/fill/FillPage";
 import HomePage from "./pages/home/HomePage";
 import RecordPage from "./pages/record/RecordPage";
+import { AuthStatus, getAuthStatus } from "./methods/auth";
 
 const PrivateRoute = ({ redirectPath = "/auth" }) => {
-    // 检查 localStorage 中的 token
-    const isAuthenticated = !!localStorage.getItem("token");
-
+    const isAuthenticated = getAuthStatus() == AuthStatus.AUTH;
+    if (!isAuthenticated) {
+        localStorage.clear();
+    }
     return isAuthenticated ? <Outlet /> : <Navigate to={redirectPath} replace />;
 };
 

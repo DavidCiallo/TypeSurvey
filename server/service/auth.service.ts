@@ -1,17 +1,17 @@
-import { LoginToken, RegisterResult } from "../../shared/router/AuthRouter";
+import { LoginResult, RegisterResult } from "../../shared/router/AuthRouter";
 import { AccountEntity } from "../../shared/types/Account";
 import { aesDecrypt, aesEncrypt, hashGenerate } from "../lib/crypto";
 import Repository from "../lib/repository";
 
 const accountRepository = Repository.instance(AccountEntity);
 
-export async function loginUser(email: string, password: string): Promise<LoginToken> {
+export async function loginUser(email: string, password: string): Promise<LoginResult> {
     password = hashGenerate(password);
     const emailItem = await accountRepository.findOne({ email, password });
     if (emailItem) {
-        return { token: genTokenForIdentify(email), success: true };
+        return { data: { token: genTokenForIdentify(email) }, success: true };
     } else {
-        return { token: "", success: false };
+        return { success: false, message: "账号或密码错误" };
     }
 }
 
@@ -25,7 +25,7 @@ export async function registerUser(name: string, email: string, password: string
     return { success: true };
 }
 
-registerUser("管理员", "plumend@yeah.net", "wdc20140772");
+registerUser("管理员", "admin@nodejs.host", "Form123@");
 
 export function genTokenForIdentify(identity: string, expried: number = 1000 * 60 * 60 * 24): string {
     expried = Date.now() + expried;

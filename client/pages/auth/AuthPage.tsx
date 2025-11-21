@@ -4,7 +4,8 @@ import { Button, Input, Link, Form } from "@heroui/react";
 import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../../methods/notify";
-import { LoginToken } from "../../../shared/router/AuthRouter";
+import { LoginResult } from "../../../shared/router/AuthRouter";
+import { setAuthStatus, setUserInfo } from "../../methods/auth";
 
 export default function Component() {
     const navigate = useNavigate();
@@ -14,15 +15,17 @@ export default function Component() {
         const { email, password } = Object.fromEntries(new FormData(event.currentTarget));
         AuthRouter.login({ email: email.toString(), password: password.toString() });
         window.addEventListener("login", async (e) => {
-            const loginResult = (e as CustomEvent).detail as LoginToken;
-            if (loginResult.success) {
-                toast({ title: "登录成功", color: "success" });
-                await new Promise((r) => setTimeout(r, 1000));
-                navigate("/form");
-                localStorage.setItem("token", email.toString());
-            } else {
-                toast({ title: "登录失败，请检查密码", color: "danger" });
+            const { success, data, message } = (e as CustomEvent).detail as LoginResult;
+            if (!success || !data) {
+                toast({ title: message, color: "danger" });
+                return;
             }
+            const { token } = data;
+            toast({ title: "登录成功", color: "success" });
+            await new Promise((r) => setTimeout(r, 1000));
+            setAuthStatus({ access_token: token, expires_in: 3600 });
+            setUserInfo({ email: email.toString() });
+            navigate("/form");
         });
     };
 

@@ -1,4 +1,4 @@
-import { BaseRouterInstance } from "../lib/decorator";
+import { BaseResponse, BaseRouterInstance } from "../lib/decorator";
 
 export class AuthRouterInstance extends BaseRouterInstance {
     base = "/api";
@@ -24,16 +24,16 @@ export class AuthRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    login: (request: AuthBody, callback?: Function) => Promise<LoginToken>;
+    login: (request: AuthBody, callback?: Function) => Promise<LoginResult>;
     register: (request: AuthBody, callback?: Function) => Promise<RegisterResult>;
-    code: (request: CodeLogin, callback?: Function) => Promise<LoginToken>;
+    code: (request: CodeLogin, callback?: Function) => Promise<LoginResult>;
 
     constructor(
         inject: Function,
         functions?: {
-            login: (request: AuthBody) => Promise<LoginToken>;
+            login: (request: AuthBody) => Promise<LoginResult>;
             register: (request: AuthBody) => Promise<RegisterResult>;
-            code: (request: CodeLogin) => Promise<LoginToken>;
+            code: (request: CodeLogin) => Promise<LoginResult>;
         },
     ) {
         super();
@@ -47,14 +47,13 @@ export interface AuthBody {
     password?: string;
 }
 
-export interface LoginToken {
-    token: string;
-    success: boolean;
+export interface LoginResult extends BaseResponse {
+    data?: {
+        token: string;
+    };
 }
 
-export interface RegisterResult {
-    success: boolean;
-}
+export interface RegisterResult extends BaseResponse {}
 
 export interface CodeLogin {
     code: string;
