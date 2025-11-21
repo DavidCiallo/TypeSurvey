@@ -10,7 +10,7 @@ export async function createRadio(radio: Omit<FormFieldRadioImpl, "id">): Promis
     if (exist) {
         return false;
     }
-    const result = await RadioRepository.insert({ radio_name, field_id, useful: true });
+    const result = await RadioRepository.insert({ radio_name, field_id, useful: false });
     return result;
 }
 

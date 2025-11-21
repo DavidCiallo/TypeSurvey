@@ -25,6 +25,48 @@ const CreateRecordEditor = ({ isOpen, fields, onOpenChange, onCreate }: Prop) =>
         onOpenChange(v);
     }
 
+    const SubmitMode = (
+        <div className="w-full flex flex-col gap-6">
+            <div className="w-full flex flex-row gap-4 items-center">
+                <Input size="md" readOnly isDisabled value="无需更多操作" />
+            </div>
+            <div>
+                <Button color="primary" className="w-full" onClick={() => onCreate()}>
+                    复制链接
+                </Button>
+            </div>
+        </div>
+    );
+    const CollectMode = (
+        <div className="w-full flex flex-col gap-6">
+            <div className="w-full flex flex-row gap-4 items-center">
+                <Select ref={fieldSelect} aria-label="select" size="md" placeholder="选择字段">
+                    {fields.map((field) => {
+                        return (
+                            <SelectItem key={field.id} isDisabled={!!field.radios?.length}>
+                                {field.field_name}
+                            </SelectItem>
+                        );
+                    })}
+                </Select>
+                <Input ref={valueSelect} size="md" placeholder="预设值" />
+            </div>
+            <div>
+                <Button
+                    color="primary"
+                    className="w-full"
+                    onClick={() =>
+                        onCreate({
+                            field_index: (fieldSelect.current?.selectedIndex || 0) - 1,
+                            field_value: valueSelect.current?.value || "",
+                        })
+                    }
+                >
+                    创建并复制链接
+                </Button>
+            </div>
+        </div>
+    );
     return (
         <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
             <ModalContent>
@@ -58,45 +100,8 @@ const CreateRecordEditor = ({ isOpen, fields, onOpenChange, onCreate }: Prop) =>
                     </div>
 
                     <div className="w-full h-24 max-w-xs flex flex-row">
-                        {selectedType === "submit" && (
-                            <div className="w-full flex flex-col gap-6">
-                                <div className="w-full flex flex-row gap-4 items-center">
-                                    <Input size="md" readOnly isDisabled value="无需更多操作" />
-                                </div>
-                                <div>
-                                    <Button color="primary" className="w-full" onClick={() => onCreate()}>
-                                        复制链接
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {selectedType === "collect" && (
-                            <div className="w-full flex flex-col gap-6">
-                                <div className="w-full flex flex-row gap-4 items-center">
-                                    <Select ref={fieldSelect} aria-label="select" size="md" placeholder="选择字段">
-                                        {fields.map((field) => {
-                                            return <SelectItem key={field.id}>{field.field_name}</SelectItem>;
-                                        })}
-                                    </Select>
-                                    <Input ref={valueSelect} size="md" placeholder="预设值" />
-                                </div>
-                                <div>
-                                    <Button
-                                        color="primary"
-                                        className="w-full"
-                                        onClick={() =>
-                                            onCreate({
-                                                field_index: (fieldSelect.current?.selectedIndex || 0) - 1,
-                                                field_value: valueSelect.current?.value || "",
-                                            })
-                                        }
-                                    >
-                                        创建并复制链接
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                        {selectedType === "submit" && SubmitMode}
+                        {selectedType === "collect" && CollectMode}
                     </div>
                     <div className="px-10 w-full"></div>
                 </ModalBody>
