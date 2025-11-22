@@ -28,7 +28,7 @@ export const Header = ({ name }: params) => {
                 lan = "中文";
         }
         return (
-            <Button size="sm" variant="bordered" className="text-xs text-gray-700 w-16" onClick={changeLan}>
+            <Button size="sm" variant="bordered" className="text-xs text-gray-500 w-16" onClick={changeLan}>
                 {lan}
             </Button>
         );

@@ -140,11 +140,11 @@
         "Title": "Verification Code"
     },
     "HomePage": {
-        "MainText1": "A small tool for building forms",
-        "MainText2": "quite useful",
-        "MainText3": "",
+        "MainText1": "This is a ",
+        "MainText2": "quite useful ",
+        "MainText3": "tool about building forms ",
         "Slogan1": "Compact, elegant, and fast.",
-        "Slogan2": "No complex code or editing required, just the fastest way to start your data business.",
+        "Slogan2": "No complex code or editing, just faster way to start data business.",
         "ViewSource": "View Source Code"
     }
 }

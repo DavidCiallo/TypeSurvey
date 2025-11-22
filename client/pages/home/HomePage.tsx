@@ -1,3 +1,4 @@
+import { Button } from "@heroui/react";
 import { AuthStatus, getAuthStatus } from "../../methods/auth";
 import { Locale } from "../../methods/locale";
 
@@ -5,6 +6,34 @@ const Component = () => {
     const locale = Locale("HomePage");
     const Logo = () => <span className="text-2xl font-bold tracking-tight text-white">QuickForm</span>;
     const auth = getAuthStatus();
+
+    function changeLan() {
+        const lanList = ["cn", "en"];
+        const locale = localStorage.getItem("locale") || "cn";
+        const index = lanList.indexOf(locale);
+        const nextIndex = (index + 1) % lanList.length;
+        localStorage.setItem("locale", lanList[nextIndex]);
+        window.location.reload();
+    }
+    function Language() {
+        const locale = localStorage.getItem("locale") || "cn";
+        let lan = "";
+        switch (locale) {
+            case "cn":
+                lan = "中文";
+                break;
+            case "en":
+                lan = "EN";
+                break;
+            default:
+                lan = "中文";
+        }
+        return (
+            <Button size="sm" variant="bordered" className="text-xs text-white w-16" onClick={changeLan}>
+                {lan}
+            </Button>
+        );
+    }
     return (
         <div className="h-screen relative isolate overflow-hidden bg-gray-800 pt-10">
             <header className="absolute inset-x-0 top-0 z-50">
@@ -15,13 +44,16 @@ const Component = () => {
                             <Logo />
                         </a>
                     </div>
-                    {auth !== AuthStatus.AUTH && (
-                        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-                            <a href="/auth" className="text-sm font-semibold leading-6 text-white">
-                                Log in
-                            </a>
-                        </div>
-                    )}
+                    <div className="flex flex-row flex-between items-center gap-4">
+                        {auth !== AuthStatus.AUTH && (
+                            <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+                                <a href="/auth" className="text-sm font-semibold leading-6 text-white">
+                                    Log in
+                                </a>
+                            </div>
+                        )}
+                        <Language />
+                    </div>
                 </nav>
             </header>
 
