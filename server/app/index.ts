@@ -34,6 +34,7 @@ app.use(express.static(staticPath));
 app.use((q, s, n) => (q.path.endsWith(".mjs") ? s.status(403).send("Forbidden") : n()));
 app.get(/.*/, (q, s) => {
     if (q.path.startsWith("/api")) return s.status(404).json({ error: "API not found" });
+    else if (q.path.startsWith("/favicon.ico")) return s.sendFile(path.join(staticPath, "favicon.ico"));
     else return s.sendFile(path.join(staticPath, "index.html"));
 });
 
