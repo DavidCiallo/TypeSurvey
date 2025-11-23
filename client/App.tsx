@@ -8,12 +8,12 @@ import FormFieldPage from "./pages/field/FormFieldPage";
 import FillPage from "./pages/fill/FillPage";
 import HomePage from "./pages/home/HomePage";
 import RecordPage from "./pages/record/RecordPage";
-import { AuthStatus, getAuthStatus } from "./methods/auth";
+import { AuthStatus, clearAuthData, getAuthStatus } from "./methods/auth";
 
 const PrivateRoute = ({ redirectPath = "/auth" }) => {
     const isAuthenticated = getAuthStatus() == AuthStatus.AUTH;
     if (!isAuthenticated) {
-        localStorage.clear();
+        clearAuthData();
     }
     return isAuthenticated ? <Outlet /> : <Navigate to={redirectPath} replace />;
 };
