@@ -53,11 +53,13 @@ export interface RecordAllQuery extends BaseRequest {
 }
 
 export interface RecordAllResponse extends BaseResponse {
-    data: Array<{
-        item_id: string;
-        records: Array<RecordImpl>;
-    }>;
-    total: number;
+    data?: {
+        records: Array<{
+            item_id: string;
+            data: Array<RecordImpl>;
+        }>;
+        total: number;
+    };
 }
 
 export interface RecordGetResponse extends BaseResponse {

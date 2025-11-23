@@ -10,20 +10,31 @@ import {
     FormRouterInstance,
 } from "../../shared/router/FormRouter";
 import { inject, injectws } from "../lib/inject";
+import { getIdentifyByVerify } from "../service/auth.service";
 import { createField, getFormBriefList, getFormList, updateFormName } from "../service/field.service";
 
 async function list(query: FormListQuery): Promise<FormListResponse> {
-    if (!query.page) return { success: false, message: "参数错误" };
+    const { page, auth } = query;
+    if (!page || !auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
+    }
     const list = await getFormBriefList();
     return { success: true, data: { list, total: list.length } };
 }
 
 async function create(query: FormCreateRequest): Promise<FormCreateResponse> {
-    const { form_name } = query;
-    if (!form_name) {
+    const { form_name, auth } = query;
+    if (!form_name || !auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
         return { success: false };
     }
-
     const forms = await getFormList();
     if (forms.includes(form_name)) {
         return { success: false };
@@ -46,7 +57,15 @@ async function update(query: FormUpdateRequest): Promise<FormUpdateResponse> {
 }
 
 async function del(query: FormDeleteRequest): Promise<FormDeleteResponse> {
-    return { success: false };
+    const { auth } = query;
+    if (!auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
+    }
+    return { success: true };
 }
 
 export const formController = new FormRouterInstance(inject, { list, create, update, del });

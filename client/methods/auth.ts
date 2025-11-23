@@ -38,7 +38,6 @@ export function setUserInfo(info: { email: string }) {
 
 export function clearAuthData() {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     localStorage.removeItem("expires_at");
     localStorage.removeItem("user_email");
 }

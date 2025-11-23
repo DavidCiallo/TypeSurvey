@@ -10,25 +10,42 @@ import {
     FormFieldUpdateResponse,
 } from "../../shared/router/FieldRouter";
 import { inject, injectws } from "../lib/inject";
+import { getIdentifyByVerify } from "../service/auth.service";
 import { createField, getFieldList, updateSingleField } from "../service/field.service";
 
 async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
-    const { form_name } = query;
-    if (!form_name) return { success: false, message: "参数错误" };
+    const { form_name, auth } = query;
+    if (!form_name || !auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
+    }
     const list = await getFieldList(form_name);
     return { success: true, data: { list, total: list.length } };
 }
 
 async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateResponse> {
-    const { form_name, field_name, field_type } = query;
-    if (!form_name || !field_name || !field_type) return { success: false };
+    const { form_name, field_name, field_type, auth } = query;
+    if (!form_name || !field_name || !field_type || !auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
+    }
     const success = await createField({ form_name, field_name, field_type });
     return { success };
 }
 
 async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {
-    const { field_id, field_name, field_type, comment } = query;
-    if (!field_id) {
+    const { field_id, field_name, field_type, comment, auth } = query;
+    if (!field_id || !auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
         return { success: false };
     }
     if (field_name) {
@@ -51,6 +68,14 @@ async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateRes
 }
 
 async function del(query: FormFieldDeleteRequest): Promise<FormFieldDeleteResponse> {
+    const { auth } = query;
+    if (!auth) {
+        return { success: false, message: "参数错误" };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
+    }
     return { success: true };
 }
 

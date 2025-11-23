@@ -5,13 +5,13 @@ import Repository from "../lib/repository";
 
 const accountRepository = Repository.instance(AccountEntity);
 
-export async function loginUser(email: string, password: string): Promise<LoginResult> {
+export async function loginUser(email: string, password: string): Promise<{ token?: string }> {
     password = hashGenerate(password);
     const emailItem = await accountRepository.findOne({ email, password });
     if (emailItem) {
-        return { data: { token: genTokenForIdentify(email) }, success: true };
+        return { token: genTokenForIdentify(email) };
     } else {
-        return { success: false, message: "账号或密码错误" };
+        return {};
     }
 }
 

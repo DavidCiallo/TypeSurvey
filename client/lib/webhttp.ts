@@ -13,20 +13,24 @@ export class HttpClientService {
         const final_url = url + "?" + new URLSearchParams(query).toString();
         fetch(final_url, {
             method: "get",
-            headers: { "Token": localStorage.getItem("token") || "" }
-        }).then(r => r.json()).then(data => {
-            const event = new CustomEvent(name, { detail: data, bubbles: true });
-            window.dispatchEvent(event);
-        });
+            headers: { Token: localStorage.getItem("access_token") || "" },
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                const event = new CustomEvent(name, { detail: data, bubbles: true });
+                window.dispatchEvent(event);
+            });
     }
     public async post(name: string, url: string, body: any) {
         fetch(url, {
             method: "post",
             body: JSON.stringify(body),
-            headers: { "Content-Type": "application/json", "Token": localStorage.getItem("token") || "" }
-        }).then(r => r.json()).then(data => {
-            const event = new CustomEvent(name, { detail: data, bubbles: true });
-            window.dispatchEvent(event);
-        });
+            headers: { "Content-Type": "application/json", Token: localStorage.getItem("access_token") || "" },
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                const event = new CustomEvent(name, { detail: data, bubbles: true });
+                window.dispatchEvent(event);
+            });
     }
 }

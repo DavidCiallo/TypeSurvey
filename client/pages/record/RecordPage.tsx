@@ -26,7 +26,7 @@ import { Locale } from "../../methods/locale";
 const Component = () => {
     const locale = Locale("RecordPage");
 
-    const [recordList, setRecordList] = useState<Array<{ item_id: string; records: RecordImpl[] }>>([]);
+    const [recordList, setRecordList] = useState<Array<{ item_id: string; data: RecordImpl[] }>>([]);
     const [fieldList, setFieldList] = useState<Array<FormFieldImpl>>([]);
     const [fieldChoose, setFieldChoose] = useState<FormFieldImpl | null>(null);
     const [itemChoose, setItemChoose] = useState<string | null>(null);
@@ -38,9 +38,12 @@ const Component = () => {
         setPage(page);
         setItemChoose(null);
         const form_name = localStorage.getItem("formname") || "";
-        RecordRouter.all({ form_name, page }, (data: RecordAllResponse) => {
+        RecordRouter.all({ form_name, page }, ({ data }: RecordAllResponse) => {
+            if (!data) {
+                return;
+            }
             setTotal(Math.ceil(data.total / 10) || 1);
-            setRecordList(data.data);
+            setRecordList(data.records);
         });
         FormFieldRouter.list({ form_name, page: 1 }, ({ success, data, message }: FormFieldListResponse) => {
             if (!success || !data) {
@@ -101,9 +104,9 @@ const Component = () => {
                             </TableHeader>
                             <TableBody className="h-full">
                                 {recordList.map((i) => {
-                                    const index = i.records.findIndex((r) => r.field_id === fieldChoose?.id);
-                                    const record = i.records[index] || null;
-                                    const time = new Date(i.records[0]?.update_time || i.records[0]?.create_time);
+                                    const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
+                                    const record = i.data[index] || null;
+                                    const time = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
                                     return (
                                         <TableRow>
                                             <TableCell className="min-w-32" align="center">
@@ -142,7 +145,7 @@ const Component = () => {
                                     .map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
-                                            ?.records.find((r) => r.field_id == field_id);
+                                            ?.data.find((r) => r.field_id == field_id);
                                         return (
                                             <TableRow>
                                                 <TableCell className="min-w-32" align="center">

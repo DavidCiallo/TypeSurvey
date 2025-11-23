@@ -13,6 +13,7 @@ import { getFieldList, getFormNameByField } from "../service/field.service";
 import { getAllRecord, getRecords, submitRecord } from "../service/record.service";
 import { codeGenerate } from "../lib/crypto";
 import { RecordImpl } from "../../shared/impl";
+import { getIdentifyByVerify } from "../service/auth.service";
 
 async function history(request: RecordGetQuery): Promise<RecordGetResponse> {
     const { id, code } = request;
@@ -51,31 +52,41 @@ async function history(request: RecordGetQuery): Promise<RecordGetResponse> {
 
 async function submit(request: RecordUpdateRequest): Promise<RecordUpdateResponse> {
     const { item_id, field_id, field_value } = request;
+    if (field_value?.length > 0x3e8) {
+        return { success: false };
+    }
     const success = await submitRecord({ item_id, field_id, field_value });
     return { success };
 }
 
 async function all(request: RecordAllQuery): Promise<RecordAllResponse> {
-    const { form_name, page } = request;
-    if (!form_name || !page || page < 1) {
-        return { data: [], total: 0, success: false };
+    const { form_name, page, auth } = request;
+    if (!form_name || !page || page < 1 || !auth) {
+        return { success: false };
+    }
+    const user = getIdentifyByVerify(auth);
+    if (!user) {
+        return { success: false };
     }
     const records = await getAllRecord(form_name);
     const group: Array<{
         item_id: string;
-        records: Array<RecordImpl>;
+        data: Array<RecordImpl>;
     }> = [];
     for (const r of records) {
         const exist = group.findIndex(({ item_id }) => r.item_id == item_id);
         if (exist !== -1) {
-            group[exist].records.push(r);
+            group[exist].data.push(r);
         } else {
-            group.push({ item_id: r.item_id, records: [r] });
+            group.push({ item_id: r.item_id, data: [r] });
         }
     }
-    const data = group.slice((page - 1) * 10, page * 10);
+    const data = {
+        records: group.slice((page - 1) * 10, page * 10),
+        total: group.length,
+    };
 
-    return { data, total: group.length, success: true };
+    return { data, success: true };
 }
 
 export const recordController = new RecordRouterInstance(inject, { history, submit, all });
