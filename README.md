@@ -1,8 +1,8 @@
-# Quick-Form
+# TypeForm
 
 ## 项目介绍
 
-一个开源的快速表单系统，只需简单配置，即可构建属于你的调查问卷/收集表单/统计工具。
+一个开源的表单系统，只需简单配置，即可构建属于你的调查问卷/收集表单/统计工具。
 
 本项目为全栈应用，前端基于 [React](https://react.dev/) [HeroUI](https://heroicons.com/) ，后端基于 [Express](https://expressjs.com/)，使用[TypeScript](https://www.typescriptlang.org/) 进行开发，推荐使用 [Bun](https://bun.sh/)。
 
@@ -17,8 +17,8 @@
 ### 克隆项目
 
 ```bash
-git clone https://github.com/DavidCiallo/Quick-Form
-cd Quick-Form
+git clone https://github.com/DavidCiallo/TypeForm
+cd TypeForm
 ```
 
 ### 安装依赖

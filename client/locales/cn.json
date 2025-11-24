@@ -20,7 +20,7 @@
     },
 
     "AuthPage": {
-        "Title": "快速表单",
+        "Title": "Type表单",
         "LoginSuccess": "登录成功",
         "LoginFailed": "登录失败",
         "EmailLabel": "邮箱",

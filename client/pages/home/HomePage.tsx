@@ -4,7 +4,7 @@ import { Locale } from "../../methods/locale";
 
 const Component = () => {
     const locale = Locale("HomePage");
-    const Logo = () => <span className="text-2xl font-bold tracking-tight text-white">QuickForm</span>;
+    const Logo = () => <span className="text-2xl font-bold tracking-tight text-white">TypeForm</span>;
     const auth = getAuthStatus();
 
     function changeLan() {
@@ -40,7 +40,7 @@ const Component = () => {
                 <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
                     <div className="flex lg:flex-1">
                         <a href="#" className="-m-1.5 p-1.5">
-                            <span className="sr-only">QuickForm</span>
+                            <span className="sr-only">TypeForm</span>
                             <Logo />
                         </a>
                     </div>
@@ -78,7 +78,7 @@ const Component = () => {
                             </a>
 
                             <a
-                                href="https://github.com/DavidCiallo/Quick-Form"
+                                href="https://github.com/DavidCiallo/TypeForm"
                                 target="_blank"
                                 className="text-sm font-semibold leading-6 text-white"
                             >
