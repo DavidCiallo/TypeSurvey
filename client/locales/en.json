@@ -20,7 +20,7 @@
     },
 
     "AuthPage": {
-        "Title": "Quick Form",
+        "Title": "TypeForm",
         "LoginSuccess": "Login successful",
         "LoginFailed": "Login failed",
         "EmailLabel": "Email",

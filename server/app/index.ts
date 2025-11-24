@@ -19,11 +19,12 @@ import { formController } from "../controller/form.controller";
 import { fieldController } from "../controller/field.controller";
 import { radioController } from "../controller/radio.controller";
 import { recordController } from "../controller/record.controller";
+import { fileController } from "../controller/file.controller";
 
 // HTTP
 const app = express();
 app.use(bodyParser.json()).use(cors());
-mounthttp(app, [authController, recordController, formController, fieldController, radioController]);
+mounthttp(app, [authController, recordController, formController, fieldController, radioController, fileController]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

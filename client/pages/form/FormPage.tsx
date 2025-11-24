@@ -1,27 +1,27 @@
 import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
-import { Accordion, AccordionItem, Button } from "@heroui/react";
 import {
     FormFieldCreateResponse,
     FormFieldListResponse,
     FormFieldUpdateResponse,
 } from "../../../shared/router/FieldRouter";
-import { FormFieldRouter, FormRouter, RecordRouter } from "../../api/instance";
+import { FileRouter, FormFieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
 import { toast } from "../../methods/notify";
 import { FormListResponse } from "../../../shared/router/FormRouter";
 import CreateRecordModal from "./CreateRecordEditor";
 import { FormFieldImpl } from "../../../shared/impl";
 import { RecordGetResponse } from "../../../shared/router/RecordRouter";
-import { useNavigate } from "react-router-dom";
 import { Locale } from "../../methods/locale";
+import { getChunks } from "../../methods/file";
+import FormList from "./FormList";
+import FormAddBtn from "./FormAddBtn";
+import { copytext } from "../../methods/text";
 
 const Component = () => {
     const locale = Locale("FormPage");
 
-    const baseurl = location.host + "/fill?t=";
-
-    const navigate = useNavigate();
+    const baseurl = location.protocol + "//" + location.host + "/fill?t=";
 
     const [formList, setFormList] = useState<
         Array<{
@@ -37,11 +37,6 @@ const Component = () => {
     const [focusForm, setFocusForm] = useState<string | null>(null);
 
     const [isNewRecordOpen, setNewRecordOpen] = useState(false);
-
-    function viewRecords(formname: string) {
-        localStorage.setItem("formname", formname);
-        navigate("/record");
-    }
 
     function openFormEditor(formname?: string) {
         if (formname) {
@@ -61,10 +56,7 @@ const Component = () => {
             }
             const list = data.list;
             if (!list || list.length == 0) {
-                return toast({
-                    title: locale.ToastFormListEmpty,
-                    color: "danger",
-                });
+                return toast({ title: locale.ToastFormListEmpty, color: "danger" });
             } else {
                 setFieldList(list);
                 setNewRecordOpen(true);
@@ -72,12 +64,9 @@ const Component = () => {
         });
     }
 
-    async function saveForm(new_name: string) {
+    async function saveForm({ form_name: new_name }: { form_name: string }) {
         if (!new_name) {
-            return toast({
-                title: Locale("Common").ToastParamError,
-                color: "danger",
-            });
+            return toast({ title: Locale("Common").ToastParamError, color: "danger" });
         }
         if (editMode == "create") {
             FormRouter.create({ form_name: new_name }, ({ success }: FormFieldCreateResponse) => {
@@ -85,25 +74,16 @@ const Component = () => {
                     setFormEditorOpen(false);
                     setFormList([...formList, { form_name: new_name, records_num: 0, last_submit: 0 }]);
                 } else {
-                    toast({
-                        title: locale.ToastCreateFormFailed,
-                        color: "danger",
-                    });
+                    toast({ title: locale.ToastCreateFormFailed, color: "danger" });
                 }
             });
         }
         if (editMode == "edit") {
             if (!focusForm) {
-                return toast({
-                    title: Locale("Common").ToastParamError,
-                    color: "danger",
-                });
+                return toast({ title: Locale("Common").ToastParamError, color: "danger" });
             }
             if (focusForm === new_name) {
-                return toast({
-                    title: Locale("Common").ToastParamError,
-                    color: "danger",
-                });
+                return toast({ title: Locale("Common").ToastParamError, color: "danger" });
             }
             FormRouter.update({ form_name: focusForm, new_name }, ({ success }: FormFieldUpdateResponse) => {
                 if (success) {
@@ -111,10 +91,7 @@ const Component = () => {
                     setFormEditorOpen(false);
                     setFormList([...formList]);
                 } else {
-                    toast({
-                        title: locale.ToastEditFormFailed,
-                        color: "danger",
-                    });
+                    toast({ title: locale.ToastEditFormFailed, color: "danger" });
                 }
             });
         }
@@ -124,19 +101,13 @@ const Component = () => {
         if (!data) {
             const url = baseurl + fieldList[0].id;
             navigator.clipboard.writeText(url);
-            toast({
-                title: locale.ToastCopySuccess,
-                color: "success",
-            });
+            toast({ title: locale.ToastCopySuccess, color: "success" });
             return;
         }
         const { field_index, field_value } = data;
         const field_id = fieldList[field_index]?.id;
         if (!field_id || !field_value) {
-            return toast({
-                title: Locale("Common").ToastParamError,
-                color: "danger",
-            });
+            return toast({ title: Locale("Common").ToastParamError, color: "danger" });
         }
         RecordRouter.history({ id: field_id }, async ({ success, data, message }: RecordGetResponse) => {
             if (!success || !data) {
@@ -144,12 +115,8 @@ const Component = () => {
             }
             const { item_id, code } = data;
             RecordRouter.submit({ field_id, field_value, item_id });
-            const url = `${baseurl + item_id}#code:${code}`;
-            navigator.clipboard.writeText(url);
-            toast({
-                title: locale.ToastCopySuccess,
-                color: "success",
-            });
+            copytext(`${baseurl + item_id}#code:${code}`);
+            toast({ title: locale.ToastCopySuccess, color: "success" });
         });
     }
 
@@ -171,72 +138,29 @@ const Component = () => {
             <Header name={locale.Title} />
             <div className="w-full flex flex-col flex-wrap px-[5vw] pt-6 pb-2">
                 <div className="flex flex-row justify-end items-center w-full py-2">
-                    <div className="flex flex-row">
-                        <Button
-                            onClick={() => openFormEditor()}
-                            color="default"
-                            variant="bordered"
-                            className="text-black-500"
-                        >
-                            {locale.CreateNewForm}
-                        </Button>
-                    </div>
+                    <FormAddBtn
+                        openFormEditor={openFormEditor}
+                        uploadXlsx={async (file) => {
+                            if (!file) return;
+                            const chunks = await getChunks(file);
+                            chunks.forEach((file) => FileRouter.readxlsx({ file }));
+                        }}
+                    />
                 </div>
-                <Accordion selectedKeys={[]}>
-                    {formList.map(({ form_name, records_num, last_submit }) => {
-                        const title = <div className="text-lg font-bold">{form_name}</div>;
-                        const subtitle = (
-                            <div className="flex flex-row gap-3">
-                                <div>{locale.RecordNumLabel + " " + records_num}</div>
-                                {!!last_submit && <div>{new Date(last_submit).toLocaleString().slice(5, 16)}</div>}
-                                {!last_submit && <div>{locale.EmptyNumLabel}</div>}
-                            </div>
-                        );
-                        const indicator = (
-                            <div className="flex flex-row gap-3">
-                                <div className="text-sm text-primary" onClick={() => viewRecords(form_name)}>
-                                    {locale.ViewRecordsButton}
-                                </div>
-                                <div className="text-sm text-primary" onClick={() => openFormEditor(form_name)}>
-                                    {locale.RenameButton}
-                                </div>
-                                <div className="text-sm text-danger" onClick={() => openRecordEditor(form_name)}>
-                                    {locale.CreateRecordButton}
-                                </div>
-                            </div>
-                        );
-                        return (
-                            <AccordionItem
-                                key={form_name}
-                                aria-label={form_name}
-                                title={title}
-                                subtitle={subtitle}
-                                indicator={indicator}
-                            ></AccordionItem>
-                        );
-                    })}
-                </Accordion>
+                <div className="flex flex-row justify-center">
+                    <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
+                </div>
             </div>
 
-            {
-                <FormEditor
-                    isOpen={isFormEditorOpen}
-                    onOpenChange={(v: boolean) => {
-                        setFormEditorOpen(v);
-                    }}
-                    onSubmit={({ form_name }) => saveForm(form_name)}
-                />
-            }
-            {
-                <CreateRecordModal
-                    isOpen={isNewRecordOpen}
-                    fields={fieldList}
-                    onOpenChange={(v: boolean) => {
-                        setNewRecordOpen(v);
-                    }}
-                    onCreate={createRecordLink}
-                />
-            }
+            <FormEditor isOpen={isFormEditorOpen} onOpenChange={setFormEditorOpen} onSubmit={saveForm} />
+            <CreateRecordModal
+                isOpen={isNewRecordOpen}
+                fields={fieldList}
+                onOpenChange={(v: boolean) => {
+                    setNewRecordOpen(v);
+                }}
+                onCreate={createRecordLink}
+            />
         </div>
     );
 };
