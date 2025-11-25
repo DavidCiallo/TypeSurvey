@@ -11,7 +11,7 @@ import {
 import { inject } from "../lib/inject";
 import { getFieldList, getFormNameByField } from "../service/field.service";
 import { getAllRecord, getRecords, submitRecord } from "../service/record.service";
-import { codeGenerate } from "../lib/crypto";
+import { codeGenerate } from "../methods/crypto";
 import { RecordImpl } from "../../shared/impl";
 import { getIdentifyByVerify } from "../service/auth.service";
 

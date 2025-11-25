@@ -42,7 +42,7 @@ export function analyzeCellType(cells: Array<string | null>): { type: FieldType;
     if (set.size == 1) {
         return { type: "checkbox", sub: Array.from(set) };
     }
-    if (noEmptyCells.length / set.size > noEmptyCells.length / 10) {
+    if (noEmptyCells.every((i) => i.length < 8) && noEmptyCells.length / set.size > 10) {
         return { type: "select", sub: Array.from(set) };
     }
     if (noEmptyCells.every((i) => i?.includes("@"))) {

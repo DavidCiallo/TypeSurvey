@@ -1,3 +1,4 @@
+import { FieldType } from "../impl/field";
 import { BaseRequest, BaseResponse, BaseRouterInstance } from "../lib/decorator";
 
 export class FileRouterInstance extends BaseRouterInstance {
@@ -10,14 +11,21 @@ export class FileRouterInstance extends BaseRouterInstance {
             method: "post",
             handler: Function,
         },
+        {
+            name: "confirm",
+            path: "/confirm",
+            method: "post",
+            handler: Function,
+        },
     ];
 
-    readxlsx: (query: FileXlsxRequest, callback?: Function) => Promise<FileXlsxResponse>;
-
+    readxlsx: (query: FileXlsxRequest) => Promise<FileXlsxResponse>;
+    confirm: (query: FileConfirmRequest) => Promise<FileConfirmResponse>;
     constructor(
         inject: Function,
         functions?: {
             readxlsx: (query: FileXlsxRequest) => Promise<FileXlsxResponse>;
+            confirm: (query: FileConfirmRequest) => Promise<FileConfirmResponse>;
         },
     ) {
         super();
@@ -33,10 +41,34 @@ export type Chunk = {
     chunk_data: string;
 };
 
+export type FieldCache = {
+    check: boolean;
+    field: string;
+    type: FieldType;
+};
+
+export type XlsxHeader = {
+    field: string;
+    type: FieldType;
+    sub: Array<string>;
+};
+
 export interface FileXlsxRequest extends BaseRequest {
     file: Chunk;
 }
 
 export interface FileXlsxResponse extends BaseResponse {
-    data?: {};
+    data?: {
+        tempid: string;
+        header: Array<XlsxHeader>;
+        size: number;
+    };
 }
+
+export interface FileConfirmRequest extends BaseRequest {
+    tempid: string;
+    usedata: boolean;
+    fields: FieldCache[];
+}
+
+export interface FileConfirmResponse extends BaseResponse {}

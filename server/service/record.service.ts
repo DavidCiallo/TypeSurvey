@@ -45,3 +45,10 @@ export async function getAllRecord(form_name: string) {
         .map((r) => new RecordImpl(r));
     return records;
 }
+
+export async function insertRecords(
+    records: Omit<RecordImpl, "id" | "create_time" | "update_time">[],
+): Promise<boolean> {
+    await RecordRepository.insertMany(records);
+    return true;
+}

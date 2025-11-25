@@ -134,6 +134,17 @@ const Component = () => {
             toast({ title: "Fail", color: "danger" });
         }
         setImportOpen(false);
+        {
+            const { success, data, message } = await FormRouter.list({ page: 1 });
+            if (!success || !data) {
+                return toast({ title: message, color: "danger" });
+            }
+            const { list } = data;
+            setFormList(list);
+            if (data.list.length) {
+                localStorage.setItem("formname", data.list[0].form_name);
+            }
+        }
     }
 
     useEffect(() => {

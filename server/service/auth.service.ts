@@ -1,6 +1,6 @@
-import { LoginResult, RegisterResult } from "../../shared/router/AuthRouter";
+import { RegisterResult } from "../../shared/router/AuthRouter";
 import { AccountEntity } from "../../shared/types/Account";
-import { aesDecrypt, aesEncrypt, hashGenerate } from "../lib/crypto";
+import { aesDecrypt, aesEncrypt, hashGenerate } from "../methods/crypto";
 import Repository from "../lib/repository";
 
 const accountRepository = Repository.instance(AccountEntity);
