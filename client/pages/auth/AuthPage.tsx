@@ -1,34 +1,32 @@
 "use client";
 
-import { Button, Input, Link, Form } from "@heroui/react";
+import { Button, Input, Form } from "@heroui/react";
 import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../../methods/notify";
-import { LoginResult } from "../../../shared/router/AuthRouter";
 import { setAuthStatus, setUserInfo } from "../../methods/auth";
 import { Locale } from "../../methods/locale";
 
 export default function Component() {
     const navigate = useNavigate();
     const locale = Locale("AuthPage");
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const { email, password } = Object.fromEntries(new FormData(event.currentTarget));
-        AuthRouter.login({ email: email.toString(), password: password.toString() });
-        window.addEventListener("login", async (e) => {
-            const { success, data, message } = (e as CustomEvent).detail as LoginResult;
-            console.log(locale.LoginSuccess);
-            if (!success || !data) {
-                toast({ title: message || locale.LoginFailed, color: "danger" });
-                return;
-            }
-            const { token } = data;
-            toast({ title: locale.LoginSuccess, color: "success" });
-            await new Promise((r) => setTimeout(r, 1000));
-            setAuthStatus({ access_token: token, expires_in: 3600 });
-            setUserInfo({ email: email.toString() });
-            navigate("/form");
+        const { success, data, message } = await AuthRouter.login({
+            email: email.toString(),
+            password: password.toString(),
         });
+        if (!success || !data) {
+            toast({ title: message || locale.LoginFailed, color: "danger" });
+            return;
+        }
+        const { token } = data;
+        toast({ title: locale.LoginSuccess, color: "success" });
+        await new Promise((r) => setTimeout(r, 1000));
+        setAuthStatus({ access_token: token, expires_in: 3600 });
+        setUserInfo({ email: email.toString() });
+        navigate("/form");
     };
 
     return (

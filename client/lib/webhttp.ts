@@ -9,28 +9,20 @@ export class HttpClientService {
         }
         return HttpClientService.instance;
     }
-    public async get(name: string, url: string, query: URLSearchParams) {
+    public async get(url: string, query: URLSearchParams) {
         const final_url = url + "?" + new URLSearchParams(query).toString();
-        fetch(final_url, {
+        const data = fetch(final_url, {
             method: "get",
             headers: { Token: localStorage.getItem("access_token") || "" },
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                const event = new CustomEvent(name, { detail: data, bubbles: true });
-                window.dispatchEvent(event);
-            });
+        }).then((r) => r.json());
+        return data;
     }
-    public async post(name: string, url: string, body: any) {
-        fetch(url, {
+    public async post(url: string, body: any) {
+        const data = fetch(url, {
             method: "post",
             body: JSON.stringify(body),
             headers: { "Content-Type": "application/json", Token: localStorage.getItem("access_token") || "" },
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                const event = new CustomEvent(name, { detail: data, bubbles: true });
-                window.dispatchEvent(event);
-            });
+        }).then((r) => r.json());
+        return data;
     }
 }
