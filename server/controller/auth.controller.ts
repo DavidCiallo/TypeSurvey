@@ -1,5 +1,5 @@
 import { AuthBody, AuthRouterInstance, CodeLogin, LoginResult, RegisterResult } from "../../shared/router/AuthRouter";
-import { inject, injectws } from "../lib/inject";
+import { inject } from "../lib/inject";
 import { loginUser, registerUser } from "../service/auth.service";
 
 async function login(request: AuthBody): Promise<LoginResult> {

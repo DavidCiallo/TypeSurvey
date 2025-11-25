@@ -24,9 +24,9 @@ export class FormFieldRadioRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    create: (request: FormFieldRadioCreateRequest, callback?: Function) => Promise<FormFieldRadioCreateResponse>;
-    update: (request: FormFieldRadioUpdateRequest, callback?: Function) => Promise<FormFieldRadioUpdateResponse>;
-    del: (request: FormFieldRadioDeleteRequest, callback?: Function) => Promise<FormFieldRadioDeleteResponse>;
+    create: (request: FormFieldRadioCreateRequest) => Promise<FormFieldRadioCreateResponse>;
+    update: (request: FormFieldRadioUpdateRequest) => Promise<FormFieldRadioUpdateResponse>;
+    del: (request: FormFieldRadioDeleteRequest) => Promise<FormFieldRadioDeleteResponse>;
 
     constructor(
         inject: Function,

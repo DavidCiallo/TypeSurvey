@@ -42,15 +42,27 @@ const Component = () => {
     const [isFieldEditorOpen, setFieldEditorOpen] = useState(false);
     const [isRadioEditorOpen, setRadioEditorOpen] = useState(false);
 
-    function chooseForm(name: string | null) {
+    async function chooseForm(name: string | null) {
         if (!name || !formList.includes(name)) return;
         if (formName !== name) {
             setFormName(name);
             setIsLoading(true);
             setPage(1);
-            FormFieldRouter.list({ form_name: name, page: 1 }, renderFormField);
+            const { success, data, message } = await FormFieldRouter.list({ form_name: name, page: 1 });
+            if (!success || !data) {
+                setIsLoading(false);
+                return toast({ title: message, color: "danger" });
+            }
+            const { list, total } = data;
+            renderFormField(list, total);
         } else {
-            FormFieldRouter.list({ form_name: name, page: page }, renderFormField);
+            const { success, data, message } = await FormFieldRouter.list({ form_name: name, page: page });
+            if (!success || !data) {
+                setIsLoading(false);
+                return toast({ title: message, color: "danger" });
+            }
+            const { list, total } = data;
+            renderFormField(list, total);
         }
     }
 
@@ -62,19 +74,15 @@ const Component = () => {
         setRadioEditorOpen(true);
     }
 
-    function renderFormField({ success, data, message }: FormFieldListResponse) {
-        if (!success || !data) {
-            setIsLoading(false);
-            return toast({ title: message, color: "danger" });
-        }
-        const { list, total } = data;
+    function renderFormField(list: FormFieldImpl[], total: number) {
         setTotal(total);
         setFormFieldList(list);
         setIsLoading(false);
     }
 
     useEffect(() => {
-        FormRouter.list({ page: 1 }, ({ success, data, message }: FormListResponse) => {
+        (async () => {
+            const { success, data, message } = await FormRouter.list({ page: 1 });
             if (!success || !data) {
                 return toast({ title: message, color: "danger" });
             }
@@ -82,13 +90,18 @@ const Component = () => {
             setFormList(list.map((i) => i.form_name));
             if (list.length) {
                 const form_name = list[0]?.form_name;
-                const page = 1;
                 setFormName(form_name);
-                setPage(page);
+                setPage(1);
                 setIsLoading(true);
-                FormFieldRouter.list({ form_name, page: 1 }, renderFormField);
+                const { success, data, message } = await FormFieldRouter.list({ form_name, page: 1 });
+                if (!success || !data) {
+                    setIsLoading(false);
+                    return toast({ title: message, color: "danger" });
+                }
+                const { list: fields, total } = data;
+                renderFormField(fields, total);
             }
-        });
+        })();
     }, []);
 
     return (
@@ -101,10 +114,18 @@ const Component = () => {
                             <Pagination
                                 initialPage={1}
                                 total={Math.ceil(total / 10)}
-                                onChange={(page: number) => {
+                                onChange={async (page: number) => {
                                     setPage(page);
                                     setIsLoading(true);
-                                    formName && FormFieldRouter.list({ form_name: formName, page }, renderFormField);
+                                    const { success, data, message } = await FormFieldRouter.list({
+                                        form_name: formName,
+                                        page,
+                                    });
+                                    if (!success || !data) {
+                                        return toast({ title: message, color: "danger" });
+                                    }
+                                    const { list, total } = data;
+                                    renderFormField(list, total);
                                 }}
                             />
                         )}
@@ -166,12 +187,13 @@ const Component = () => {
                                     defaultSelectedKeys={[
                                         FieldTypeList.find(({ type }) => type === field.field_type)?.type || "",
                                     ]}
-                                    onSelectionChange={(key) => {
+                                    onSelectionChange={async (key) => {
                                         if (!key.currentKey) return;
-                                        FormFieldRouter.update(
-                                            { field_id: field.id, field_type: key.currentKey as FieldType },
-                                            () => chooseForm(formName),
-                                        );
+                                        await FormFieldRouter.update({
+                                            field_id: field.id,
+                                            field_type: key.currentKey as FieldType,
+                                        });
+                                        chooseForm(formName);
                                     }}
                                 >
                                     {FieldTypeList.map(({ name, type }) => (
@@ -216,10 +238,9 @@ const Component = () => {
                                     {field.radios.map(({ id: radio_id, radio_name, useful }) => (
                                         <SelectItem
                                             key={radio_name}
-                                            onClick={() => {
-                                                FormFieldRadioRouter.update({ radio_id, useful: !useful }, () =>
-                                                    chooseForm(formName),
-                                                );
+                                            onClick={async () => {
+                                                await FormFieldRadioRouter.update({ radio_id, useful: !useful });
+                                                chooseForm(formName);
                                             }}
                                         >
                                             {radio_name}
@@ -233,10 +254,9 @@ const Component = () => {
                                         <Input
                                             variant="bordered"
                                             defaultValue={field.field_name}
-                                            onValueChange={(field_name) => {
-                                                FormFieldRouter.update({ field_id: field.id, field_name }, () =>
-                                                    chooseForm(formName),
-                                                );
+                                            onValueChange={async (field_name) => {
+                                                await FormFieldRouter.update({ field_id: field.id, field_name });
+                                                chooseForm(formName);
                                             }}
                                         />
                                     </TableCell>
@@ -278,31 +298,28 @@ const Component = () => {
                     </TableBody>
                 </Table>
             </div>
-            {
-                <FormEditor
-                    isOpen={isFormEditorOpen}
-                    onOpenChange={(v: boolean) => {
-                        setFormEditorOpen(v);
-                    }}
-                    onSubmit={(data) => {
-                        if ("form_name" in data) {
-                            const form_name = data.form_name;
-                            FormRouter.create({ form_name }, ({ success }: FormFieldCreateResponse) => {
-                                if (success) {
-                                    setFormEditorOpen(false);
-                                    setFormList([...formList, form_name]);
-                                    chooseForm(form_name);
-                                } else {
-                                    toast({
-                                        title: locale.CreateFormFailed,
-                                        color: "danger",
-                                    });
-                                }
+            <FormEditor
+                isOpen={isFormEditorOpen}
+                onOpenChange={(v: boolean) => {
+                    setFormEditorOpen(v);
+                }}
+                onSubmit={async (data) => {
+                    if ("form_name" in data) {
+                        const form_name = data.form_name;
+                        const { success } = await FormRouter.create({ form_name });
+                        if (success) {
+                            setFormEditorOpen(false);
+                            setFormList([...formList, form_name]);
+                            chooseForm(form_name);
+                        } else {
+                            toast({
+                                title: locale.CreateFormFailed,
+                                color: "danger",
                             });
                         }
-                    }}
-                />
-            }
+                    }
+                }}
+            />
             {
                 <FieldEditor
                     form_name={formName}
@@ -310,25 +327,18 @@ const Component = () => {
                     onOpenChange={(v: boolean) => {
                         setFieldEditorOpen(v);
                     }}
-                    onSubmit={(data) => {
+                    onSubmit={async (data) => {
                         if ("form_name" in data) {
                             const form_name = data.form_name;
                             const field_name = data.field_name!;
                             const field_type = data.field_type!;
-                            FormFieldRouter.create(
-                                { form_name, field_name, field_type },
-                                ({ success }: FormFieldCreateResponse) => {
-                                    if (success) {
-                                        setFieldEditorOpen(false);
-                                        chooseForm(form_name);
-                                    } else {
-                                        toast({
-                                            title: locale.CreateFieldFailed,
-                                            color: "danger",
-                                        });
-                                    }
-                                },
-                            );
+                            const { success } = await FormFieldRouter.create({ form_name, field_name, field_type });
+                            if (success) {
+                                setFieldEditorOpen(false);
+                                chooseForm(form_name);
+                            } else {
+                                toast({ title: locale.CreateFieldFailed, color: "danger" });
+                            }
                         }
                     }}
                 />
@@ -340,22 +350,18 @@ const Component = () => {
                     onOpenChange={(v: boolean) => {
                         setRadioEditorOpen(v);
                     }}
-                    onSubmit={(data) => {
+                    onSubmit={async (data) => {
                         if ("radio_name" in data) {
-                            FormFieldRadioRouter.create(
-                                {
-                                    field_id: focusFormField.id,
-                                    radio_name: data.radio_name!,
-                                },
-                                ({ success }: FormFieldRadioCreateResponse) => {
-                                    if (success) {
-                                        setRadioEditorOpen(false);
-                                        chooseForm(formName);
-                                    } else {
-                                        toast({ title: locale.CreateRadioFailed, color: "danger" });
-                                    }
-                                },
-                            );
+                            const { success } = await FormFieldRadioRouter.create({
+                                field_id: focusFormField.id,
+                                radio_name: data.radio_name!,
+                            });
+                            if (success) {
+                                setRadioEditorOpen(false);
+                                chooseForm(formName);
+                            } else {
+                                toast({ title: locale.CreateRadioFailed, color: "danger" });
+                            }
                         }
                     }}
                 />

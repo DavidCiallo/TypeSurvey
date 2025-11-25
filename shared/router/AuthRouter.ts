@@ -24,9 +24,9 @@ export class AuthRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    login: (request: AuthBody, callback?: Function) => Promise<LoginResult>;
-    register: (request: AuthBody, callback?: Function) => Promise<RegisterResult>;
-    code: (request: CodeLogin, callback?: Function) => Promise<LoginResult>;
+    login: (request: AuthBody) => Promise<LoginResult>;
+    register: (request: AuthBody) => Promise<RegisterResult>;
+    code: (request: CodeLogin) => Promise<LoginResult>;
 
     constructor(
         inject: Function,

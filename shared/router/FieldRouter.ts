@@ -32,17 +32,17 @@ export class FormFieldRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    list: (query: FormFieldListQuery, callback?: Function) => Promise<FormFieldListResponse>;
-    create: (request: FormFieldCreateRequest, callback?: Function) => Promise<FormFieldCreateResponse>;
-    update: (request: FormFieldUpdateRequest, callback?: Function) => Promise<FormFieldUpdateResponse>;
-    del: (request: FormFieldDeleteRequest, callback?: Function) => Promise<FormFieldDeleteResponse>;
+    list: (query: FormFieldListQuery) => Promise<FormFieldListResponse>;
+    create: (request: FormFieldCreateRequest) => Promise<FormFieldCreateResponse>;
+    update: (request: FormFieldUpdateRequest) => Promise<FormFieldUpdateResponse>;
+    del: (request: FormFieldDeleteRequest) => Promise<FormFieldDeleteResponse>;
 
     constructor(
         inject: Function,
         functions?: {
             list: (query: FormFieldListQuery) => Promise<FormFieldListResponse>;
-            create: (request: FormFieldCreateRequest, callback?: Function) => Promise<FormFieldCreateResponse>;
-            update: (request: FormFieldUpdateRequest, callback?: Function) => Promise<FormFieldUpdateResponse>;
+            create: (request: FormFieldCreateRequest) => Promise<FormFieldCreateResponse>;
+            update: (request: FormFieldUpdateRequest) => Promise<FormFieldUpdateResponse>;
             del: (request: FormFieldDeleteRequest) => Promise<FormFieldDeleteResponse>;
         },
     ) {

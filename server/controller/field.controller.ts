@@ -9,12 +9,12 @@ import {
     FormFieldUpdateRequest,
     FormFieldUpdateResponse,
 } from "../../shared/router/FieldRouter";
-import { inject, injectws } from "../lib/inject";
+import { inject } from "../lib/inject";
 import { getIdentifyByVerify } from "../service/auth.service";
 import { createField, getFieldList, updateSingleField } from "../service/field.service";
 
 async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
-    const { form_name, auth } = query;
+    const { form_name, page, auth } = query;
     if (!form_name || !auth) {
         return { success: false, message: "参数错误" };
     }
@@ -23,7 +23,7 @@ async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
         return { success: false };
     }
     const list = await getFieldList(form_name);
-    return { success: true, data: { list, total: list.length } };
+    return { success: true, data: { list: list.slice(10 * (page - 1), 10 * page), total: list.length } };
 }
 
 async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateResponse> {
@@ -35,7 +35,7 @@ async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateRes
     if (!user) {
         return { success: false };
     }
-    const success = await createField({ form_name, field_name, field_type });
+    const success = !!(await createField({ form_name, field_name, field_type }));
     return { success };
 }
 

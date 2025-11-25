@@ -8,7 +8,7 @@ type props = {
 };
 
 const FormAddBtn = ({ openFormEditor, uploadXlsx }: props) => {
-    const locale = Locale("FormPage");
+    const locale = Locale("FormAddBtn");
 
     return (
         <div className="flex flex-row">

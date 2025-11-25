@@ -7,7 +7,7 @@ import {
     FormFieldRadioUpdateRequest,
     FormFieldRadioUpdateResponse,
 } from "../../shared/router/RadioRouter";
-import { inject, injectws } from "../lib/inject";
+import { inject } from "../lib/inject";
 import { getIdentifyByVerify } from "../service/auth.service";
 import { createRadio, updateRadio } from "../service/radio.service";
 
@@ -20,7 +20,7 @@ async function create(query: FormFieldRadioCreateRequest): Promise<FormFieldRadi
     if (!user) {
         return { success: false };
     }
-    const success = await createRadio({ field_id, radio_name, useful: false });
+    const success = !!(await createRadio({ field_id, radio_name, useful: false }));
     return { success };
 }
 

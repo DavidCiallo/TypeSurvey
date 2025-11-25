@@ -30,10 +30,10 @@ export class FormRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    list: (query: FormListQuery, callback?: Function) => Promise<FormListResponse>;
-    create: (request: FormCreateRequest, callback?: Function) => Promise<FormCreateResponse>;
-    update: (request: FormUpdateRequest, callback?: Function) => Promise<FormUpdateResponse>;
-    del: (request: FormDeleteRequest, callback?: Function) => Promise<FormDeleteResponse>;
+    list: (query: FormListQuery) => Promise<FormListResponse>;
+    create: (request: FormCreateRequest) => Promise<FormCreateResponse>;
+    update: (request: FormUpdateRequest) => Promise<FormUpdateResponse>;
+    del: (request: FormDeleteRequest) => Promise<FormDeleteResponse>;
 
     constructor(
         inject: Function,

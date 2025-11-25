@@ -25,9 +25,9 @@ export class RecordRouterInstance extends BaseRouterInstance {
         },
     ];
 
-    history: (query: RecordGetQuery, callback?: Function) => Promise<RecordGetResponse>;
-    submit: (request: RecordUpdateRequest, callback?: Function) => Promise<RecordUpdateResponse>;
-    all: (request: RecordAllQuery, callback?: Function) => Promise<RecordAllResponse>;
+    history: (query: RecordGetQuery) => Promise<RecordGetResponse>;
+    submit: (request: RecordUpdateRequest) => Promise<RecordUpdateResponse>;
+    all: (request: RecordAllQuery) => Promise<RecordAllResponse>;
 
     constructor(
         inject: Function,

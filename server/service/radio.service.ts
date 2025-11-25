@@ -4,13 +4,13 @@ import Repository from "../lib/repository";
 
 const RadioRepository = Repository.instance(FormFieldRadioEntity);
 
-export async function createRadio(radio: Omit<FormFieldRadioImpl, "id">): Promise<boolean> {
-    const { field_id, radio_name } = radio;
+export async function createRadio(radio: Omit<FormFieldRadioImpl, "id">): Promise<string | null> {
+    const { field_id, radio_name, useful } = radio;
     const exist = await RadioRepository.findOne({ field_id, radio_name });
     if (exist) {
-        return false;
+        return null;
     }
-    const result = await RadioRepository.insert({ radio_name, field_id, useful: false });
+    const result = await RadioRepository.insert({ radio_name, field_id, useful });
     return result;
 }
 

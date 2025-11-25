@@ -6,6 +6,7 @@ import Repository from "../lib/repository";
 const FieldRepository = Repository.instance(FormFieldEntity);
 const RecordRepository = Repository.instance(RecordEntity);
 
+// User Used
 export async function getRecords(item_id?: string): Promise<Array<RecordImpl>> {
     const recordsData = [];
     if (item_id) {
@@ -27,9 +28,10 @@ export async function submitRecord(record: Omit<RecordImpl, "id" | "create_time"
         return result;
     }
     const result = await RecordRepository.insert({ item_id, field_id, field_value });
-    return result;
+    return !!result;
 }
 
+// Admin used
 export async function getAllRecord(form_name: string) {
     const fields = await FieldRepository.find({ form_name });
     const recordData = await Promise.all(fields.map(({ id: field_id }) => RecordRepository.find({ field_id })));

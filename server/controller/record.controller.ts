@@ -8,7 +8,7 @@ import {
     RecordUpdateRequest,
     RecordUpdateResponse,
 } from "../../shared/router/RecordRouter";
-import { inject, injectws } from "../lib/inject";
+import { inject } from "../lib/inject";
 import { getFieldList, getFormNameByField } from "../service/field.service";
 import { getAllRecord, getRecords, submitRecord } from "../service/record.service";
 import { codeGenerate } from "../lib/crypto";

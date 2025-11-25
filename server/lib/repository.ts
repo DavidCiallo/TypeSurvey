@@ -140,14 +140,14 @@ class Repository<T> {
      * @param entity A partial entity object to insert.
      * @returns True if the insertion was successful.
      */
-    async insert(entity: Partial<T>): Promise<boolean> {
+    async insert(entity: Partial<T>): Promise<string> {
         this.initialize();
         const id = nanoid(6);
         const create_time = Date.now();
         const newEntity = { ...entity, id, create_time } as T;
         this.cache.push(newEntity);
         this.saveData();
-        return true;
+        return id;
     }
 
     /**

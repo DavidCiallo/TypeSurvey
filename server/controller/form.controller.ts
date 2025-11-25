@@ -9,7 +9,7 @@ import {
     FormListResponse,
     FormRouterInstance,
 } from "../../shared/router/FormRouter";
-import { inject, injectws } from "../lib/inject";
+import { inject } from "../lib/inject";
 import { getIdentifyByVerify } from "../service/auth.service";
 import { createField, getFormBriefList, getFormList, updateFormName } from "../service/field.service";
 
@@ -40,11 +40,11 @@ async function create(query: FormCreateRequest): Promise<FormCreateResponse> {
         return { success: false };
     }
 
-    const success = await createField({
+    const success = !!(await createField({
         form_name: form_name,
         field_name: "new",
         field_type: "text",
-    });
+    }));
     return { success };
 }
 

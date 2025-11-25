@@ -1,11 +1,8 @@
 import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
 import {
-    Accordion,
-    AccordionItem,
     Button,
     Card,
-    CardBody,
     Pagination,
     Select,
     SelectItem,
@@ -16,10 +13,8 @@ import {
     TableHeader,
     TableRow,
 } from "@heroui/react";
-import { FormFieldListResponse } from "../../../shared/router/FieldRouter";
 import { FormFieldRouter, RecordRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
-import { RecordAllResponse } from "../../../shared/router/RecordRouter";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 
@@ -31,35 +26,46 @@ const Component = () => {
     const [fieldChoose, setFieldChoose] = useState<FormFieldImpl | null>(null);
     const [itemChoose, setItemChoose] = useState<string | null>(null);
 
-    const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(1);
+    const [userpage, setPage] = useState(1);
+    const [usertotal, setTotal] = useState(1);
 
-    async function loadPage(page: number) {
+    const [fieldpage, setFieldPage] = useState(1);
+    const [fieldtotal, setFieldTotal] = useState(1);
+
+    async function loadUserPage(page: number) {
         setPage(page);
         setItemChoose(null);
         const form_name = localStorage.getItem("formname") || "";
-        RecordRouter.all({ form_name, page }, ({ data }: RecordAllResponse) => {
-            if (!data) {
-                return;
-            }
-            setTotal(Math.ceil(data.total / 10) || 1);
-            setRecordList(data.records);
-        });
-        FormFieldRouter.list({ form_name, page: 1 }, ({ success, data, message }: FormFieldListResponse) => {
-            if (!success || !data) {
-                toast({ title: message, color: "danger" });
-                return;
-            }
-            const { list } = data;
-            setFieldList(list);
-            if (!fieldChoose || !list.some((f) => f.id === fieldChoose.id)) {
-                setFieldChoose(list[0] || null);
-            }
-        });
+        const { data } = await RecordRouter.all({ form_name, page });
+        if (!data) {
+            return;
+        }
+        setTotal(Math.ceil(data.total / 10) || 1);
+        setRecordList(data.records);
     }
+    async function loadFieldPage(page: number) {
+        setFieldPage(page);
+        const form_name = localStorage.getItem("formname") || "";
 
+        const { success, data, message } = await FormFieldRouter.list({ form_name, page });
+        if (!success || !data) {
+            toast({ title: message, color: "danger" });
+            return;
+        }
+        const { list, total } = data;
+        list.forEach((field) => {
+            if (fieldList.find((f) => f.id === field.id)) return;
+            fieldList.push(field);
+        });
+        setFieldList([...fieldList]);
+        setFieldTotal(Math.ceil(total / 10));
+        if (!fieldChoose || !fieldList.some((f) => f.id === fieldChoose.id)) {
+            setFieldChoose(list[0] || null);
+        }
+    }
     useEffect(() => {
-        loadPage(page);
+        loadUserPage(userpage);
+        loadFieldPage(fieldpage);
     }, []);
 
     return (
@@ -82,7 +88,7 @@ const Component = () => {
                         color="default"
                         variant="bordered"
                         className="text-black-500"
-                        onClick={() => loadPage(page)}
+                        onClick={() => loadUserPage(userpage)}
                     >
                         {locale.ReloadButton}
                     </Button>
@@ -93,7 +99,12 @@ const Component = () => {
                             aria-label="table"
                             bottomContent={
                                 <div className="flex items-center">
-                                    <Pagination className="mx-auto" initialPage={1} total={total} onChange={loadPage} />
+                                    <Pagination
+                                        className="mx-auto"
+                                        initialPage={1}
+                                        total={usertotal}
+                                        onChange={loadUserPage}
+                                    />
                                 </div>
                             }
                         >
@@ -134,27 +145,43 @@ const Component = () => {
                     </Card>
 
                     <Card className="w-2/3 h-[70vh]">
-                        <Table aria-label="table" className="h-full">
+                        <Table
+                            aria-label="table"
+                            className="h-full"
+                            bottomContent={
+                                <div className="flex items-center">
+                                    <Pagination
+                                        className="mx-auto"
+                                        initialPage={1}
+                                        total={fieldtotal}
+                                        onChange={loadFieldPage}
+                                    />
+                                </div>
+                            }
+                        >
                             <TableHeader>
                                 <TableColumn align="center">{locale.RecordFieldColumn}</TableColumn>
                                 <TableColumn align="center">{locale.RecordValueColumn}</TableColumn>
                             </TableHeader>
                             <TableBody className="h-full" emptyContent={<div>{locale.EmptyRecordSelect}</div>}>
                                 {fieldList
+                                    .slice((fieldpage - 1) * 10, fieldpage * 10)
                                     .filter(() => itemChoose)
                                     .map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
+                                        const value =
+                                            radios?.find((r) => r.id === record?.field_value)?.radio_name ||
+                                            record?.field_value;
+                                        console.log(fieldList.filter(() => itemChoose).length, record);
                                         return (
                                             <TableRow>
                                                 <TableCell className="min-w-32" align="center">
                                                     {field_name}
                                                 </TableCell>
                                                 <TableCell className="min-w-32" align="center">
-                                                    {radios?.length
-                                                        ? radios.find((r) => r.id === record?.field_value)?.radio_name
-                                                        : record?.field_value}
+                                                    {value}
                                                 </TableCell>
                                             </TableRow>
                                         );
