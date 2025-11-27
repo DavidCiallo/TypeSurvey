@@ -6,11 +6,12 @@ import { Locale } from "../../methods/locale";
 
 interface props {
     isOpen: boolean;
+    formName: string | null;
     onOpenChange: (v: boolean) => void;
     onSubmit: (data: FormCreateRequest | FormUpdateRequest) => void;
 }
 
-const FormEditorModal = ({ isOpen, onOpenChange, onSubmit }: props) => {
+const FormEditorModal = ({ isOpen, formName, onOpenChange, onSubmit }: props) => {
     const locale = Locale("FormEditor");
     const formRef = useRef<HTMLFormElement>(null);
 
@@ -42,6 +43,7 @@ const FormEditorModal = ({ isOpen, onOpenChange, onSubmit }: props) => {
                         label={locale.FormNameLabel}
                         name="form_name"
                         labelPlacement="outside"
+                        defaultValue={formName || ""}
                         placeholder={locale.FormNamePlaceholder}
                         variant="bordered"
                         className="mb-4"

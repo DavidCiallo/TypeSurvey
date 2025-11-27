@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FileRouter, FormFieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
 import { toast } from "../../methods/notify";
-import CreateRecordModal from "./CreateRecordEditor";
+import CreateRecordModal from "./RecordCreator";
 import { FormFieldImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { getChunks } from "../../methods/file";
@@ -172,7 +172,12 @@ const Component = () => {
                 </div>
             </div>
 
-            <FormEditor isOpen={isFormEditorOpen} onOpenChange={setFormEditorOpen} onSubmit={saveForm} />
+            <FormEditor
+                formName={focusForm}
+                isOpen={isFormEditorOpen}
+                onOpenChange={setFormEditorOpen}
+                onSubmit={saveForm}
+            />
             <FormImport
                 isOpen={isImportOpen}
                 onOpenChange={setImportOpen}
