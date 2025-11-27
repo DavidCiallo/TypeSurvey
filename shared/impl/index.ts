@@ -49,7 +49,7 @@ export class RecordImpl
     id: string;
     item_id: string;
     field_id: string;
-    field_value: string;
+    field_value: number | string | boolean;
     create_time: number;
     update_time: number | null;
     constructor(record: RecordEntity) {
