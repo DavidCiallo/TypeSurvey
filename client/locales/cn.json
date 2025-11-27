@@ -142,9 +142,12 @@
         "ListUpdateTimeColumn": "更新时间",
         "ListActionColumn": "操作",
         "ListViewRecordButton": "查看",
+        "ListItemLinkButton": "链接",
+        "ToastCopySuccess": "复制链接成功",
         "RecordFieldColumn": "字段",
         "RecordValueColumn": "内容",
-        "EmptyRecordSelect": "请选择用户"
+        "RecordActionColumn": "操作",
+        "EmptyRecordSelect": "等待数据"
     },
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
