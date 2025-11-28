@@ -73,19 +73,24 @@ export async function getFieldList(form_name: string): Promise<FormFieldImpl[]> 
 }
 
 export async function createField(
-    field: Omit<FormFieldImpl, "id" | "comment" | "placeholder" | "offset">,
+    field: Omit<FormFieldImpl, "id" | "comment" | "placeholder" | "position">,
 ): Promise<string | null> {
     const { form_name, field_name } = field;
     const exist = await FieldRepository.findOne({ form_name, field_name });
-    const offset = await FieldRepository.count();
+    const position = (await FieldRepository.count()) + 1;
     if (exist) {
         return null;
     }
-    const result = await FieldRepository.insert({ ...field, offset, comment: "", placeholder: "" });
+    const result = await FieldRepository.insert({
+        ...field,
+        position,
+        comment: "",
+        placeholder: "",
+    });
     return result;
 }
 
-export async function updateSingleField(id: string, key: string, value: string): Promise<boolean> {
+export async function updateSingleField(id: string, key: string, value: number | string | boolean): Promise<boolean> {
     const exist = await FieldRepository.findOne({ id });
     if (!exist) {
         return false;

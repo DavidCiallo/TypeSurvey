@@ -5,7 +5,7 @@ import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
 
 interface props {
-    field_id: string;
+    field_id: string | null;
     isOpen: boolean;
     onOpenChange: any;
     onSubmit: (data: FormFieldRadioCreateRequest | FormFieldRadioUpdateRequest) => void;
@@ -18,6 +18,9 @@ const RadioEditorModal = ({ field_id, isOpen, onOpenChange, onSubmit }: props) =
     const handleCustomSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
         if (event) {
             event.preventDefault();
+            return;
+        }
+        if (!field_id) {
             return;
         }
         const { radio_name } = Object.fromEntries(new FormData(formRef.current!).entries());

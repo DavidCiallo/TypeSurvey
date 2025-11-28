@@ -1,4 +1,4 @@
-import { BaseResponse, BaseRouterInstance } from "../lib/decorator";
+import { BaseRequest, BaseResponse, BaseRouterInstance } from "../lib/decorator";
 
 export class AuthRouterInstance extends BaseRouterInstance {
     base = "/api";
@@ -24,6 +24,7 @@ export class AuthRouterInstance extends BaseRouterInstance {
         },
     ];
 
+    alive: (request: AliveRequest) => Promise<AliveResponse>;
     login: (request: AuthBody) => Promise<LoginResult>;
     register: (request: AuthBody) => Promise<RegisterResult>;
     code: (request: CodeLogin) => Promise<LoginResult>;
@@ -31,6 +32,7 @@ export class AuthRouterInstance extends BaseRouterInstance {
     constructor(
         inject: Function,
         functions?: {
+            alive: (request: AliveRequest) => Promise<AliveResponse>;
             login: (request: AuthBody) => Promise<LoginResult>;
             register: (request: AuthBody) => Promise<RegisterResult>;
             code: (request: CodeLogin) => Promise<LoginResult>;
@@ -46,6 +48,10 @@ export interface AuthBody {
     email?: string;
     password?: string;
 }
+
+export interface AliveRequest extends BaseRequest {}
+
+export interface AliveResponse extends BaseResponse {}
 
 export interface LoginResult extends BaseResponse {
     data?: {

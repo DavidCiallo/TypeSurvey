@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FileRouter, FormFieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
 import { toast } from "../../methods/notify";
-import CreateRecordModal from "./CreateRecordEditor";
+import CreateRecordModal from "./RecordCreator";
 import { FormFieldImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { getChunks } from "../../methods/file";
@@ -56,7 +56,7 @@ const Component = () => {
         if (!list || list.length == 0) {
             return toast({ title: locale.ToastFormListEmpty, color: "danger" });
         } else {
-            setFieldList(list);
+            setFieldList(list.filter((i) => !i.disabled && i.field_type == "text"));
             setNewRecordOpen(true);
         }
     }
@@ -119,7 +119,6 @@ const Component = () => {
         chunks.forEach(async (file) => {
             const { success, data } = await FileRouter.readxlsx({ file });
             if (!success || !data) return;
-            console.log(data);
             const { tempid, header } = data;
             setTempid(tempid);
             setImportOpen(true);
@@ -173,7 +172,12 @@ const Component = () => {
                 </div>
             </div>
 
-            <FormEditor isOpen={isFormEditorOpen} onOpenChange={setFormEditorOpen} onSubmit={saveForm} />
+            <FormEditor
+                formName={focusForm}
+                isOpen={isFormEditorOpen}
+                onOpenChange={setFormEditorOpen}
+                onSubmit={saveForm}
+            />
             <FormImport
                 isOpen={isImportOpen}
                 onOpenChange={setImportOpen}

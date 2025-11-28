@@ -1,6 +1,23 @@
-import { AuthBody, AuthRouterInstance, CodeLogin, LoginResult, RegisterResult } from "../../shared/router/AuthRouter";
+import {
+    AliveRequest,
+    AliveResponse,
+    AuthBody,
+    AuthRouterInstance,
+    CodeLogin,
+    LoginResult,
+    RegisterResult,
+} from "../../shared/router/AuthRouter";
 import { inject } from "../lib/inject";
-import { loginUser, registerUser } from "../service/auth.service";
+import { getIdentifyByVerify, loginUser, registerUser } from "../service/auth.service";
+
+async function alive(request: AliveRequest): Promise<AliveResponse> {
+    const { auth } = request;
+    if (auth && getIdentifyByVerify(auth)) {
+        return { success: true };
+    } else {
+        return { success: false };
+    }
+}
 
 async function login(request: AuthBody): Promise<LoginResult> {
     const { email, password } = request;
@@ -34,4 +51,4 @@ async function code(request: CodeLogin): Promise<LoginResult> {
     return { success: true, data: { token } };
 }
 
-export const authController = new AuthRouterInstance(inject, { login, register, code });
+export const authController = new AuthRouterInstance(inject, { alive, login, register, code });

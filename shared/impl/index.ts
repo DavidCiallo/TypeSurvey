@@ -3,16 +3,18 @@ import { FormFieldRadioEntity } from "../types/FormFieldRadio";
 import { RecordEntity } from "../types/Record";
 import { FieldType } from "./field";
 
-export class FormFieldImpl
-    implements Pick<FormFieldEntity, "id" | "form_name" | "field_name" | "field_type" | "comment" | "placeholder">
-{
+export class FormFieldImpl implements Omit<FormFieldEntity, "create_time" | "update_time" | "delete_time"> {
     id: string;
     form_name: string;
     field_name: string;
     field_type: FieldType;
+    required: boolean;
+    disabled: boolean;
     radios?: FormFieldRadioImpl[];
     comment: string;
     placeholder: string;
+    position: number;
+
     constructor(field: FormFieldEntity, radios?: FormFieldRadioImpl[]) {
         this.id = field.id;
         this.field_name = field.field_name;
@@ -22,6 +24,9 @@ export class FormFieldImpl
         }
         this.comment = field.comment;
         this.placeholder = field.placeholder;
+        this.position = field.position;
+        this.required = field.required || false;
+        this.disabled = field.disabled || false;
     }
 }
 
@@ -44,7 +49,7 @@ export class RecordImpl
     id: string;
     item_id: string;
     field_id: string;
-    field_value: string;
+    field_value: number | string | boolean;
     create_time: number;
     update_time: number | null;
     constructor(record: RecordEntity) {

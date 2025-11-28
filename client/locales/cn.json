@@ -37,6 +37,7 @@
         "text": "文本",
         "email": "邮箱",
         "password": "密码",
+        "number": "数字",
         "checkbox": "复选框",
         "select": "单选项",
         "mulselect": "多选项",
@@ -58,6 +59,19 @@
         "ToastFormListEmpty": "表单错误，可能不存在或者为空",
         "ToastCreateFormFailed": "创建表单失败，可能存在同名项",
         "ToastEditFormFailed": "修改表单失败，可能存在同名项"
+    },
+    "FormImport": {
+        "UsefulField": "是否使用",
+        "FieldName": "字段名",
+        "FieldComment": "字段备注",
+        "FieldType": "字段类型",
+        "SubList": "辅助字段",
+        "SaveEmpty": "仅创建表单",
+        "SaveData": "同时保存数据"
+    },
+    "FormAddBtn": {
+        "CreateNewForm": "新建表单",
+        "ImportXlsx": "导入XLSX"
     },
     "FormEditor": {
         "FormNameLabel": "表单名",
@@ -82,6 +96,7 @@
         "TableHeaderFieldNameColumn": "字段名",
         "TableHeaderFieldTypeColumn": "字段类型",
         "TableHeaderOptionsColumn": "可选择项",
+        "TableHeaderRequiredColumn": "必填项",
         "TableHeaderRemarkColumn": "备注",
         "TableHeaderHintColumn": "提示",
         "TableHeaderActionsColumn": "操作",
@@ -127,9 +142,12 @@
         "ListUpdateTimeColumn": "更新时间",
         "ListActionColumn": "操作",
         "ListViewRecordButton": "查看",
+        "ListItemLinkButton": "链接",
+        "ToastCopySuccess": "复制链接成功",
         "RecordFieldColumn": "字段",
         "RecordValueColumn": "内容",
-        "EmptyRecordSelect": "请选择用户"
+        "RecordActionColumn": "操作",
+        "EmptyRecordSelect": "等待数据"
     },
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",

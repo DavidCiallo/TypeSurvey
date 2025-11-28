@@ -33,10 +33,10 @@ export function genTokenForIdentify(identity: string, expried: number = 1000 * 6
     return aesEncrypt(token);
 }
 
-export function getIdentifyByVerify(token: string): string | false {
+export function getIdentifyByVerify(token: string): string | null {
     const dt = aesDecrypt(token);
-    if (!dt) return false;
+    if (!dt) return null;
     const [identity, expried] = dt.split("|-|");
-    if (Date.now() > Number(expried)) return false;
+    if (Date.now() > Number(expried)) return null;
     return identity;
 }

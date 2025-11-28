@@ -49,13 +49,16 @@ async function confirm(query: FileConfirmRequest): Promise<FileXlsxResponse> {
     const { header, data, filename } = existData;
     const form_name = filename.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "") + Math.random().toString(36).slice(4, 8);
     for (let i = 0; i < header.length; i++) {
-        if (!fields[i].check) continue;
         const field_id = await createField({
             form_name: form_name,
             field_name: fields[i].field,
             field_type: fields[i].type,
+            required: false,
+            disabled: !fields[i].check,
         });
-        if (!field_id) continue;
+        if (!field_id || !["select", "mulselect", "checkbox"].includes(fields[i].type)) {
+            continue;
+        }
         for (const radio_name of header[i].sub || []) {
             await createRadio({ field_id, radio_name, useful: true });
         }
@@ -80,7 +83,7 @@ async function confirm(query: FileConfirmRequest): Promise<FileXlsxResponse> {
     for (const row of data) {
         const item_id = nanoid(6);
         row.forEach((cell, index) => {
-            if (!fields[index].check || !cell) return;
+            if (!cell) return;
             const field_id = fieldMap.get(fields[index].field);
             let field_value;
             if (radioMap.has(field_id + cell)) {
@@ -91,7 +94,6 @@ async function confirm(query: FileConfirmRequest): Promise<FileXlsxResponse> {
             if (field_id) records.push({ item_id, field_id, field_value });
         });
     }
-    console.log(records.length);
     await insertRecords(records);
     return { success: true };
 }

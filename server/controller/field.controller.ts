@@ -23,6 +23,7 @@ async function list(query: FormFieldListQuery): Promise<FormFieldListResponse> {
         return { success: false };
     }
     const list = await getFieldList(form_name);
+    list.sort((a, b) => (a.position || 0) - (b.position || 0));
     return { success: true, data: { list: list.slice(10 * (page - 1), 10 * page), total: list.length } };
 }
 
@@ -35,12 +36,12 @@ async function create(query: FormFieldCreateRequest): Promise<FormFieldCreateRes
     if (!user) {
         return { success: false };
     }
-    const success = !!(await createField({ form_name, field_name, field_type }));
+    const success = !!(await createField({ form_name, field_name, field_type, disabled: false, required: false }));
     return { success };
 }
 
 async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateResponse> {
-    const { field_id, field_name, field_type, comment, auth } = query;
+    const { field_id, field_name, field_type, position, disabled, required, comment, auth } = query;
     if (!field_id || !auth) {
         return { success: false, message: "参数错误" };
     }
@@ -54,6 +55,18 @@ async function update(query: FormFieldUpdateRequest): Promise<FormFieldUpdateRes
     }
     if (field_type) {
         const success = await updateSingleField(field_id, "field_type", field_type);
+        if (!success) return { success: false };
+    }
+    if (position) {
+        const success = await updateSingleField(field_id, "position", position);
+        if (!success) return { success: false };
+    }
+    if (typeof required === "boolean") {
+        const success = await updateSingleField(field_id, "required", required);
+        if (!success) return { success: false };
+    }
+    if (typeof disabled === "boolean") {
+        const success = await updateSingleField(field_id, "disabled", disabled);
         if (!success) return { success: false };
     }
     if (typeof comment === "string") {

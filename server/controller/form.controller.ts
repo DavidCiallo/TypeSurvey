@@ -44,6 +44,8 @@ async function create(query: FormCreateRequest): Promise<FormCreateResponse> {
         form_name: form_name,
         field_name: "new",
         field_type: "text",
+        required: false,
+        disabled: false,
     }));
     return { success };
 }

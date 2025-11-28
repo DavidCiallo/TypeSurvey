@@ -56,6 +56,7 @@ export interface RecordAllResponse extends BaseResponse {
     data?: {
         records: Array<{
             item_id: string;
+            code: string;
             data: Array<RecordImpl>;
         }>;
         total: number;
@@ -75,7 +76,7 @@ export interface RecordGetResponse extends BaseResponse {
 export interface RecordUpdateRequest extends BaseRequest {
     item_id: string;
     field_id: string;
-    field_value: string;
+    field_value: number | string | boolean;
 }
 
 export interface RecordUpdateResponse extends BaseResponse {}

@@ -7,4 +7,7 @@ export class FormFieldEntity extends BaseEntity {
     field_type: FieldType;
     comment: string;
     placeholder: string;
+    position: number;
+    required: boolean;
+    disabled: boolean;
 }

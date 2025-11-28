@@ -52,7 +52,7 @@ async function history(request: RecordGetQuery): Promise<RecordGetResponse> {
 
 async function submit(request: RecordUpdateRequest): Promise<RecordUpdateResponse> {
     const { item_id, field_id, field_value } = request;
-    if (field_value?.length > 0x3e8) {
+    if (String(field_value)?.length > 0x3e8) {
         return { success: false };
     }
     const success = await submitRecord({ item_id, field_id, field_value });
@@ -71,6 +71,7 @@ async function all(request: RecordAllQuery): Promise<RecordAllResponse> {
     const records = await getAllRecord(form_name);
     const group: Array<{
         item_id: string;
+        code: string;
         data: Array<RecordImpl>;
     }> = [];
     for (const r of records) {
@@ -78,7 +79,7 @@ async function all(request: RecordAllQuery): Promise<RecordAllResponse> {
         if (exist !== -1) {
             group[exist].data.push(r);
         } else {
-            group.push({ item_id: r.item_id, data: [r] });
+            group.push({ item_id: r.item_id, code: codeGenerate(r.item_id), data: [r] });
         }
     }
     const data = {
