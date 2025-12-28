@@ -17,7 +17,7 @@ const FormAddBtn = ({ openFormEditor, uploadXlsx }: props) => {
             </Button>
             <FileUpload
                 element={
-                    <Button color="default" variant="bordered" className="text-black-500">
+                    <Button color="default" variant="bordered" className="text-black-500 ml-1">
                         {locale.ImportXlsx}
                     </Button>
                 }

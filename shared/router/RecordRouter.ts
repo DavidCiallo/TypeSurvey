@@ -50,6 +50,7 @@ export interface RecordGetQuery extends BaseRequest {
 export interface RecordAllQuery extends BaseRequest {
     form_name: string;
     page: number;
+    search: string;
 }
 
 export interface RecordAllResponse extends BaseResponse {
