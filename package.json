@@ -10,7 +10,10 @@
         "all": "concurrently \"rsbuild dev --open\" \"bun run server/app\""
     },
     "dependencies": {
+        "@heroui/pagination": "^2.2.24",
         "@heroui/react": "^2.8.0-beta.5",
+        "@heroui/select": "^2.4.28",
+        "@heroui/table": "^2.2.27",
         "@twallpaper/react": "^2.1.2",
         "@types/cors": "^2.8.19",
         "@types/http-proxy-agent": "^4.0.0",

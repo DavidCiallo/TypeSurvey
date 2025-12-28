@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
     Button,
     Card,
+    Input,
     Pagination,
     Select,
     SelectItem,
@@ -18,26 +19,30 @@ import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { copytext } from "../../methods/text";
+import SearchIcon from "../../images/svg/Search";
 
 const Component = () => {
     const locale = Locale("RecordPage");
 
     const baseurl = location.protocol + "//" + location.host + "/fill?t=";
 
-    const [recordList, setRecordList] = useState<Array<{ item_id: string; code: string; data: RecordImpl[] }>>([]);
     const [fieldList, setFieldList] = useState<Array<FormFieldImpl>>([]);
     const [fieldChoose, setFieldChoose] = useState<FormFieldImpl | null>(null);
+
+    const [recordList, setRecordList] = useState<Array<{ item_id: string; code: string; data: RecordImpl[] }>>([]);
     const [itemChoose, setItemChoose] = useState<string | null>(null);
 
     const [userpage, setPage] = useState(1);
     const [usertotal, setTotal] = useState(1);
 
+    const [search, setSearch] = useState("");
+
     const [_, setFieldTotal] = useState(1);
 
-    async function loadUserPage(page: number) {
+    async function loadUserPage(page: number = 1) {
         setItemChoose(null);
         const form_name = localStorage.getItem("formname") || "";
-        const { data } = await RecordRouter.all({ form_name, page });
+        const { data } = await RecordRouter.all({ form_name, page, search });
         if (!data) {
             return;
         }
@@ -70,8 +75,8 @@ const Component = () => {
         }
     }
     useEffect(() => {
-        loadUserPage(userpage);
-        loadFieldPage(1);
+        loadUserPage();
+        loadFieldPage();
     }, []);
 
     return (
@@ -79,28 +84,53 @@ const Component = () => {
             <Header name={locale.Title} />
             <div className="w-full flex flex-col flex-wrap px-[5vw] pt-6">
                 <div className="flex flex-row justify-between items-center w-full py-2">
-                    <Select
-                        aria-label="select"
-                        className="w-1/6"
-                        variant="bordered"
-                        selectedKeys={[fieldChoose?.id || ""]}
-                        onSelectionChange={(key) => setFieldChoose(fieldList.find((f) => f.id === key.currentKey)!)}
-                    >
-                        {fieldList.map((f) => {
-                            return <SelectItem key={f.id}>{f.field_name}</SelectItem>;
-                        })}
-                    </Select>
-                    <Button
-                        color="default"
-                        variant="bordered"
-                        className="text-black-500"
-                        onClick={() => loadUserPage(userpage)}
-                    >
-                        {locale.ReloadButton}
-                    </Button>
+                    <div className="w-full flex flex-row">
+                        <Select
+                            aria-label="select"
+                            className="w-1/6"
+                            variant="bordered"
+                            selectedKeys={[fieldChoose?.id || ""]}
+                            onSelectionChange={(key) => setFieldChoose(fieldList.find((f) => f.id === key.currentKey)!)}
+                        >
+                            {fieldList
+                                .filter((i) => !i.disabled)
+                                .map((f) => {
+                                    return <SelectItem key={f.id}>{f.field_name}</SelectItem>;
+                                })}
+                        </Select>
+                        <Input
+                            className="w-1/8 mx-1"
+                            variant="bordered"
+                            value={search}
+                            onValueChange={setSearch}
+                            endContent={
+                                <Button
+                                    size="sm"
+                                    isIconOnly
+                                    className="p-[5px] ml-[-10px] mr-[-5px]"
+                                    variant="light"
+                                    onClick={() => loadUserPage()}
+                                >
+                                    <SearchIcon />
+                                </Button>
+                            }
+                            onBlur={() => loadUserPage()}
+                        />
+                    </div>
+
+                    <div className="flex flex-row">
+                        <Button
+                            color="default"
+                            variant="bordered"
+                            className="text-black-500"
+                            onClick={() => loadUserPage(userpage)}
+                        >
+                            {locale.ReloadButton}
+                        </Button>
+                    </div>
                 </div>
                 <div className="mt-2 flex flex-row justify-between items-start gap-4">
-                    <Card className="min-w-[450px] min-w-1/3 max-w-1/3 h-[70vh]">
+                    <Card className="min-w-[450px] w-1/3 h-[70vh]">
                         <Table
                             isStriped
                             aria-label="table"

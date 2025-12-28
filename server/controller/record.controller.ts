@@ -60,7 +60,7 @@ async function submit(request: RecordUpdateRequest): Promise<RecordUpdateRespons
 }
 
 async function all(request: RecordAllQuery): Promise<RecordAllResponse> {
-    const { form_name, page, auth } = request;
+    const { form_name, page, search, auth } = request;
     if (!form_name || !page || page < 1 || !auth) {
         return { success: false };
     }
@@ -82,11 +82,18 @@ async function all(request: RecordAllQuery): Promise<RecordAllResponse> {
             group.push({ item_id: r.item_id, code: codeGenerate(r.item_id), data: [r] });
         }
     }
+    if (search && search.length) {
+        const filter = group.filter((i) => i.data.some((r) => String(r.field_value).includes(search)));
+        const data = {
+            records: filter.slice((page - 1) * 10, page * 10),
+            total: filter.length,
+        };
+        return { data, success: true };
+    }
     const data = {
         records: group.slice((page - 1) * 10, page * 10),
         total: group.length,
     };
-
     return { data, success: true };
 }
 
