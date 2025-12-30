@@ -39,14 +39,15 @@ export function analyzeCellType(cells: Array<string | null>): { type: FieldType;
     }
     const noEmptyCells = cells.filter((i) => i !== null);
     const set = new Set(noEmptyCells);
-    if (set.size == 1) {
-        return { type: "checkbox", sub: Array.from(set) };
-    }
-    if (noEmptyCells.every((i) => i.length < 8) && noEmptyCells.length / set.size > 10) {
+
+    if (noEmptyCells.every((i) => String(i).length < 8) && noEmptyCells.length / set.size > 10) {
         return { type: "select", sub: Array.from(set) };
     }
-    if (noEmptyCells.every((i) => i?.includes("@"))) {
+    if (noEmptyCells.every((i) => String(i).includes("@"))) {
         return { type: "email", sub: [] };
+    }
+    if (set.size == 1) {
+        return { type: "checkbox", sub: Array.from(set) };
     }
     return { type: "text", sub: [] };
 }
