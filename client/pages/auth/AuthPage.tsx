@@ -6,17 +6,29 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "../../methods/notify";
 import { setAuthStatus, setUserInfo } from "../../methods/auth";
 import { Locale } from "../../methods/locale";
+import { decodeBase64 } from "../../methods/base64";
 
 export default function Component() {
+    try {
+        const loginCode = new URLSearchParams(window.location?.search)?.get("code");
+        const data = JSON.parse(decodeBase64(loginCode || ""));
+        const { email, password } = data;
+        login({ email, password });
+    } catch (e) {}
+
     const navigate = useNavigate();
     const locale = Locale("AuthPage");
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const { email, password } = Object.fromEntries(new FormData(event.currentTarget));
-        const { success, data, message } = await AuthRouter.login({
-            email: email.toString(),
-            password: password.toString(),
-        });
+        const data = Object.fromEntries(new FormData(event.currentTarget));
+        const email = data.email.toString();
+        const password = data.password.toString();
+        await login({ email, password });
+    };
+
+    async function login(auth: { email: string; password: string }) {
+        const { success, data, message } = await AuthRouter.login(auth);
         if (!success || !data) {
             toast({ title: message || locale.LoginFailed, color: "danger" });
             return;
@@ -25,9 +37,9 @@ export default function Component() {
         toast({ title: locale.LoginSuccess, color: "success" });
         await new Promise((r) => setTimeout(r, 1000));
         setAuthStatus({ access_token: token, expires_in: 3600 });
-        setUserInfo({ email: email.toString() });
+        setUserInfo({ email: auth.email });
         navigate("/form");
-    };
+    }
 
     return (
         <div className="flex h-full w-full items-center justify-center">
