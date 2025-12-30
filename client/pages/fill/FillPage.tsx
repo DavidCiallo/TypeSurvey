@@ -102,11 +102,11 @@ const Component = () => {
             case "text": {
                 return (
                     <div className="w-full flex flex-col">
-                        <label className="text-sm pb-2">
+                        <label className="text-sm pb-1">
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <Input
@@ -125,11 +125,11 @@ const Component = () => {
             case "email": {
                 return (
                     <div className="w-full flex flex-col">
-                        <label className="text-sm pb-2">
+                        <label className="text-sm pb-1">
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <Input
@@ -148,11 +148,11 @@ const Component = () => {
             case "password": {
                 return (
                     <div className="w-full flex flex-col">
-                        <label className="text-sm pb-2">
+                        <label className="text-sm pb-1">
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <Input
@@ -171,11 +171,11 @@ const Component = () => {
             case "textarea": {
                 return (
                     <div className="w-full flex flex-col">
-                        <label className="text-sm pb-2">
+                        <label className="text-sm pb-1">
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <Textarea
@@ -195,11 +195,11 @@ const Component = () => {
             case "number": {
                 return (
                     <div className="w-full flex flex-col">
-                        <label className="text-sm pb-2">
+                        <label className="text-sm pb-1">
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <NumberInput
@@ -212,8 +212,8 @@ const Component = () => {
                                 !field_value && field_value !== 0
                                     ? undefined
                                     : isNaN(Number(render_value))
-                                      ? undefined
-                                      : Number(render_value)
+                                    ? undefined
+                                    : Number(render_value)
                             }
                             onValueChange={(number) => submitRecord(field.id, number)}
                             className="w-full"
@@ -228,7 +228,7 @@ const Component = () => {
                             <span>{field.field_name}</span>
                             <span className="text-red-600">{field.required ? "*" : ""}</span>
                         </label>
-                        <label className="text-xs pb-2">
+                        <label className="text-xs pb-1">
                             <span className="text-gray-500">{field.comment}</span>
                         </label>
                         <Select
@@ -270,10 +270,13 @@ const Component = () => {
                 if (!id || !radio_name) return <div />;
                 return (
                     <div className="flex flex-col">
-                        <label className="text-sm pb-2">{field.field_name}</label>
+                        <label className="text-sm pb-1">
+                            <span>{field.field_name}</span>
+                            <span className="text-red-600">{field.required ? "*" : ""}</span>
+                        </label>
                         <Checkbox
                             size="sm"
-                            className="pb-2"
+                            className="pb-1"
                             defaultSelected={id === choose_value}
                             onValueChange={(check) => submitRecord(field.id, check ? id : "")}
                         >
