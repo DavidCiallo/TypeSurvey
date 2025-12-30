@@ -35,6 +35,7 @@ const Component = () => {
     const [focusForm, setFocusForm] = useState<string | null>(null);
 
     const [isNewRecordOpen, setNewRecordOpen] = useState(false);
+    const [selectedType, setSelectedType] = useState<"common" | "collect" | null>(null);
 
     function openFormEditor(formname?: string) {
         if (formname) {
@@ -187,6 +188,8 @@ const Component = () => {
             <CreateRecordModal
                 isOpen={isNewRecordOpen}
                 fields={fieldList}
+                selectedType={selectedType}
+                setSelectedType={setSelectedType}
                 onOpenChange={setNewRecordOpen}
                 onCreate={createRecordLink}
             />

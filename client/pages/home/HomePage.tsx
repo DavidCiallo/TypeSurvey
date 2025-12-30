@@ -46,7 +46,7 @@ const Component = () => {
                     </div>
                     <div className="flex flex-row flex-between items-center gap-4">
                         {auth !== AuthStatus.AUTH && (
-                            <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+                            <div className="lg:flex lg:flex-1 lg:justify-end">
                                 <a href="/auth" className="text-sm font-semibold leading-6 text-white">
                                     Log in
                                 </a>
@@ -82,7 +82,7 @@ const Component = () => {
                                 target="_blank"
                                 className="text-sm font-semibold leading-6 text-white"
                             >
-                                {locale.ViewSource} <span aria-hidden="true">→</span>
+                                {locale.ViewSource} <span>→</span>
                             </a>
                         </div>
                     </div>
