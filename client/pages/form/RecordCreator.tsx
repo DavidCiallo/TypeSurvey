@@ -1,25 +1,25 @@
 import { Button, Modal, ModalBody, ModalContent, Input, Select, SelectItem } from "@heroui/react";
 import CommonImg from "../../images/png/Common.png";
 import CollectImg from "../../images/png/Collect.png";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 
 interface Prop {
     isOpen: boolean;
     fields: FormFieldImpl[];
+    selectedType: "common" | "collect" | null;
+    setSelectedType: (type: "common" | "collect" | null) => void;
     onOpenChange: (v: boolean) => void;
     onCreate: (data?: { field_index: number; field_value: string }) => void;
 }
 
-type SelectionType = "common" | "collect" | null;
-
-const CreateRecordEditor = ({ isOpen, fields, onOpenChange, onCreate }: Prop) => {
+const CreateRecordEditor = ({ isOpen, fields, selectedType, setSelectedType, onOpenChange, onCreate }: Prop) => {
     const locale = Locale("CreateRecordEditor");
-    const [selectedType, setSelectedType] = useState<SelectionType>(null);
 
     const fieldSelect = useRef<HTMLSelectElement>(null);
     const valueSelect = useRef<HTMLInputElement>(null);
+
     function handleOpenChange(v: boolean) {
         if (!v) {
             setSelectedType(null);
@@ -70,9 +70,9 @@ const CreateRecordEditor = ({ isOpen, fields, onOpenChange, onCreate }: Prop) =>
         </div>
     );
     return (
-        <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
-            <ModalContent>
-                <ModalBody className="flex flex-col items-center p-6">
+        <Modal className="w-full" isOpen={isOpen} onOpenChange={handleOpenChange} isDismissable={false}>
+            <ModalContent className="w-full">
+                <ModalBody className="w-full flex flex-col items-center p-6">
                     <div className="mb-4 text-center font-bold text-xl">
                         {selectedType === null ? locale.NullSelectedType : ""}
                         {selectedType === "common" ? locale.CommonType : ""}

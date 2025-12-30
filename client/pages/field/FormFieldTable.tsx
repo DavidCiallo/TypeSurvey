@@ -83,7 +83,6 @@ const Component = ({
         return (
             <Select
                 isDisabled={field.disabled}
-                hidden={!["checkbox", "select", "mulselect"].some((i) => i == field.field_type)}
                 isOpen={!isRadioEditorOpen && field.id === focusFormFieldId}
                 onOpenChange={(i) => changeFocusField(i ? field.id : null)}
                 className="w-36 mx-auto"
