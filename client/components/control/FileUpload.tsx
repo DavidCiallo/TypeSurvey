@@ -1,4 +1,4 @@
-import { ChangeEvent, ReactElement, cloneElement, useRef } from "react";
+import { ChangeEvent, ReactElement, useRef } from "react";
 
 export enum AcceptType {
     Image = "image/*",
