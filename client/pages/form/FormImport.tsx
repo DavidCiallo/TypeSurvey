@@ -18,7 +18,7 @@ import {
     TableRow,
 } from "@heroui/react";
 import { Locale } from "../../methods/locale";
-import { XlsxHeader } from "../../../shared/router/FileRouter";
+import { XlsxHeader } from "../../../shared/modules/file/file.interface";
 import { FieldTypeList } from "./types";
 import { FieldType } from "../../../shared/impl/field";
 

@@ -1,6 +1,6 @@
 import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
-import { FileRouter, FormFieldRouter, FormRouter, RecordRouter } from "../../api/instance";
+import { FileRouter, FieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
 import { toast } from "../../methods/notify";
 import CreateRecordModal from "./RecordCreator";
@@ -11,7 +11,7 @@ import FormList from "./FormList";
 import FormAddBtn from "./FormAddBtn";
 import { copytext } from "../../methods/text";
 import FormImport from "./FormImport";
-import { FieldCache, XlsxHeader } from "../../../shared/router/FileRouter";
+import { FieldCache, XlsxHeader } from "../../../shared/modules/file/file.interface";
 
 const Component = () => {
     const locale = Locale("FormPage");
@@ -49,7 +49,7 @@ const Component = () => {
 
     async function openRecordEditor(formname: string) {
         setFocusForm(formname);
-        const { success, data, message } = await FormFieldRouter.list({ form_name: formname, page: 1 });
+        const { success, data, message } = await FieldRouter.list({ form_name: formname, page: 1 });
         if (!success || !data) {
             return toast({ title: message, color: "danger" });
         }

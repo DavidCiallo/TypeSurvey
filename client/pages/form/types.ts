@@ -7,6 +7,6 @@ export const FieldTypeList: Array<{
     name: string;
     type: FieldType;
 }> = ["text", "email", "password", "checkbox", "select", "mulselect", "textarea", "number"].map((type) => ({
-    name: locale[type],
+    name: locale[type] || "",
     type: type as FieldType,
 }));

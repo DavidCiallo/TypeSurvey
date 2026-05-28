@@ -16,7 +16,8 @@
     "Menu": {
         "FormList": "Form List",
         "FieldManage": "Form Management",
-        "Feedback": "Data Feedback"
+        "Feedback": "Data Feedback",
+        "Logout": "Logout"
     },
 
     "AuthPage": {
@@ -90,6 +91,7 @@
         "TableBodyHadSetRadio": "Options Set",
         "TableBodyNoSetRadio": "Options Not Set",
         "TableBodyEmptyRadio": "No Options Available",
+        "TableBodyAddRadio": "Add Option",
         "TableBodyNoRemark": "No Remark",
         "TableBodyNoHint": "No Hint",
         "TableBodyUponSort": "Upon",
@@ -134,7 +136,9 @@
     "FillPage": {
         "ToastErrorSubmit": "Submission failed, possibly incorrect format",
         "ToastErrorParam": "Parameter error",
-        "FormSelectPlaceholder": "Please select"
+        "FormSelectPlaceholder": "Please select",
+        "ButtonNext": "Next",
+        "ButtonSubmit": "Save"
     },
     "CheckModal": {
         "Title": "Verification Code"
