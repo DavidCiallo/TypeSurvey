@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
-import { FormFieldRadioCreateRequest, FormFieldRadioUpdateRequest } from "../../../shared/router/RadioRouter";
+import { RadioCreateRequest, RadioUpdateRequest } from "../../../shared/modules/radio/radio.interface";
 import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
 
@@ -8,7 +8,7 @@ interface props {
     field_id: string | null;
     isOpen: boolean;
     onOpenChange: any;
-    onSubmit: (data: FormFieldRadioCreateRequest | FormFieldRadioUpdateRequest) => void;
+    onSubmit: (data: RadioCreateRequest | RadioUpdateRequest) => void;
 }
 
 const RadioEditorModal = ({ field_id, isOpen, onOpenChange, onSubmit }: props) => {

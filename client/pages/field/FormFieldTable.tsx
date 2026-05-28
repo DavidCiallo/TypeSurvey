@@ -1,9 +1,9 @@
+import { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
     Button,
     Checkbox,
     Input,
-    Select,
-    SelectItem,
     Table,
     TableBody,
     TableCell,
@@ -30,10 +30,8 @@ type props = {
 
 const Component = ({
     formFieldList,
-    isRadioEditorOpen,
     changeFocusField,
     changeRadioEditorOpen,
-    focusFormFieldId,
     updateField,
     updateRadio,
 }: props) => {
@@ -56,65 +54,148 @@ const Component = ({
         return updateField(field_id, "position", position);
     }
 
-    function TypeSelect(item: { field: FormFieldImpl }) {
-        const { field } = item;
+    function DropdownPopover({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
+        const [isOpen, setIsOpen] = useState(false);
+        const [isClosing, setIsClosing] = useState(false);
+        const [pos, setPos] = useState({ left: 0, top: 0, width: 0 });
+        const triggerRef = useRef<HTMLDivElement>(null);
+        const popoverRef = useRef<HTMLDivElement>(null);
+
+        const close = () => {
+            setIsClosing(true);
+            setTimeout(() => {
+                setIsClosing(false);
+                setIsOpen(false);
+            }, 100);
+        };
+
+        const toggle = () => {
+            if (isOpen) {
+                close();
+            } else {
+                if (triggerRef.current) {
+                    const rect = triggerRef.current.getBoundingClientRect();
+                    setPos({ left: rect.left, top: rect.bottom + 4, width: rect.width });
+                }
+                setIsOpen(true);
+            }
+        };
+
+        useEffect(() => {
+            if (!isOpen) return;
+            const handleClick = (e: MouseEvent) => {
+                const target = e.target as Node;
+                if (
+                    popoverRef.current && !popoverRef.current.contains(target) &&
+                    triggerRef.current && !triggerRef.current.contains(target)
+                ) {
+                    close();
+                }
+            };
+            document.addEventListener("click", handleClick, true);
+            return () => document.removeEventListener("click", handleClick, true);
+        }, [isOpen]);
+
+        const visible = isOpen || isClosing;
+
         return (
-            <Select
-                isDisabled={field.disabled}
-                variant="bordered"
-                aria-label="select"
-                className="w-36 mx-auto"
-                defaultSelectedKeys={[FieldTypeList.find(({ type }) => type === field.field_type)?.type || ""]}
-                onSelectionChange={async (key) => {
-                    if (!key.currentKey) return;
-                    updateField(field.id, "field_type", key.currentKey);
-                }}
-            >
-                {FieldTypeList.map(({ name, type }) => (
-                    <SelectItem key={type}>{name}</SelectItem>
-                ))}
-            </Select>
+            <>
+                <div ref={triggerRef} onClick={toggle} className="cursor-pointer">
+                    {trigger}
+                </div>
+                {visible && createPortal(
+                    <div
+                        ref={popoverRef}
+                        className="fixed z-[9999] py-1 rounded-xl border-2 border-default-200 bg-content1 shadow-lg"
+                        style={{
+                            left: pos.left,
+                            top: pos.top,
+                            width: pos.width,
+                            animation: isClosing ? "fadeOut 100ms ease-in forwards" : "fadeIn 150ms ease-out forwards",
+                        }}
+                    >
+                        {children}
+                    </div>,
+                    document.body
+                )}
+            </>
         );
     }
 
-    function RadioSelect(item: { field: FormFieldImpl }) {
-        const { field } = item;
-        const radios = field?.radios || [];
+    function TypeSelect({ field }: { field: FormFieldImpl }) {
+        const current = FieldTypeList.find(({ type }) => type === field.field_type);
+
         return (
-            <Select
-                isDisabled={field.disabled}
-                isOpen={!isRadioEditorOpen && field.id === focusFormFieldId}
-                onOpenChange={(i) => changeFocusField(i ? field.id : null)}
-                className="w-36 mx-auto"
-                variant="bordered"
-                aria-label="select"
-                selectionMode="multiple"
-                renderValue={(selectedKeys) => {
-                    if (selectedKeys.length === 0) {
-                        return null;
-                    }
-                    return `${locale.TableBodyHadSetRadio} ${selectedKeys.length} `;
-                }}
-                placeholder={locale.TableBodyNoSetRadio}
-                defaultSelectedKeys={radios.filter((radio) => radio.useful).map((radio) => radio.radio_name)}
-                listboxProps={{
-                    emptyContent: <div className="text-center">{locale.TableBodyEmptyRadio}</div>,
-                    bottomContent: <AddRadioComp />,
-                }}
-            >
-                {radios.map(({ id: radio_id, radio_name, useful }) => (
-                    <SelectItem key={radio_name} onClick={() => updateRadio(radio_id, "useful", !useful)}>
-                        {radio_name}
-                    </SelectItem>
+            <DropdownPopover trigger={
+                <div className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center
+                    transition-colors duration-150
+                    ${field.disabled ? "opacity-50" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
+                    <span className="flex-1 truncate">{current?.name || ""}</span>
+                    <svg className="text-default-400 flex-shrink-0 ml-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+            }>
+                {FieldTypeList.map(({ name, type }) => (
+                    <div
+                        key={type}
+                        className={`px-3 py-2 text-sm cursor-pointer transition-colors duration-75 whitespace-nowrap
+                            ${type === field.field_type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-default-100"}`}
+                        onClick={() => updateField(field.id, "field_type", type)}
+                    >
+                        {name}
+                    </div>
                 ))}
-            </Select>
+            </DropdownPopover>
         );
     }
-    function AddRadioComp() {
+
+    function RadioSelect({ field }: { field: FormFieldImpl }) {
+        const radios = field?.radios || [];
+        const selectedCount = radios.filter((r) => r.useful).length;
+
         return (
-            <div className="text-center cursor-pointer" onClick={() => changeRadioEditorOpen(true)}>
-                +
-            </div>
+            <DropdownPopover trigger={
+                <div className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center
+                    transition-colors duration-150
+                    ${field.disabled ? "opacity-50" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
+                    <span className="flex-1 truncate">
+                        {selectedCount > 0 ? `${locale.TableBodyHadSetRadio} ${selectedCount}` : locale.TableBodyNoSetRadio}
+                    </span>
+                    <svg className="text-default-400 flex-shrink-0 ml-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+            }>
+                <div className="max-h-48 overflow-y-auto">
+                    {radios.length === 0
+                        ? <div className="px-3 py-2 text-sm text-default-400 text-center">{locale.TableBodyEmptyRadio}</div>
+                        : radios.map((radio) => (
+                            <div
+                                key={radio.radio_name}
+                                className="px-3 py-2 text-sm cursor-pointer transition-colors duration-75 flex items-center gap-2 hover:bg-default-100"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateRadio(radio.id, "useful", !radio.useful);
+                                }}
+                            >
+                                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors
+                                    ${radio.useful ? "bg-primary border-primary" : "border-default-300"}`}>
+                                    {radio.useful && (
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6 9 17l-5-5"/></svg>
+                                    )}
+                                </span>
+                                <span className="truncate">{radio.radio_name}</span>
+                            </div>
+                        ))
+                    }
+                </div>
+                <div
+                    className="px-3 py-2 text-sm text-primary cursor-pointer hover:bg-default-100 border-t border-default-200 text-center"
+                    onClick={() => {
+                        changeFocusField(field.id);
+                        changeRadioEditorOpen(true);
+                    }}
+                >
+                    {locale.TableBodyAddRadio}
+                </div>
+            </DropdownPopover>
         );
     }
     const TableHeaders = (
@@ -142,10 +223,10 @@ const Component = ({
                                 onValueChange={(field_name) => updateField(field.id, "field_name", field_name)}
                             />
                         </TableCell>
-                        <TableCell align="center" className="w-28">
+                        <TableCell align="center" className="min-w-36">
                             <TypeSelect field={field} />
                         </TableCell>
-                        <TableCell align="center">
+                        <TableCell align="center" className="min-w-44">
                             <RadioSelect field={field} />
                         </TableCell>
                         <TableCell align="center" className="w-12">
@@ -155,7 +236,7 @@ const Component = ({
                                 onValueChange={(required) => updateField(field.id, "required", required)}
                             />
                         </TableCell>
-                        <TableCell align="center" className="w-1/5">
+                        <TableCell align="center" className="min-w-36">
                             <Input
                                 isDisabled={field.disabled}
                                 placeholder={locale.TableBodyNoRemark}
@@ -164,7 +245,7 @@ const Component = ({
                                 onValueChange={(comment) => updateField(field.id, "comment", comment)}
                             />
                         </TableCell>
-                        <TableCell align="center" className="w-1/5">
+                        <TableCell align="center" className="min-w-36">
                             <Input
                                 isDisabled={field.disabled}
                                 placeholder={locale.TableBodyNoHint}
@@ -210,8 +291,8 @@ const Component = ({
         </TableBody>
     );
     return (
-        <div className="w-full flex flex-row flex-wrap px-[5vw] py-2 justify-between">
-            <Table className="w-full" aria-label="table">
+        <div className="w-full px-[5vw] py-2 overflow-x-auto">
+            <Table className="min-w-[900px]" aria-label="table">
                 {TableHeaders}
                 {TableBodyContent}
             </Table>

@@ -1,18 +1,21 @@
 import { Header } from "../../components/header/Header";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormFieldImpl } from "../../../shared/impl";
-import { FormRouter, FormFieldRouter, FormFieldRadioRouter } from "../../api/instance";
+import { FormRouter, FieldRouter, RadioRouter } from "../../api/instance";
 import FieldEditor from "./FormFieldEditor";
 import RadioEditor from "./FormFieldRadioEditor";
 import { toast } from "../../methods/notify";
 import FormFieldTable from "./FormFieldTable";
 import { Locale } from "../../methods/locale";
-import { FormFieldCreateRequest, FormFieldUpdateRequest } from "../../../shared/router/FieldRouter";
-import { FormFieldRadioCreateRequest, FormFieldRadioUpdateRequest } from "../../../shared/router/RadioRouter";
+import { FieldCreateRequest, FieldUpdateRequest } from "../../../shared/modules/field/field.interface";
+import { RadioCreateRequest, RadioUpdateRequest } from "../../../shared/modules/radio/radio.interface";
 import FormFieldHeader from "./FormFieldHeader";
+
+const DEBOUNCE_KEYS = ["field_name", "comment", "placeholder"];
 
 const Component = () => {
     const locale = Locale("FormFieldPage");
+    const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
     const [formName, setFormName] = useState<string>("");
     const [formList, setFormList] = useState<string[]>([]);
@@ -27,14 +30,14 @@ const Component = () => {
     async function loadFormFields(form_name: string, page: number = 1) {
         if (formName !== form_name) {
             setFormName(form_name);
-            const { success, data, message } = await FormFieldRouter.list({ form_name, page });
+            const { success, data, message } = await FieldRouter.list({ form_name, page });
             if (!success || !data) {
                 return toast({ title: message, color: "danger" });
             }
             const { list, total } = data;
             renderFormField(list, total);
         } else {
-            const { success, data, message } = await FormFieldRouter.list({ form_name, page });
+            const { success, data, message } = await FieldRouter.list({ form_name, page });
             if (!success || !data) {
                 return toast({ title: message, color: "danger" });
             }
@@ -44,14 +47,14 @@ const Component = () => {
         setPage(page);
     }
 
-    async function saveField(field: FormFieldCreateRequest | FormFieldUpdateRequest) {
+    async function saveField(field: FieldCreateRequest | FieldUpdateRequest) {
         if (!("form_name" in field)) {
             return;
         }
         const form_name = field.form_name;
         const field_name = field.field_name!;
         const field_type = field.field_type!;
-        const { success } = await FormFieldRouter.create({ form_name, field_name, field_type });
+        const { success } = await FieldRouter.create({ form_name, field_name, field_type });
         if (success) {
             setFieldEditorOpen(false);
             loadFormFields(form_name, page);
@@ -60,11 +63,11 @@ const Component = () => {
         }
     }
 
-    async function saveRadio(radio: FormFieldRadioCreateRequest | FormFieldRadioUpdateRequest) {
+    async function saveRadio(radio: RadioCreateRequest | RadioUpdateRequest) {
         if (!("radio_name" in radio) || !focusFormField) {
             return;
         }
-        const { success } = await FormFieldRadioRouter.create({
+        const { success } = await RadioRouter.create({
             field_id: focusFormField.id,
             radio_name: radio.radio_name!,
         });
@@ -77,13 +80,31 @@ const Component = () => {
     }
 
     async function updateField(field_id: string, key: string, value: string | number | boolean) {
-        await FormFieldRouter.update({ field_id, [key]: value });
-        await loadFormFields(formName, page);
+        if (DEBOUNCE_KEYS.includes(key)) {
+            const timerKey = `field_${field_id}_${key}`;
+            if (timers.current[timerKey]) clearTimeout(timers.current[timerKey]);
+            timers.current[timerKey] = setTimeout(async () => {
+                await FieldRouter.update({ field_id, [key]: value });
+                await loadFormFields(formName, page);
+            }, 600);
+        } else {
+            await FieldRouter.update({ field_id, [key]: value });
+            await loadFormFields(formName, page);
+        }
     }
 
     async function updateRadio(radio_id: string, key: string, value: string | number | boolean) {
-        await FormFieldRadioRouter.update({ radio_id, [key]: value });
-        await loadFormFields(formName, page);
+        if (DEBOUNCE_KEYS.includes(key)) {
+            const timerKey = `radio_${radio_id}_${key}`;
+            if (timers.current[timerKey]) clearTimeout(timers.current[timerKey]);
+            timers.current[timerKey] = setTimeout(async () => {
+                await RadioRouter.update({ radio_id, [key]: value });
+                await loadFormFields(formName, page);
+            }, 600);
+        } else {
+            await RadioRouter.update({ radio_id, [key]: value });
+            await loadFormFields(formName, page);
+        }
     }
 
     function renderFormField(list: FormFieldImpl[], total: number) {
