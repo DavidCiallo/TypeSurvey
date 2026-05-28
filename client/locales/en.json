@@ -1,0 +1,150 @@
+{
+    "Common": {
+        "ButtonAdd": "Add",
+        "ButtonSave": "Save",
+        "ButtonConfirm": "Confirm",
+        "ButtonCancel": "Cancel",
+        "ButtonClose": "Close",
+        "ToastSuccess": "Operation successful",
+        "ToastFailed": "Operation failed",
+        "ToastNetworkError": "Network error, please try again later",
+        "ToastUnauthorized": "Authentication failed, please log in again",
+        "ToastParamError": "Parameter error, please check input",
+        "DefaultSelectPlaceholder": "Please enter"
+    },
+
+    "Menu": {
+        "FormList": "Form List",
+        "FieldManage": "Form Management",
+        "Feedback": "Data Feedback"
+    },
+
+    "AuthPage": {
+        "Title": "TypeForm",
+        "LoginSuccess": "Login successful",
+        "LoginFailed": "Login failed",
+        "EmailLabel": "Email",
+        "EmailPlaceholder": "Please enter account",
+        "EmailError": "This format might be a bit odd",
+        "PasswordLabel": "Password",
+        "PasswordPlaceholder": "Please enter password",
+        "PasswordError": "This is obviously required",
+        "ForgetPasswordLinkText": "Forgot Password?",
+        "ForgetPasswordErrorText": "Please contact the administrator 🙁",
+        "SubmitButtonText": "Login"
+    },
+    "FieldType": {
+        "text": "Text",
+        "email": "Email",
+        "password": "Password",
+        "checkbox": "Checkbox",
+        "select": "Single Option",
+        "mulselect": "Multiple Option",
+        "textarea": "Multiline Text"
+    },
+    "FormPage": {
+        "Title": "Form List",
+        "CreateNewForm": "Create New Form",
+        "TitleCreate": "Create Form",
+        "TitleEdit": "Edit Form",
+        "RecordNumLabel": "Record Count",
+        "EmptyNumLabel": "No Records Yet",
+        "ViewRecordsButton": "View",
+        "RenameButton": "Rename",
+        "CreateRecordButton": "Generate Link",
+        "FormNameLabel": "Form Name",
+        "FormNamePlaceholder": "Please enter form name",
+        "ToastCopySuccess": "Link copied successfully",
+        "ToastFormListEmpty": "Form error, may not exist or is empty",
+        "ToastCreateFormFailed": "Failed to create form, a form with the same name may exist",
+        "ToastEditFormFailed": "Failed to modify form, a form with the same name may exist"
+    },
+    "FormEditor": {
+        "FormNameLabel": "Form Name",
+        "FormNamePlaceholder": "Please enter form name"
+    },
+    "CreateRecordEditor": {
+        "Title": "Fill Form",
+        "CopyLinkButton": "Copy Link",
+        "CreateCopyLinkButton": "Create and Copy Link",
+        "CommonPlaceholder": "No further action required",
+        "FieldPlaceholder": "Please select field",
+        "ValuePlaceholder": "Preset Value",
+        "NullSelectedType": "Please select form type",
+        "CommonType": "Normal Form",
+        "CollectType": "Named Form"
+    },
+    "FormFieldPage": {
+        "Title": "Form Management",
+        "FieldDetail": "Field Details",
+        "CreateNewForm": "Create New Form",
+        "CreateNewField": "Add Field",
+        "TableHeaderFieldNameColumn": "Field Name",
+        "TableHeaderFieldTypeColumn": "Field Type",
+        "TableHeaderOptionsColumn": "Selectable Options",
+        "TableHeaderRemarkColumn": "Remark",
+        "TableHeaderHintColumn": "Hint",
+        "TableHeaderActionsColumn": "Actions",
+        "TableBodyEditAction": "Edit",
+        "TableBodyDeleteAction": "Delete",
+        "TableBodyHadSetRadio": "Options Set",
+        "TableBodyNoSetRadio": "Options Not Set",
+        "TableBodyEmptyRadio": "No Options Available",
+        "TableBodyNoRemark": "No Remark",
+        "TableBodyNoHint": "No Hint",
+        "TableBodyUponSort": "Upon",
+        "TableBodyDownSort": "Down",
+        "CreateFormFailed": "Failed to create form, a form with the same name may exist",
+        "CreateFieldFailed": "Failed to create field, a field with the same name may exist",
+        "CreateRadioFailed": "Failed to create option, an option with the same name may exist"
+    },
+    "FormFieldRadioEditor": {
+        "Title": "Add Selectable Option",
+        "FormNameLabel": "Form Name",
+        "FormNamePlaceholder": "Please select form name",
+        "FieldNameLabel": "Field Name",
+        "FieldNamePlaceholder": "Please enter field name",
+        "FieldTypeLabel": "Field Type",
+        "FieldTypePlaceholder": "Please select field type",
+        "CreateRadioFailed": "Failed to create selectable option"
+    },
+    "FormFieldContent": {
+        "FieldDetail": "Field Details"
+    },
+    "FormFieldEditor": {
+        "Title": "Field Edit",
+        "FormNameLabel": "Form Name",
+        "FormNamePlaceholder": "Please select form name",
+        "FieldNameLabel": "Field Name",
+        "FieldNamePlaceholder": "Please enter field name",
+        "FieldTypeLabel": "Field Type",
+        "FieldTypePlaceholder": "Please select field type"
+    },
+    "RecordPage": {
+        "Title": "Data Feedback",
+        "ReloadButton": "Refresh",
+        "ListFieldValueColumn": "Field Value",
+        "ListUpdateTimeColumn": "Update Time",
+        "ListActionColumn": "Action",
+        "ListViewRecordButton": "View",
+        "RecordFieldColumn": "Field",
+        "RecordValueColumn": "Content",
+        "EmptyRecordSelect": "Please select user"
+    },
+    "FillPage": {
+        "ToastErrorSubmit": "Submission failed, possibly incorrect format",
+        "ToastErrorParam": "Parameter error",
+        "FormSelectPlaceholder": "Please select"
+    },
+    "CheckModal": {
+        "Title": "Verification Code"
+    },
+    "HomePage": {
+        "MainText1": "This is a ",
+        "MainText2": "quite useful ",
+        "MainText3": "tool about building forms ",
+        "Slogan1": "Compact, elegant, and fast.",
+        "Slogan2": "No complex code or editing, just faster way to start data business.",
+        "ViewSource": "View Source Code"
+    }
+}

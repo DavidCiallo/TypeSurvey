@@ -1,0 +1,169 @@
+<html lang="fr-fr" dir="ltr">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+        <title>TLScontact</title>
+    </head>
+
+    <body>
+        <div data-nosnippet="" class="osano-cm-window" dir="ltr"></div>
+        <noscript>
+            <strong
+                >We're sorry but 'TLScitizen' doesn't work properly without JavaScript enabled. Please enable it to
+                continue.</strong
+            >
+        </noscript>
+        <div id="app" data-v-app="">
+            <main id="main" class="flex min-h-screen flex-1 flex-col items-stretch pt-12 md:pt-18" tabindex="-1">
+                <nav class="fixed top-0 z-10 flex h-12 w-full items-center bg-white px-2 md:h-18 lg:pl-8 print:hidden">
+                    <a href="/travel-groups" class=""></a>
+                    <div
+                        class="h-5 w-5 rounded-full bg-gray-100 bg-cover bg-center bg-no-repeat lg:h-6 lg:w-6"
+                        style="
+                            background-image: url(&quot;https://cache-cms.directuscloud.tlscontact.com/assets/ca841c4b-168c-405d-88b0-e05c2bc4a7eb&quot;);
+                        "
+                    ></div>
+                </nav>
+                <!---->
+                <div class="relative bg-primary-500 p-10 px-6 py-8 print:hidden"></div>
+            </main>
+        </div>
+
+        <div data-v-app="">
+            <div class="toast fixed end-2 top-6 z-50 flex flex-col items-end sm:end-7">
+                <ul>
+                    <li class="hidden"></li>
+                </ul>
+            </div>
+        </div>
+        <iframe name="__uspapiLocator" style="display: none"></iframe>
+        <script type="text/javascript">
+            var _paq = _paq || [];
+            _paq.push(["setCustomDimensionValue", 2, "en-us"]);
+        </script>
+        <script type="text/javascript">
+            var _paq = _paq || [];
+            _paq.push(["setTrackingSource", "jstc_tm"]);
+            _paq.push(["enableLinkTracking"]);
+            _paq.push(["setIpTracking", true]);
+            _paq.push(["setDomains", ["fr.tlscontact.com/", "visas-fr.tlscontact.com/", "visa-fr.tlscontact.com/"]]);
+            var userId = undefined;
+            if (typeof userId === "string" || typeof userId === "number") {
+                _paq.push(["setUserId", String(userId)]);
+            }
+            _paq.push(["trackPageView"]);
+            _paq.push(["trackAllContentImpressions"]);
+            _paq.push(["enableJSErrorTracking"]);
+        </script>
+        <script>
+            (function (a, n, r) {
+                function o(e) {
+                    var t;
+                    !(function (e) {
+                        try {
+                            e.contentWindow.location.href;
+                        } catch (e) {
+                            return 1;
+                        }
+                    })(e)
+                        ? setTimeout(function () {
+                              o(e);
+                          }, 500)
+                        : ((t = new YT.Player(e, { events: { onStateChange: c } })),
+                          e.setAttribute("data-listener-attached", !0),
+                          (t.lastAction = "i"));
+                }
+                function i(e) {
+                    return "function" == typeof e.getCurrentTime ? e.getCurrentTime() : e.playerInfo.currentTime;
+                }
+                function s(e, t) {
+                    ((n._paq = n._paq || []),
+                        n._paq.push([
+                            "trackEvent",
+                            "Video - YouTube",
+                            t,
+                            ("function" == typeof (t = e).getVideoData ? t.getVideoData() : t.playerInfo.videoData)
+                                .title,
+                            i(e).toFixed(),
+                        ]));
+                }
+                function c(e) {
+                    var t = e.target;
+                    (e.data === YT.PlayerState.PLAYING && setTimeout(u, 1e3, t),
+                        e.data === YT.PlayerState.PLAYING &&
+                            (-1 < ["i", "p"].indexOf(t.lastAction) && s(t, "i" === t.lastAction ? "Play" : "Resume"),
+                            (t.lastAction = "")),
+                        e.data === YT.PlayerState.PAUSED && (s(t, "Pause"), (t.lastAction = "p")),
+                        e.data === YT.PlayerState.ENDED && (s(t, "Watched"), (t.lastAction = "i")));
+                }
+                function u(e) {
+                    var t, a, n, o;
+                    ("function" == typeof (t = e).getPlayerState ? t.getPlayerState() : t.playerInfo.playerState) ===
+                        YT.PlayerState.PLAYING &&
+                        r.trackThresholds &&
+                        ((t = r.thresholdsToTrack),
+                        (o = e),
+                        (o = Math.round(
+                            (i(o) /
+                                ("function" == typeof (o = o).getDuration ? o.getDuration() : o.playerInfo.duration)) *
+                                100,
+                        )),
+                        (n = o),
+                        (o = t),
+                        ((a = e).passedThresholds = a.passedThresholds || []),
+                        o.forEach(function (e) {
+                            !a.passedThresholds.includes(e) &&
+                                e < n &&
+                                (a.passedThresholds.push(e), s(a, "Progress - " + e + "%"));
+                        }),
+                        setTimeout(u, 1e3, e));
+                }
+                function e() {
+                    a.querySelectorAll("iframe").forEach(function (e) {
+                        var t, a;
+                        /youtube.*\/embed/.test(e.src) &&
+                            !e.getAttribute("data-listener-attached") &&
+                            (-1 === (a = (t = e).src).indexOf("enablejsapi=") &&
+                                (a += (-1 === a.indexOf("?") ? "?" : "&") + "enablejsapi=1"),
+                            -1 === a.indexOf("origin=") &&
+                                (a +=
+                                    (-1 === a.indexOf("?") ? "?" : "&") +
+                                    "origin=" +
+                                    encodeURIComponent(location.origin)),
+                            (t.src = a),
+                            o(e));
+                    });
+                }
+                function t(e) {
+                    var t;
+                    n.MutationObserver &&
+                        ((t = a.getElementsByTagName("body")[0]),
+                        new MutationObserver(e).observe(t, { childList: !0, attributes: !1, subtree: !0 }));
+                }
+                var d, l, f;
+                Boolean(n.YT)
+                    ? (e(), t(e))
+                    : ((d = n.onYouTubeIframeAPIReady),
+                      (n.onYouTubeIframeAPIReady = function () {
+                          ("function" == typeof d && d(), e(), t(e));
+                      }),
+                      (l = a.createElement("script")),
+                      (f = a.getElementsByTagName("script")[0]),
+                      (l.src = "//www.youtube.com/iframe_api"),
+                      (l.async = !0),
+                      f.parentNode.insertBefore(l, f));
+            })(document, window, {
+                trackThresholds: 1,
+                thresholdsToTrack: [25, 50, 75, 100],
+            });
+        </script>
+        <!----><!----><!---->
+        <script type="text/javascript">
+            var _paq = _paq || [];
+            _paq.push(["setCustomUrl", ""]);
+            _paq.push(["setDocumentTitle", String("TLScontact")]);
+            _paq.push(["trackPageView"]);
+        </script>
+    </body>
+</html>
