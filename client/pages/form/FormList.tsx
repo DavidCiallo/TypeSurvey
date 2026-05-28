@@ -1,6 +1,5 @@
 import { Accordion, AccordionItem } from "@heroui/react";
 import { Locale } from "../../methods/locale";
-import { formatDate } from "../../methods/date";
 import { useNavigate } from "react-router-dom";
 import { EmptyComp } from "../../components/empty/Empty";
 
@@ -27,7 +26,7 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                     const subtitle = (
                         <div className="flex flex-row gap-3">
                             <div>{locale.RecordNumLabel + " " + records_num}</div>
-                            {!!last_submit && <div>{formatDate(last_submit, "MMDDHHmm", "-")}</div>}
+                            {!!last_submit && <div>{new Date(last_submit).toLocaleString().slice(5, 16)}</div>}
                             {!last_submit && <div>{locale.EmptyNumLabel}</div>}
                         </div>
                     );

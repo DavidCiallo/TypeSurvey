@@ -11,7 +11,7 @@ export async function createRadio(
     if (exist) {
         return null;
     }
-    const result = await RadioRepository.insert({ radio_name, field_id, useful: radio.useful ?? true } as any);
+    const result = await RadioRepository.insert({ radio_name, field_id, useful: true } as any);
     return result?.id || null;
 }
 

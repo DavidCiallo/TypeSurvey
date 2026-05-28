@@ -9,7 +9,6 @@ import { getAllRecord, getRecords, submitRecord } from "./record.service";
 import { codeGenerate } from "../../methods/crypto";
 
 async function history(request: RecordHistoryRequest) {
-    request = RecordHistoryRequest.self(request);
     const { id, code } = request;
     const records = await getRecords(id);
     if (records.length) {
@@ -29,7 +28,6 @@ async function history(request: RecordHistoryRequest) {
 }
 
 async function submit(request: RecordSubmitRequest) {
-    request = RecordSubmitRequest.self(request);
     const { item_id, field_id, field_value } = request;
     if (String(field_value)?.length > 0x3e8) throw "内容过长";
     await submitRecord({ item_id, field_id, field_value });
@@ -37,9 +35,9 @@ async function submit(request: RecordSubmitRequest) {
 }
 
 async function all(request: RecordAllRequest) {
-    request = RecordAllRequest.self(request);
-    const { form_name, page, search } = request;
-    const user = getIdentifyByVerify(request.auth);
+    const { form_name, page, search, auth } = request;
+    if (!form_name || !page || page < 1 || !auth) throw "参数错误";
+    const user = getIdentifyByVerify(auth);
     if (!user) throw "Unauthorized";
     const records = await getAllRecord(form_name);
     const group: Array<{

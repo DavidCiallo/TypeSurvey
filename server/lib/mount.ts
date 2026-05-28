@@ -109,19 +109,10 @@ export async function mountstatic(staticPath: string, pathName: string) {
         return new Response("Forbidden", { status: 403 });
     }
 
-    if (pathName.includes("..")) {
-        return new Response("Forbidden", { status: 403 });
-    }
-
     let filePath = path.join(staticPath, pathName);
     if (pathName === "/") {
         filePath = path.join(staticPath, "index.html");
     }
-
-    if (!filePath.startsWith(staticPath)) {
-        return new Response("Forbidden", { status: 403 });
-    }
-
     if (!validStaticFiles.has(filePath)) {
         // @ts-ignore
         const file = Bun.file(filePath);
