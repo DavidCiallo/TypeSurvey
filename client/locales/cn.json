@@ -16,7 +16,8 @@
     "Menu": {
         "FormList": "表单列表",
         "FieldManage": "表单管理",
-        "Feedback": "数据反馈"
+        "Feedback": "数据反馈",
+        "Logout": "退出登录"
     },
 
     "AuthPage": {
@@ -105,6 +106,7 @@
         "TableBodyHadSetRadio": "已设置项数",
         "TableBodyNoSetRadio": "未设置选项",
         "TableBodyEmptyRadio": "无选项可用",
+        "TableBodyAddRadio": "新建选项",
         "TableBodyNoRemark": "无备注",
         "TableBodyNoHint": "无提示",
         "TableBodyUponSort": "上升",
@@ -152,7 +154,9 @@
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
         "ToastErrorParam": "参数错误",
-        "FormSelectPlaceholder": "请选择"
+        "FormSelectPlaceholder": "请选择",
+        "ButtonNext": "继续",
+        "ButtonSubmit": "保存"
     },
     "CheckModal": {
         "Title": "验证码"

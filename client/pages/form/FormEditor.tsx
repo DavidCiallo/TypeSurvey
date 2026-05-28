@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
-import { FormCreateRequest, FormUpdateRequest } from "../../../shared/router/FormRouter";
+import { FormCreateRequest, FormUpdateRequest } from "../../../shared/modules/form/form.interface";
 import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
 
