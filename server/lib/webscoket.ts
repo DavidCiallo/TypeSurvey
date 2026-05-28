@@ -1,4 +1,4 @@
-import { WebSocket } from "ws";
+type WebSocket = any;
 
 export class WebSocketServerService {
     private static instance: WebSocketServerService;
@@ -41,7 +41,7 @@ export class WebSocketServerService {
         if (client) client.connect_time = Date.now();
     }
 
-    public listenEvent(id: string, event: string, handler: Function, payload: string) {
+    public listenEvent(id: string, event: string, _handler: Function, payload: string) {
         if (this.listeners.find(listener => listener.id === id && listener.event === event)) {
             return;
         }

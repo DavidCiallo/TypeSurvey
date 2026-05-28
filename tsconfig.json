@@ -2,6 +2,7 @@
   "compilerOptions": {
     "lib": [
       "DOM",
+      "DOM.Iterable",
       "ES2021"
     ],
     "jsx": "react-jsx",
@@ -23,6 +24,7 @@
   },
   "include": [
     "shared",
-    "client"
+    "client",
+    "server"
   ]
 }

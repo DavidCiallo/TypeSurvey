@@ -1,4 +1,7 @@
 import crypto from "crypto";
+import { config } from "dotenv";
+
+config();
 
 const secret = process.env.SECRET || Date.now().toString(36);
 const noncelen = Number(process.env.NONCE_LENGTH) || 4;

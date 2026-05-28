@@ -1,6 +1,6 @@
-import { FormFieldEntity } from "../types/FormField";
-import { FormFieldRadioEntity } from "../types/FormFieldRadio";
-import { RecordEntity } from "../types/Record";
+import { FormFieldEntity } from "../modules/form/form.entity";
+import { FormFieldRadioEntity } from "../modules/radio/radio.entity";
+import { RecordEntity } from "../modules/record/record.entity";
 import { FieldType } from "./field";
 
 export class FormFieldImpl implements Omit<FormFieldEntity, "create_time" | "update_time" | "delete_time"> {
@@ -17,6 +17,7 @@ export class FormFieldImpl implements Omit<FormFieldEntity, "create_time" | "upd
 
     constructor(field: FormFieldEntity, radios?: FormFieldRadioImpl[]) {
         this.id = field.id;
+        this.form_name = field.form_name;
         this.field_name = field.field_name;
         this.field_type = field.field_type;
         if (field.field_type === "select" || field.field_type === "mulselect" || field.field_type === "checkbox") {
