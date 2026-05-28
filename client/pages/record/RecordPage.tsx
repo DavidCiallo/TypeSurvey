@@ -19,6 +19,7 @@ import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { copytext } from "../../methods/text";
+import { formatDate } from "../../methods/date";
 import SearchIcon from "../../images/svg/Search";
 
 const Component = () => {
@@ -163,7 +164,7 @@ const Component = () => {
                                     const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
                                     const record = i.data[index] || null;
                                     const raw = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
-                                    const time = `${String(raw.getMonth() + 1).padStart(2, "0")}-${String(raw.getDate()).padStart(2, "0")} ${String(raw.getHours()).padStart(2, "0")}:${String(raw.getMinutes()).padStart(2, "0")}`;
+                                    const time = formatDate(raw, "MMDDHHmm", "-");
                                     return (
                                         <TableRow>
                                             <TableCell className="min-w-24" align="center">
