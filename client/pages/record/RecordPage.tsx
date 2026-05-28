@@ -14,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from "@heroui/react";
-import { FormFieldRouter, RecordRouter } from "../../api/instance";
+import { FieldRouter, RecordRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
@@ -53,7 +53,7 @@ const Component = () => {
     async function loadFieldPage(page: number = 1) {
         const form_name = localStorage.getItem("formname") || "";
 
-        const { success, data, message } = await FormFieldRouter.list({ form_name, page });
+        const { success, data, message } = await FieldRouter.list({ form_name, page });
         if (!success || !data) {
             toast({ title: message, color: "danger" });
             return;
@@ -66,8 +66,12 @@ const Component = () => {
         setFieldList([...fieldList]);
         setFieldTotal(Math.ceil(total / 10));
         if (!fieldChoose || !fieldList.some((f) => f.id === fieldChoose.id)) {
-            const usefulField = fieldList.find((i) => !i.disabled);
-            setFieldChoose(usefulField || null);
+            const priorityKeys = ["姓名", "名字", "Name", "FullName", "FirstName"];
+            const enabledFields = fieldList.filter((i) => !i.disabled);
+            const priorityField = enabledFields.find((f) =>
+                priorityKeys.some((k) => f.field_name.toLowerCase().includes(k.toLowerCase()))
+            );
+            setFieldChoose(priorityField || enabledFields[0] || null);
         }
         if (list.length > 0 && fieldList.length < total) {
             loadFieldPage(page + 1);
@@ -82,13 +86,14 @@ const Component = () => {
     return (
         <div className="max-w-screen">
             <Header name={locale.Title} />
-            <div className="w-full flex flex-col flex-wrap px-[5vw] pt-6">
-                <div className="flex flex-row justify-between items-center w-full py-2">
-                    <div className="w-full flex flex-row">
+            <div className="w-full flex flex-col px-[5vw] pt-6">
+                <div className="flex flex-row justify-between items-center w-full py-2 gap-2">
+                    <div className="flex flex-row flex-1 min-w-0 gap-1">
                         <Select
                             aria-label="select"
-                            className="w-1/6"
+                            className="min-w-[120px] max-w-[200px]"
                             variant="bordered"
+                            size="sm"
                             selectedKeys={[fieldChoose?.id || ""]}
                             onSelectionChange={(key) => setFieldChoose(fieldList.find((f) => f.id === key.currentKey)!)}
                         >
@@ -99,8 +104,9 @@ const Component = () => {
                                 })}
                         </Select>
                         <Input
-                            className="w-1/8 mx-1"
+                            className="min-w-[120px] flex-1"
                             variant="bordered"
+                            size="sm"
                             value={search}
                             onValueChange={setSearch}
                             endContent={
@@ -118,26 +124,28 @@ const Component = () => {
                         />
                     </div>
 
-                    <div className="flex flex-row">
+                    <div className="flex-shrink-0">
                         <Button
                             color="default"
                             variant="bordered"
-                            className="text-black-500"
+                            size="sm"
                             onClick={() => loadUserPage(userpage)}
                         >
                             {locale.ReloadButton}
                         </Button>
                     </div>
                 </div>
-                <div className="mt-2 flex flex-row justify-between items-start gap-4">
-                    <Card className="min-w-[450px] w-1/3 h-[70vh]">
+                <div className="mt-2 flex flex-col lg:flex-row justify-between items-start gap-4">
+                    <Card className="w-full lg:w-1/3 h-auto lg:h-[70vh] overflow-auto">
                         <Table
                             isStriped
                             aria-label="table"
+                            removeWrapper
                             bottomContent={
-                                <div className="flex items-center">
+                                <div className="flex items-center py-1">
                                     <Pagination
                                         className="mx-auto"
+                                        size="sm"
                                         initialPage={1}
                                         total={usertotal}
                                         onChange={loadUserPage}
@@ -154,35 +162,38 @@ const Component = () => {
                                 {recordList.map((i) => {
                                     const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
                                     const record = i.data[index] || null;
-                                    const time = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
+                                    const raw = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
+                                    const time = `${String(raw.getMonth() + 1).padStart(2, "0")}-${String(raw.getDate()).padStart(2, "0")} ${String(raw.getHours()).padStart(2, "0")}:${String(raw.getMinutes()).padStart(2, "0")}`;
                                     return (
                                         <TableRow>
-                                            <TableCell className="min-w-32" align="center">
+                                            <TableCell className="min-w-24" align="center">
                                                 {record?.field_value}
                                             </TableCell>
-                                            <TableCell align="center" className="min-w-28 max-w-28">
-                                                {time.toLocaleString().slice(5, 16)}
+                                            <TableCell align="center" className="min-w-24">
+                                                {time}
                                             </TableCell>
-                                            <TableCell align="center" className="flex flex-row justify-center gap-1">
-                                                <Button
-                                                    variant="bordered"
-                                                    size="sm"
-                                                    onClick={() => setItemChoose(i.item_id)}
-                                                    color={i.item_id === itemChoose ? "primary" : "default"}
-                                                >
-                                                    {locale.ListViewRecordButton}
-                                                </Button>
-                                                <Button
-                                                    variant="bordered"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        copytext(`${baseurl + i.item_id}#code:${i.code}`);
-                                                        toast({ title: locale.ToastCopySuccess, color: "success" });
-                                                    }}
-                                                    color="danger"
-                                                >
-                                                    {locale.ListItemLinkButton}
-                                                </Button>
+                                            <TableCell align="center">
+                                                <div className="flex flex-row justify-center gap-1 flex-wrap">
+                                                    <Button
+                                                        variant="bordered"
+                                                        size="sm"
+                                                        onClick={() => setItemChoose(i.item_id)}
+                                                        color={i.item_id === itemChoose ? "primary" : "default"}
+                                                    >
+                                                        {locale.ListViewRecordButton}
+                                                    </Button>
+                                                    <Button
+                                                        variant="bordered"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            copytext(`${baseurl + i.item_id}#code:${i.code}`);
+                                                            toast({ title: locale.ToastCopySuccess, color: "success" });
+                                                        }}
+                                                        color="danger"
+                                                    >
+                                                        {locale.ListItemLinkButton}
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -191,14 +202,14 @@ const Component = () => {
                         </Table>
                     </Card>
 
-                    <Card className="w-2/3 h-[70vh]">
-                        <Table isStriped aria-label="table" className="h-full">
+                    <Card className="w-full lg:w-2/3 h-auto lg:h-[70vh] overflow-auto">
+                        <Table isStriped aria-label="table" removeWrapper>
                             <TableHeader>
                                 <TableColumn align="center">{locale.RecordFieldColumn}</TableColumn>
                                 <TableColumn align="center">{locale.RecordValueColumn}</TableColumn>
                                 <TableColumn align="center">{locale.RecordActionColumn}</TableColumn>
                             </TableHeader>
-                            <TableBody className="h-full" emptyContent={<div>{locale.EmptyRecordSelect}</div>}>
+                            <TableBody emptyContent={<div>{locale.EmptyRecordSelect}</div>}>
                                 {fieldList
                                     .filter(() => itemChoose)
                                     .map(({ id: field_id, field_name, radios }) => {
@@ -210,13 +221,13 @@ const Component = () => {
                                             record?.field_value;
                                         return (
                                             <TableRow>
-                                                <TableCell className="min-w-48 max-w-48" align="center">
+                                                <TableCell className="min-w-24" align="center">
                                                     {field_name}
                                                 </TableCell>
-                                                <TableCell className="min-w-32" align="center">
+                                                <TableCell className="min-w-24" align="center">
                                                     {value}
                                                 </TableCell>
-                                                <TableCell className="min-w-24 max-w-24" align="center">
+                                                <TableCell align="center">
                                                     <Button
                                                         variant="bordered"
                                                         size="sm"
