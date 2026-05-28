@@ -1,5 +1,5 @@
 import { FieldType } from "../../shared/impl/field";
-import { Chunk } from "../../shared/router/FileRouter";
+import { Chunk } from "../../shared/modules/file/file.interface";
 import xlsx from "xlsx";
 
 export async function assembly(chunks: Array<Chunk>): Promise<Buffer<ArrayBuffer> | null> {

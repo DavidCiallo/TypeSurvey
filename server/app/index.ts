@@ -1,51 +1,53 @@
 import { config } from "dotenv";
-import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
 config();
 
-// 中间件-pg
-// 中间件-express
-import http from "http";
-import express from "express";
-import bodyParser from "body-parser";
-import { WebSocketServer } from "ws";
-
-// 中间件-各级路由
-import { mounthttp, mountws } from "../lib/mount";
-import { authController } from "../controller/auth.controller";
-import { formController } from "../controller/form.controller";
-import { fieldController } from "../controller/field.controller";
-import { radioController } from "../controller/radio.controller";
-import { recordController } from "../controller/record.controller";
-import { fileController } from "../controller/file.controller";
-
-// HTTP
-const app = express();
-app.use(bodyParser.json()).use(cors());
-mounthttp(app, [authController, recordController, formController, fieldController, radioController, fileController]);
+import { initialize } from "./initialize";
+import { mounthttp, mountstatic, mountws, wshandler } from "../lib/mount";
+import { authController } from "../modules/auth/auth.controller";
+import { formController } from "../modules/form/form.controller";
+import { fieldController } from "../modules/field/field.controller";
+import { radioController } from "../modules/radio/radio.controller";
+import { recordController } from "../modules/record/record.controller";
+import { fileController } from "../modules/file/file.controller";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const staticPath = path.join(__dirname);
 
-// HTTP-File
-app.use(express.static(staticPath));
-app.use((q, s, n) => (q.path.endsWith(".mjs") ? s.status(403).send("Forbidden") : n()));
-app.get(/.*/, (q, s) => {
-    if (q.path.startsWith("/api")) return s.status(404).json({ error: "API not found" });
-    else if (q.path.startsWith("/favicon.ico")) return s.sendFile(path.join(staticPath, "favicon.ico"));
-    else return s.sendFile(path.join(staticPath, "index.html"));
+await initialize();
+
+const mounts = [authController, recordController, formController, fieldController, radioController, fileController];
+
+Bun.serve({
+    port: Number(process.env.SERVER_PORT) || 3300,
+    async fetch(req, server) {
+        const url = new URL(req.url);
+        const pathName = url.pathname;
+
+        // WebSocket
+        if (mountws(req, server)) return;
+
+        // API routes
+        const apiResponse = await mounthttp(req, mounts);
+        if (apiResponse) return apiResponse;
+
+        // Static files
+        const staticResponse = await mountstatic(staticPath, pathName);
+        if (staticResponse) return staticResponse;
+
+        // 404
+        if (pathName.startsWith("/api")) {
+            return new Response(JSON.stringify({ error: "API not found" }), {
+                status: 404,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+        return new Response("Not Found", { status: 404 });
+    },
+    websocket: wshandler,
 });
 
-// 挂载
-const server = http.createServer(app);
-
-// WebSocket
-const wss = new WebSocketServer({ server, path: "/ws" });
-mountws(wss, []);
-
-server.listen(process.env.SERVER_PORT || 3300, () => {
-    console.log(`Server is running at http://localhost:${process.env.SERVER_PORT || 3300}`);
-});
+console.log(`Server is running at http://localhost:${process.env.SERVER_PORT || 3300}`);

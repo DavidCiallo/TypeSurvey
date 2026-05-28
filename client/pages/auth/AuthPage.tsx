@@ -5,6 +5,7 @@ import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../../methods/notify";
 import { setAuthStatus, setUserInfo } from "../../methods/auth";
+import { useAuth } from "../../methods/auth-context";
 import { Locale } from "../../methods/locale";
 import { decodeBase64 } from "../../methods/base64";
 
@@ -18,6 +19,7 @@ export default function Component() {
 
     const navigate = useNavigate();
     const locale = Locale("AuthPage");
+    const { setAuthInfo } = useAuth();
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -28,7 +30,12 @@ export default function Component() {
     };
 
     async function login(auth: { email: string; password: string }) {
-        const { success, data, message } = await AuthRouter.login(auth);
+        const { success, data, message } = await AuthRouter.login({
+            identify: {
+                email: auth.email,
+                password: auth.password,
+            }
+        } as any);
         if (!success || !data) {
             toast({ title: message || locale.LoginFailed, color: "danger" });
             return;
@@ -37,7 +44,8 @@ export default function Component() {
         toast({ title: locale.LoginSuccess, color: "success" });
         await new Promise((r) => setTimeout(r, 1000));
         setAuthStatus({ access_token: token, expires_in: 3600 });
-        setUserInfo({ email: auth.email });
+        setUserInfo({ email: auth.email, is_admin: data.is_admin, roles: data.roles });
+        setAuthInfo({ is_admin: data.is_admin, roles: data.roles });
         navigate("/form");
     }
 

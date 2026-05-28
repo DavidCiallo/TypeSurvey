@@ -1,213 +1,417 @@
-import fs from "fs";
-import path from "path";
+// @ts-nocheck
 import { nanoid } from "nanoid";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-type Constructor<T> = { new (...args: any[]): T };
+const _filename = fileURLToPath(import.meta.url);
+const SERVER_DIR = path.resolve(path.dirname(_filename), "..");
+const DATA_DIR = path.join(path.resolve(SERVER_DIR, ".."), "data");
 
-const DB_PATH = "form_data";
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
-class Repository<T> {
-    public name: string;
-    private filePath: string;
-    private cache: T[] = [];
-    private isInitialized: boolean = false;
+type Row = Record<string, any>;
 
+function collectionFile(name: string): string {
+    return path.join(DATA_DIR, `${name}.jsonl`);
+}
+
+function hardDeleteFile(name: string): string {
+    return path.join(DATA_DIR, `${name}.deleted`);
+}
+
+function readDeleted(name: string): Set<string> {
+    const file = hardDeleteFile(name);
+    if (!fs.existsSync(file)) return new Set();
+    const ids = fs.readFileSync(file, "utf-8").trim().split("\n").filter(Boolean);
+    return new Set(ids);
+}
+
+function appendDeleted(name: string, id: string) {
+    fs.appendFileSync(hardDeleteFile(name), id + "\n");
+}
+
+/** Read lines from end to start (newest first) — used for paginated find() with DESC order */
+async function* readLinesReverse(name: string, skipDeleted: boolean): AsyncGenerator<Row, void, void> {
+    const file = collectionFile(name);
+    if (!fs.existsSync(file)) return;
+
+    const deleted = skipDeleted ? readDeleted(name) : new Set<string>();
+    const stat = fs.statSync(file);
+    if (stat.size === 0) return;
+
+    const fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(65536);
+    let pos = stat.size;
+    let remainder = "";
+
+    try {
+        while (pos > 0) {
+            const readSize = Math.min(65536, pos);
+            pos -= readSize;
+            fs.readSync(fd, buf, 0, readSize, pos);
+            let chunk = buf.toString("utf-8", 0, readSize) + remainder;
+            remainder = "";
+
+            const lines = chunk.split("\n");
+            remainder = lines[0];
+            for (let i = lines.length - 1; i >= 1; i--) {
+                const trimmed = lines[i].trim();
+                if (!trimmed) continue;
+                const row = JSON.parse(trimmed);
+                if (skipDeleted && row.id && deleted.has(row.id)) continue;
+                yield row;
+            }
+        }
+        if (remainder.trim()) {
+            const row = JSON.parse(remainder.trim());
+            if (!(skipDeleted && row.id && deleted.has(row.id))) {
+                yield row;
+            }
+        }
+    } finally {
+        fs.closeSync(fd);
+    }
+}
+
+/** Read lines forward — used for findOne(), count(), findAllIgnoreDelete() */
+async function* readLines(name: string, skipDeleted: boolean): AsyncGenerator<Row, void, void> {
+    const file = collectionFile(name);
+    if (!fs.existsSync(file)) return;
+
+    const deleted = skipDeleted ? readDeleted(name) : new Set<string>();
+
+    const stream = Bun.file(file).stream();
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                const row = JSON.parse(trimmed);
+                if (skipDeleted && row.id && deleted.has(row.id)) continue;
+                yield row;
+            }
+        }
+        if (buffer.trim()) {
+            const row = JSON.parse(buffer.trim());
+            if (!(skipDeleted && row.id && deleted.has(row.id))) {
+                yield row;
+            }
+        }
+    } finally {
+        reader.cancel().catch(() => {});
+    }
+}
+
+/** Check if a row matches the where conditions */
+function matches<T extends Row>(row: T, where: Record<string, any>): boolean {
+    for (const [key, val] of Object.entries(where)) {
+        if (val === undefined || val === null || val === "") continue;
+        if (row[key] !== val) return false;
+    }
+    return true;
+}
+
+class Repository<
+    T extends { id?: string; create_time?: number | null; update_time?: number | null; delete_time?: number | null },
+> {
+    private collection: string;
     private static instances = new Map<string, any>();
-    /**
-     * @param entityClass The class of the entity this repository will manage.
-     */
-    private constructor(private entityClass: Constructor<T>) {
-        this.name = entityClass.name.toLowerCase().replace("entity", "");
-        this.filePath = path.join(`./${DB_PATH}`, `${this.name}.json`);
+    private writeLock = Promise.resolve();
+
+    private constructor(collection: string) {
+        this.collection = collection;
     }
 
-    public static instance<T>(entityClass: Constructor<T>): Repository<T> {
-        const entityName = entityClass.name.toLowerCase();
-        if (!Repository.instances.has(entityName)) {
-            Repository.instances.set(entityName, new Repository(entityClass));
-        }
-        return Repository.instances.get(entityName);
-    }
-    private initialize(): void {
-        if (this.isInitialized) {
-            return;
-        }
-
-        try {
-            if (!fs.existsSync(`./${DB_PATH}`)) {
-                fs.mkdirSync(`./${DB_PATH}`);
-            }
-            if (!fs.existsSync(this.filePath)) {
-                fs.writeFileSync(this.filePath, "[]");
-            }
-            this.loadData();
-        } catch (error) {
-            console.warn(`Data file not found for ${this.name}. Creating a new one.`);
-            this.saveData([]);
-        }
-
-        this.isInitialized = true;
-    }
-
-    /**
-     * A private helper to load data from the JSON file into the cache.
-     */
-    private loadData(): void {
-        try {
-            const data = fs.readFileSync(this.filePath).toString();
-            this.cache = JSON.parse(data);
-        } catch (error) {
-            console.error(`Failed to load data for ${this.name}:`, error);
-            this.cache = [];
-        }
-    }
-
-    /**
-     * A private helper to save the current cache to the JSON file.
-     * @param data The data array to save. If not provided, it saves the current cache.
-     */
-    private saveData(data: T[] = this.cache): void {
-        try {
-            this.cache = data;
-            if (Math.random() < 1) {
-                fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2));
-            }
-        } catch (error) {
-            console.error(`Failed to save data for ${this.name}:`, error);
-        }
-    }
-
-    /**
-     * Filters the cache based on the provided conditions.
-     * @param where An object containing key-value pairs to match.
-     * @returns A filtered array of entities.
-     */
-    private filterData(where?: Partial<T>): T[] {
-        if (!where || Object.keys(where).length === 0) {
-            return this.cache;
-        }
-
-        return this.cache.filter((entity) => {
-            return Object.entries(where).every(([key, value]) => {
-                // Handle cases where the value in `where` is null or undefined
-                const entityValue = (entity as any)[key];
-                if (value === null || value === undefined) {
-                    return entityValue === null || entityValue === undefined;
-                }
-                return entityValue === value;
-            });
+    private async withLock<R>(fn: () => Promise<R>): Promise<R> {
+        const prev = this.writeLock;
+        let release: () => void;
+        this.writeLock = new Promise<void>((resolve) => {
+            release = resolve;
         });
+        await prev;
+        try {
+            return await fn();
+        } finally {
+            release!();
+        }
     }
 
-    /**
-     * Counts the number of entities that match the optional `where` clause.
-     * @param where An optional object for filtering.
-     * @returns The number of matching entities.
-     */
-    async count(where?: Partial<T>): Promise<number> {
-        this.initialize();
-        return this.filterData(where).length;
+    private filePath(): string {
+        return collectionFile(this.collection);
     }
 
-    /**
-     * Finds all entities that match the optional `where` clause.
-     * @param where An optional object for filtering.
-     * @param config An optional object for limiting and offsetting results.
-     * @returns An array of matching entities.
-     */
-    async find(where?: Partial<T>, config?: { limit?: number; offset?: number }): Promise<T[]> {
-        this.initialize();
-        const filteredData = this.filterData(where);
-        const start = config?.offset || 0;
-        const end = start + (config?.limit || filteredData.length);
-        return filteredData.slice(start, end);
+    public static instance<
+        T extends {
+            id?: string;
+            create_time?: number | null;
+            update_time?: number | null;
+            delete_time?: number | null;
+        },
+    >(collection: string): Repository<T> {
+        const key = collection.toLowerCase();
+        if (!Repository.instances.has(key)) {
+            Repository.instances.set(key, new Repository(key));
+        }
+        return Repository.instances.get(key);
     }
 
-    /**
-     * Finds a single entity that matches the `where` clause.
-     * @param where An object for filtering.
-     * @returns The first matching entity, or undefined.
-     */
+    async find(
+        where?: Partial<T>,
+        config?: { limit?: number; offset?: number; since?: number },
+    ): Promise<T[]> {
+        const results: T[] = [];
+        const since = config?.since;
+        const limit = config?.limit;
+        const offset = config?.offset || 0;
+
+        for await (const row of readLinesReverse(this.collection, true)) {
+            if (row.delete_time) continue;
+            if (since && row.create_time < since) continue;
+
+            if (where && !matches(row, where as Record<string, any>)) continue;
+
+            results.push(row as T);
+            if (limit !== undefined && results.length >= offset + limit) break;
+        }
+
+        if (offset > 0 || limit !== undefined) {
+            return results.slice(offset, limit !== undefined ? offset + limit : undefined);
+        }
+        return results;
+    }
+
     async findOne(where: Partial<T>): Promise<T | null> {
-        this.initialize();
-        const entity = this.filterData(where)[0];
-        if (!entity) return null;
-        return this.filterData(where)[0];
+        for await (const row of readLines(this.collection, true)) {
+            if (row.delete_time) continue;
+            if (matches(row, where as Record<string, any>)) return row as T;
+        }
+        return null;
     }
 
-    /**
-     * Inserts a new entity. It generates a unique ID for the entity.
-     * @param entity A partial entity object to insert.
-     * @returns True if the insertion was successful.
-     */
-    async insert(entity: Partial<T>): Promise<string> {
-        this.initialize();
-        const id = nanoid(6);
-        const create_time = Date.now();
-        const newEntity = { ...entity, id, create_time } as T;
-        this.cache.push(newEntity);
-        this.saveData();
-        return id;
+    async findIgnoreDelete(where: Partial<T>): Promise<T | null> {
+        for await (const row of readLines(this.collection, false)) {
+            if (matches(row, where as Record<string, any>)) return row as T;
+        }
+        return null;
     }
 
-    /**
-     * Inserts more entities into the cache.
-     * @param entities An array of partial entity objects to insert.
-     * @returns True if the insertion was successful.
-     */
-    async insertMany(entities: Partial<T>[]): Promise<boolean> {
-        this.initialize();
-        const create_time = Date.now();
-        const newEntities = entities.map((entity, index) => {
-            const id = nanoid(6);
-            return { ...entity, id, create_time } as T;
-        });
-        this.cache.push(...(newEntities as Array<T>));
-        this.saveData();
-        return true;
+    async findAllIgnoreDelete(): Promise<T[]> {
+        const results: T[] = [];
+        for await (const row of readLines(this.collection, false)) {
+            results.push(row as T);
+        }
+        return results;
     }
 
-    /**
-     * Updates entities that match the `where` clause with new data.
-     * @param where An object to find the entities to update.
-     * @param updateData An object with the new data to apply.
-     * @returns True if at least one entity was updated.
-     */
-    async update(where: Partial<T>, updateData: Partial<T>): Promise<boolean> {
-        this.initialize();
-        let updatedCount = 0;
-        const newCache = this.cache.map((entity) => {
-            // Check if the entity matches the `where` clause
-            if (Object.entries(where).every(([key, value]) => (entity as any)[key] === value)) {
-                updatedCount++;
-                return { ...entity, ...updateData, update_time: Date.now() };
+    async findByIds(ids: string[]): Promise<T[]> {
+        if (ids.length === 0) return [];
+        const idSet = new Set(ids);
+        const results: T[] = [];
+        for await (const row of readLines(this.collection, true)) {
+            if (row.delete_time) continue;
+            if (row.id && idSet.has(row.id)) {
+                results.push(row as T);
             }
-            return entity;
-        });
-
-        if (updatedCount > 0) {
-            this.saveData(newCache);
         }
-        return updatedCount > 0;
+        return results;
     }
 
-    /**
-     * Deletes entities that match the `where` clause.
-     * This is a new method added for completeness.
-     * @param where An object to find the entities to delete.
-     * @returns True if at least one entity was deleted.
-     */
-    delete(where: Partial<T>): boolean {
-        this.initialize();
-        const initialCount = this.cache.length;
-        const newCache = this.cache.filter((entity) => {
-            return !Object.entries(where).every(([key, value]) => (entity as any)[key] === value);
-        });
-        const deletedCount = initialCount - newCache.length;
-        if (deletedCount > 0) {
-            this.saveData(newCache);
+    async *findAllIgnoreDeleteBatch(batchSize = 1000): AsyncGenerator<T[], void, void> {
+        let batch: T[] = [];
+        for await (const row of readLines(this.collection, false)) {
+            batch.push(row as T);
+            if (batch.length >= batchSize) {
+                yield batch;
+                batch = [];
+            }
         }
-        return deletedCount > 0;
+        if (batch.length > 0) yield batch;
+    }
+
+    async insert(entity: Partial<T>): Promise<T> {
+        return this.withLock(async () => {
+            const now = Date.now();
+            const id = (entity as any)?.id || nanoid(6);
+            const row = {
+                ...entity,
+                id,
+                create_time: (entity as any)?.create_time || now,
+                update_time: (entity as any)?.update_time || now,
+                delete_time: null,
+            };
+            fs.appendFileSync(this.filePath(), JSON.stringify(row) + "\n");
+            return row as T;
+        });
+    }
+
+    async update(where: Partial<T>, updateData: Partial<T>, includeDeleted = false): Promise<boolean> {
+        return this.withLock(async () => {
+            const now = Date.now();
+            let updated = false;
+            const file = this.filePath();
+            if (!fs.existsSync(file)) return false;
+
+            const deleted = readDeleted(this.collection);
+            const content = fs.readFileSync(file, "utf-8");
+            const lines = content.split("\n");
+            const out: string[] = [];
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                const row = JSON.parse(trimmed);
+                if (row.id && deleted.has(row.id)) continue;
+                if (!includeDeleted && row.delete_time) {
+                    out.push(line);
+                    continue;
+                }
+
+                let match = true;
+                for (const [key, val] of Object.entries(where)) {
+                    if (row[key] !== val) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    Object.assign(row, updateData, { update_time: now });
+                    out.push(JSON.stringify(row));
+                    updated = true;
+                } else {
+                    out.push(line);
+                }
+            }
+
+            fs.writeFileSync(file, out.join("\n") + "\n");
+            return updated;
+        });
+    }
+
+    async delete(where: Partial<T>): Promise<boolean> {
+        const now = Date.now();
+        return this.update(where, { delete_time: now } as any);
+    }
+
+    async hardDelete(where: Partial<T>): Promise<boolean> {
+        return this.withLock(async () => {
+            let deleted = false;
+            const file = this.filePath();
+            if (!fs.existsSync(file)) return false;
+
+            const content = fs.readFileSync(file, "utf-8");
+            const lines = content.split("\n");
+            const out: string[] = [];
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                const row = JSON.parse(trimmed);
+
+                let match = true;
+                for (const [key, val] of Object.entries(where)) {
+                    if (row[key] !== val) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    appendDeleted(this.collection, row.id);
+                    deleted = true;
+                } else {
+                    out.push(line);
+                }
+            }
+
+            fs.writeFileSync(file, out.join("\n") + "\n");
+            return deleted;
+        });
+    }
+
+    async atomicPatch(
+        where: Partial<T>,
+        patch: (row: T | null) => Partial<T> | null,
+        includeDeleted = false,
+    ): Promise<boolean> {
+        return this.withLock(async () => {
+            const file = this.filePath();
+            if (!fs.existsSync(file)) return false;
+
+            const deleted = readDeleted(this.collection);
+            const content = fs.readFileSync(file, "utf-8");
+            const lines = content.split("\n");
+            const now = Date.now();
+            let updated = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const trimmed = lines[i].trim();
+                if (!trimmed) continue;
+                const row = JSON.parse(trimmed);
+                if (row.id && deleted.has(row.id)) continue;
+                if (!includeDeleted && row.delete_time) continue;
+
+                let match = true;
+                for (const [key, val] of Object.entries(where)) {
+                    if (row[key] !== val) { match = false; break; }
+                }
+
+                if (match) {
+                    const patchData = patch(row);
+                    if (patchData) {
+                        Object.assign(row, patchData, { update_time: now });
+                        lines[i] = JSON.stringify(row);
+                        updated = true;
+                    }
+                }
+            }
+
+            if (updated) {
+                fs.writeFileSync(file, lines.join("\n") + "\n");
+            }
+            return updated;
+        });
+    }
+
+    async batchInsert(entities: Partial<T>[]): Promise<number> {
+        return this.withLock(async () => {
+            if (entities.length === 0) return 0;
+            const now = Date.now();
+            const rows = entities.map((e) => {
+                return {
+                    ...e,
+                    id: (e as any)?.id || nanoid(6),
+                    create_time: (e as any)?.create_time || now,
+                    update_time: (e as any)?.update_time || now,
+                    delete_time: null,
+                };
+            });
+            fs.appendFileSync(this.filePath(), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+            return rows.length;
+        });
+    }
+
+    async count(where?: Partial<T>, since?: number): Promise<number> {
+        let count = 0;
+        for await (const row of readLines(this.collection, true)) {
+            if (row.delete_time) continue;
+            if (since && row.create_time < since) continue;
+            if (where && !matches(row, where as Record<string, any>)) continue;
+            count++;
+        }
+        return count;
     }
 }
 

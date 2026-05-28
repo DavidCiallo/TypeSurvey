@@ -1,14 +1,14 @@
-import { AuthRouterInstance } from "../../shared/router/AuthRouter";
-import { FormRouterInstance } from "../../shared/router/FormRouter";
-import { FormFieldRouterInstance } from "../../shared/router/FieldRouter";
-import { FormFieldRadioRouterInstance } from "../../shared/router/RadioRouter";
-import { inject } from "../lib/inject";
-import { RecordRouterInstance } from "../../shared/router/RecordRouter";
-import { FileRouterInstance } from "../../shared/router/FileRouter";
+import { authRoutes } from "../../shared/modules/auth/auth.router";
+import { formRoutes } from "../../shared/modules/form/form.router";
+import { fieldRoutes } from "../../shared/modules/field/field.router";
+import { radioRoutes } from "../../shared/modules/radio/radio.router";
+import { recordRoutes } from "../../shared/modules/record/record.router";
+import { fileRoutes } from "../../shared/modules/file/file.router";
+import { createClient } from "../lib/create-client";
 
-export const AuthRouter = new AuthRouterInstance(inject);
-export const FormRouter = new FormRouterInstance(inject);
-export const FormFieldRouter = new FormFieldRouterInstance(inject);
-export const FormFieldRadioRouter = new FormFieldRadioRouterInstance(inject);
-export const RecordRouter = new RecordRouterInstance(inject);
-export const FileRouter = new FileRouterInstance(inject);
+export const AuthRouter = createClient(authRoutes);
+export const FormRouter = createClient(formRoutes);
+export const FieldRouter = createClient(fieldRoutes);
+export const RadioRouter = createClient(radioRoutes);
+export const RecordRouter = createClient(recordRoutes);
+export const FileRouter = createClient(fileRoutes);
