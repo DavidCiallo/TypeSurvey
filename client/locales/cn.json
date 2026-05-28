@@ -17,6 +17,7 @@
         "FormList": "表单列表",
         "FieldManage": "表单管理",
         "Feedback": "数据反馈",
+        "AppSetting": "系统设置",
         "Logout": "退出登录"
     },
 
@@ -160,6 +161,23 @@
     },
     "CheckModal": {
         "Title": "验证码"
+    },
+    "SettingsPage": {
+        "Title": "系统设置",
+        "BasicSettings": "基本设置",
+        "ProjectName": "项目名称",
+        "ProjectNamePlaceholder": "请输入项目名称",
+        "SaveSettings": "保存设置",
+        "ToastSaveSuccess": "设置保存成功",
+        "ToastSaveFailed": "设置保存失败",
+        "DataManagement": "数据管理",
+        "DataManagementDesc": "导出和导入数据，方便备份与迁移。",
+        "ExportData": "导出数据",
+        "ImportData": "导入数据",
+        "ToastExportSuccess": "数据导出成功",
+        "ToastExportFailed": "数据导出失败",
+        "ToastImportSuccess": "数据导入成功",
+        "ToastImportFailed": "数据导入失败，请检查文件格式"
     },
     "HomePage": {
         "MainText1": "对于构建表单",

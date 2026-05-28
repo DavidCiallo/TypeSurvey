@@ -17,6 +17,7 @@
         "FormList": "Form List",
         "FieldManage": "Form Management",
         "Feedback": "Data Feedback",
+        "AppSetting": "Settings",
         "Logout": "Logout"
     },
 
@@ -142,6 +143,23 @@
     },
     "CheckModal": {
         "Title": "Verification Code"
+    },
+    "SettingsPage": {
+        "Title": "Settings",
+        "BasicSettings": "Basic Settings",
+        "ProjectName": "Project Name",
+        "ProjectNamePlaceholder": "Please enter project name",
+        "SaveSettings": "Save Settings",
+        "ToastSaveSuccess": "Settings saved successfully",
+        "ToastSaveFailed": "Settings save failed",
+        "DataManagement": "Data Management",
+        "DataManagementDesc": "Export and import data for backup and migration.",
+        "ExportData": "Export Data",
+        "ImportData": "Import Data",
+        "ToastExportSuccess": "Data exported successfully",
+        "ToastExportFailed": "Data export failed",
+        "ToastImportSuccess": "Data imported successfully",
+        "ToastImportFailed": "Data import failed, please check file format"
     },
     "HomePage": {
         "MainText1": "This is a ",
