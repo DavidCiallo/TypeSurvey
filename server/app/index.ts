@@ -12,6 +12,7 @@ import { fieldController } from "../modules/field/field.controller";
 import { radioController } from "../modules/radio/radio.controller";
 import { recordController } from "../modules/record/record.controller";
 import { fileController } from "../modules/file/file.controller";
+import { settingsController, appController } from "../modules/settings/settings.controller";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +20,7 @@ const staticPath = path.join(__dirname);
 
 await initialize();
 
-const mounts = [authController, recordController, formController, fieldController, radioController, fileController];
+const mounts = [authController, recordController, formController, fieldController, radioController, fileController, settingsController, appController];
 
 Bun.serve({
     port: Number(process.env.SERVER_PORT) || 3300,
