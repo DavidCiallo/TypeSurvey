@@ -1,14 +1,14 @@
 import {
-    FieldListRequest, FieldCreateRequest, FieldUpdateRequest, FieldDeleteRequest,
+    FieldListRequest, FieldCreateRequest, FieldUpdateRequest,
 } from "../../../shared/modules/field/field.interface";
 import { fieldRoutes } from "../../../shared/modules/field/field.router";
 import { getIdentifyByVerify } from "../auth/auth.service";
 import { createField, getFieldList, updateSingleField } from "../form/form.service";
 
 async function list(request: FieldListRequest) {
-    const { form_name, page, auth } = request;
-    if (!form_name || !auth) throw "参数错误";
-    const user = getIdentifyByVerify(auth);
+    request = FieldListRequest.self(request);
+    const { form_name, page } = request;
+    const user = getIdentifyByVerify(request.auth);
     if (!user) throw "Unauthorized";
     const list = await getFieldList(form_name);
     list.sort((a, b) => (a.position || 0) - (b.position || 0));
@@ -16,9 +16,9 @@ async function list(request: FieldListRequest) {
 }
 
 async function create(request: FieldCreateRequest) {
-    const { form_name, field_name, field_type, auth } = request;
-    if (!form_name || !field_name || !field_type || !auth) throw "参数错误";
-    const user = getIdentifyByVerify(auth);
+    request = FieldCreateRequest.self(request);
+    const { form_name, field_name, field_type } = request;
+    const user = getIdentifyByVerify(request.auth);
     if (!user) throw "Unauthorized";
     const result = await createField({ form_name, field_name, field_type, disabled: false, required: false });
     if (!result) throw "创建字段失败，可能存在同名项";
@@ -26,9 +26,9 @@ async function create(request: FieldCreateRequest) {
 }
 
 async function update(request: FieldUpdateRequest) {
-    const { field_id, field_name, field_type, position, disabled, required, comment, auth } = request;
-    if (!field_id || !auth) throw "参数错误";
-    const user = getIdentifyByVerify(auth);
+    request = FieldUpdateRequest.self(request);
+    const { field_id, field_name, field_type, position, disabled, required, comment } = request;
+    const user = getIdentifyByVerify(request.auth);
     if (!user) throw "Unauthorized";
     if (field_name) {
         const success = await updateSingleField(field_id, "field_name", field_name);
@@ -61,15 +61,7 @@ async function update(request: FieldUpdateRequest) {
     return {};
 }
 
-async function del(request: FieldDeleteRequest) {
-    const { auth } = request;
-    if (!auth) throw "参数错误";
-    const user = getIdentifyByVerify(auth);
-    if (!user) throw "Unauthorized";
-    return {};
-}
-
 export const fieldController = {
     routes: fieldRoutes,
-    handlers: { list, create, update, del },
+    handlers: { list, create, update },
 };
