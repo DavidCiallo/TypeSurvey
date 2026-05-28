@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Form, Pagination } from "@heroui/react";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { RecordRouter } from "../../api/instance";
@@ -6,6 +6,8 @@ import CheckModal from "./CheckModal";
 import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
 import { renderControl } from "./Control";
+
+const INPUT_TYPES = ["text", "email", "password", "textarea", "number"];
 
 const Component = () => {
     const locale = Locale("FillPage");
@@ -30,14 +32,16 @@ const Component = () => {
     const [pageSize] = useState(7);
     const [pageKey, setPageKey] = useState(Math.random());
     const prePage = useRef(1);
+    const [submitting, setSubmitting] = useState(false);
 
     const submitBtn = useRef<HTMLButtonElement>(null);
+    const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
     function setAuthData(form_name: string, fields: FormFieldImpl[], records: RecordImpl[]) {
         setFormName(form_name);
         setFieldList(fields);
         setTotal(fields.length);
-        setRecords(records);
+        setRecords([...records]);
         setPass(true);
     }
 
@@ -57,41 +61,37 @@ const Component = () => {
         localStorage.setItem("code", newCode);
     }
 
-    const latestSubmit = useRef<{ field_id: string; field_value: number | string | boolean }>({
-        field_id: "",
-        field_value: "",
-    });
-
-    async function submitRecord(field_id: string, field_value: number | string | boolean) {
+    const doSubmit = useCallback(async (field_id: string, field_value: number | string | boolean) => {
         const item_id = localStorage.getItem("item_id");
-        if (!item_id)
-            return toast({
-                title: locale.ToastErrorSubmit,
-                color: "danger",
-            });
+        if (!item_id) {
+            toast({ title: locale.ToastErrorSubmit, color: "danger" });
+            return;
+        }
         const exist = records.find((i) => i.field_id === field_id);
         if (exist) {
             exist.field_value = field_value;
-            setRecords(records);
         } else {
             records.push({ id: "", item_id, field_id, field_value, create_time: 0, update_time: 0 });
-            setRecords(records);
         }
+        setRecords([...records]);
 
-        if (field_id !== latestSubmit.current.field_id && latestSubmit.current.field_id) {
-            const { success } = await RecordRouter.submit({
-                item_id,
-                field_id: latestSubmit.current.field_id,
-                field_value: latestSubmit.current.field_value,
-            });
-            if (!success) {
-                return toast({
-                    title: locale.ToastErrorSubmit,
-                    color: "danger",
-                });
-            }
+        const { success } = await RecordRouter.submit({ item_id, field_id, field_value });
+        if (!success) {
+            toast({ title: locale.ToastErrorSubmit, color: "danger" });
         }
-        latestSubmit.current = { field_id, field_value };
+    }, [records, locale]);
+
+    function submitRecord(field_id: string, field_value: number | string | boolean, field_type?: string) {
+        if (!field_id) return;
+
+        if (field_type && INPUT_TYPES.includes(field_type)) {
+            if (timers.current[field_id]) clearTimeout(timers.current[field_id]);
+            timers.current[field_id] = setTimeout(() => {
+                doSubmit(field_id, field_value);
+            }, 2000);
+        } else {
+            doSubmit(field_id, field_value);
+        }
     }
 
     useEffect(() => {
@@ -112,9 +112,16 @@ const Component = () => {
                 onInvalid={() => {
                     setPageKey(Math.random());
                 }}
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                     e.preventDefault();
-                    setPage(Number(prePage.current));
+                    setSubmitting(true);
+                    try {
+                        await new Promise((r) => setTimeout(r, 300));
+                        setPage(Number(prePage.current));
+                        toast({ title: locale.ButtonSubmit, color: "success" });
+                    } finally {
+                        setSubmitting(false);
+                    }
                 }}
             >
                 <div className="w-full flex flex-col px-2 py-2">
@@ -126,7 +133,7 @@ const Component = () => {
                             .map((field) => {
                                 return (
                                     <div className="w-full flex flex-row flex-wrap pt-3" key={field.id}>
-                                        {renderControl(records, field, submitRecord)}
+                                        {renderControl(records, field, (fid, val) => submitRecord(fid, val, field.field_type))}
                                     </div>
                                 );
                             })}
@@ -134,8 +141,8 @@ const Component = () => {
                 </div>
                 <Button ref={submitBtn} hidden type="submit" />
             </Form>
-            <div className="flex flex-row justify-center items-center w-full mt-2 py-2">
-                {!!total && (
+            {total > 0 && (
+                <div className="flex flex-col justify-center items-center w-full mt-2 py-4 gap-2">
                     <Pagination
                         siblings={0}
                         key={pageKey}
@@ -154,8 +161,18 @@ const Component = () => {
                             submitRecord("", "");
                         }}
                     />
-                )}
-            </div>
+                    <Button
+                        color="primary"
+                        className="px-8 py-1 my-2"
+                        isLoading={submitting}
+                        onPress={() => {
+                            submitBtn.current?.click();
+                        }}
+                    >
+                        {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext}
+                    </Button>
+                </div>
+            )}
             {!pass && <CheckModal value={code} change={changeCode} />}
         </div>
     );
