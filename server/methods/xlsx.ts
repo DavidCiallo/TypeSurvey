@@ -6,14 +6,13 @@ export async function assembly(chunks: Array<Chunk>): Promise<Buffer<ArrayBuffer
     if (chunks.length === 0) {
         return null;
     }
-    const base64Data = chunks
-        .sort((a, b) => a.chunk_site - b.chunk_site)
-        .map((i) => i.chunk_data)
-        .join("");
-    if (base64Data.length < chunks[0].size) {
+    const sorted = chunks.sort((a, b) => a.chunk_site - b.chunk_site);
+    const totalSize = chunks[0].size;
+    const buffers = sorted.map((i) => Buffer.from(i.chunk_data, "base64"));
+    const binaryData = Buffer.concat(buffers);
+    if (binaryData.length < totalSize) {
         return null;
     }
-    const binaryData = Buffer.from(base64Data, "base64");
     return binaryData;
 }
 

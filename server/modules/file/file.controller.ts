@@ -29,14 +29,19 @@ async function readxlsx(request: FileXlsxRequest) {
         return { field, type, sub };
     });
     dataList.push({ tempid: fileid, filename, header: result, data });
-    chunks.forEach((i) => (i.chunk_data = ""));
+    for (let i = chunkList.length - 1; i >= 0; i--) {
+        if (chunkList[i].fileid === fileid) {
+            chunkList.splice(i, 1);
+        }
+    }
     return { tempid: fileid, header: result, size: data.length };
 }
 
 async function confirm(request: FileConfirmRequest) {
     const { tempid, fields, usedata } = request;
-    const existData = dataList.find((i) => i.tempid === tempid);
-    if (!existData) throw "数据不存在";
+    const existIndex = dataList.findIndex((i) => i.tempid === tempid);
+    if (existIndex === -1) throw "数据不存在";
+    const existData = dataList[existIndex];
     const { header, data, filename } = existData;
     const form_name = filename.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "") + Math.random().toString(36).slice(4, 8);
     for (let i = 0; i < header.length; i++) {
@@ -65,16 +70,20 @@ async function confirm(request: FileConfirmRequest) {
         });
     });
 
+    dataList.splice(existIndex, 1);
+
     if (!usedata) {
         return { success: true };
     }
 
-    const records: Omit<RecordEntity, "id" | "create_time" | "update_time" | "delete_time">[] = [];
+    const BATCH_SIZE = 500;
+    let batch: Omit<RecordEntity, "id" | "create_time" | "update_time" | "delete_time">[] = [];
 
     for (const row of data) {
         const item_id = nanoid(6);
-        row.forEach((cell, index) => {
-            if (!cell) return;
+        for (let index = 0; index < row.length; index++) {
+            const cell = row[index];
+            if (!cell) continue;
             const field_id = fieldMap.get(fields[index].field);
             let field_value: string | undefined;
             if (field_id && radioMap.has(field_id + cell)) {
@@ -82,10 +91,17 @@ async function confirm(request: FileConfirmRequest) {
             } else {
                 field_value = cell;
             }
-            if (field_id) records.push({ item_id, field_id, field_value });
-        });
+            if (field_id) {
+                batch.push({ item_id, field_id, field_value });
+                if (batch.length >= BATCH_SIZE) {
+                    await insertRecords(batch.splice(0, BATCH_SIZE));
+                }
+            }
+        }
     }
-    await insertRecords(records);
+    if (batch.length > 0) {
+        await insertRecords(batch);
+    }
     return { success: true };
 }
 
