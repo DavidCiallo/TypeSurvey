@@ -6,12 +6,14 @@ import {
 } from "../../../shared/modules/settings/settings.interface";
 import { settingsRoutes, appRoutes } from "../../../shared/modules/settings/settings.router";
 import { requireAdmin } from "../auth/auth.service";
-import { getSettings, saveSettings, getAllData, importAllData } from "./settings.service";
+import { getSettings, getAllSettings, saveSettings, getAllData, importAllData } from "./settings.service";
 
 async function list(request: SettingsListRequest) {
     request = SettingsListRequest.self(request);
     await requireAdmin(request.auth);
-    return await getSettings();
+    const allSettings = getAllSettings();
+    const entries = [{ key: "allow_register", value: allSettings["allow_register"] || "" }];
+    return { entries };
 }
 
 async function save(request: SettingsSaveRequest) {

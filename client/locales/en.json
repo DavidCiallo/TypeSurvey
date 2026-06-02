@@ -17,7 +17,8 @@
         "FormList": "Form List",
         "FieldManage": "Form Management",
         "Feedback": "Data Feedback",
-        "Logout": "Logout"
+        "Logout": "Logout",
+        "Settings": "Settings"
     },
 
     "AuthPage": {
@@ -159,5 +160,23 @@
         "Slogan1": "Compact, elegant, and fast.",
         "Slogan2": "No complex code or editing, just faster way to start data business.",
         "ViewSource": "View Source Code"
+    },
+
+    "SettingsPage": {
+        "Title": "Settings",
+        "ExportData": "Export",
+        "ImportData": "Import",
+        "BasicSettings": "Basic Settings",
+        "SaveSettings": "Save Settings",
+        "ToastSaveSuccess": "Saved successfully",
+        "ToastSaveFailed": "Save failed",
+        "ToastExportSuccess": "Exported successfully",
+        "ToastExportFailed": "Export failed",
+        "ToastImportSuccess": "Imported successfully",
+        "ToastImportFailed": "Import failed",
+        "ToastInvalidFormat": "Invalid file format",
+        "FieldLabel": {
+            "allow_register": "Allow Register (1=on, 0=off)"
+        }
     }
 }

@@ -6,7 +6,7 @@ import { Locale } from "../../methods/locale";
 import { useAuth } from "../../methods/auth-context";
 import { clearAuthData } from "../../methods/auth";
 
-const ALL_MENUS = ["form", "field", "record"] as const;
+const ALL_MENUS = ["form", "field", "record", "settings"] as const;
 
 export const MenuComp = ({ now }: { now?: string }) => {
     const locale = Locale("Menu");
@@ -18,6 +18,7 @@ export const MenuComp = ({ now }: { now?: string }) => {
         form: { name: locale.FormList, link: "/form" },
         field: { name: locale.FieldManage, link: "/field" },
         record: { name: locale.Feedback, link: "/record" },
+        settings: { name: locale.Settings, link: "/settings" },
     };
 
     const menuKeys = is_admin

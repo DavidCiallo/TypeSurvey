@@ -17,7 +17,8 @@
         "FormList": "表单列表",
         "FieldManage": "表单管理",
         "Feedback": "数据反馈",
-        "Logout": "退出登录"
+        "Logout": "退出登录",
+        "Settings": "系统设置"
     },
 
     "AuthPage": {
@@ -177,5 +178,23 @@
         "Slogan1": "小巧，精致，且快速。",
         "Slogan2": "无需复杂的代码与编辑，只求最快速开启数据业务。",
         "ViewSource": "查看源代码"
+    },
+
+    "SettingsPage": {
+        "Title": "系统设置",
+        "ExportData": "导出数据",
+        "ImportData": "导入数据",
+        "BasicSettings": "基本设置",
+        "SaveSettings": "保存设置",
+        "ToastSaveSuccess": "保存成功",
+        "ToastSaveFailed": "保存失败",
+        "ToastExportSuccess": "导出成功",
+        "ToastExportFailed": "导出失败",
+        "ToastImportSuccess": "导入成功",
+        "ToastImportFailed": "导入失败",
+        "ToastInvalidFormat": "文件格式错误",
+        "FieldLabel": {
+            "allow_register": "允许注册（1=开启，0=关闭）"
+        }
     }
 }
