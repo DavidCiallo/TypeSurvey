@@ -9,7 +9,6 @@ export async function mounthttp(req: Request, mounts: RouteMount[]): Promise<Res
     const url = new URL(req.url);
     const pathName = url.pathname;
     const method = req.method.toLowerCase();
-
     for (const mount of mounts) {
         const { routes, handlers } = mount;
         for (const [key, val] of Object.entries(routes)) {
@@ -41,7 +40,6 @@ export async function mounthttp(req: Request, mounts: RouteMount[]): Promise<Res
                         requestBody = Object.fromEntries(params.entries());
                     }
                 }
-                (requestBody as any).__raw_body = rawBody;
                 (requestBody as any).__headers = rawHeaders;
             } catch (e) {
                 requestBody = null;
@@ -102,8 +100,6 @@ export async function mounthttp(req: Request, mounts: RouteMount[]): Promise<Res
     return null;
 }
 
-const validStaticFiles = new Set<string>();
-
 export async function mountstatic(staticPath: string, pathName: string) {
     if (pathName.endsWith(".mjs")) {
         return new Response("Forbidden", { status: 403 });
@@ -113,16 +109,16 @@ export async function mountstatic(staticPath: string, pathName: string) {
     if (pathName === "/") {
         filePath = path.join(staticPath, "index.html");
     }
-    if (!validStaticFiles.has(filePath)) {
-        // @ts-ignore
-        const file = Bun.file(filePath);
-        if (await file.exists()) {
-            validStaticFiles.add(filePath);
-            return new Response(file);
-        }
-    } else {
-        // @ts-ignore
-        const file = Bun.file(filePath);
+
+    // 路径穿越防护
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(path.resolve(staticPath) + path.sep)) {
+        return new Response("Forbidden", { status: 403 });
+    }
+
+    // @ts-ignore
+    const file = Bun.file(filePath);
+    if (await file.exists()) {
         return new Response(file);
     }
 
