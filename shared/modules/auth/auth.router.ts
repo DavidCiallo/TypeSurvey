@@ -4,6 +4,7 @@ import {
     AliveRequest, AliveResponse,
     AuthConfigRequest, AuthConfigResponse,
     CodeLoginRequest, CodeLoginResponse,
+    VerifyEmailRequest, VerifyEmailResponse,
 } from "./auth.interface";
 
 export const authRoutes = {
@@ -14,4 +15,5 @@ export const authRoutes = {
     register: { path: "/register", request: {} as RegisterRequest, response: {} as RegisterResponse },
     config:   { path: "/config",   request: {} as AuthConfigRequest, response: {} as AuthConfigResponse },
     code:     { path: "/code",     request: {} as CodeLoginRequest, response: {} as CodeLoginResponse },
+    verify:   { path: "/verify",   request: {} as VerifyEmailRequest, response: {} as VerifyEmailResponse },
 } as const;

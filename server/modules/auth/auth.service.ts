@@ -1,6 +1,8 @@
 import { AccountEntity } from "../../../shared/modules/auth/auth.entity";
 import { aesDecrypt, aesEncrypt, hashGenerate } from "../../methods/crypto";
 import Repository from "../../lib/repository";
+import { sendEmail, buildVerificationEmail } from "../email/email.service";
+import { getSetting } from "../settings/settings.service";
 
 const accountRepository: Repository<AccountEntity> = Repository.instance<AccountEntity>("account");
 const ALL_MENUS = ["form", "field", "record"];
@@ -18,14 +20,53 @@ export async function loginUser(email: string, password: string): Promise<{ toke
     }
 }
 
-export async function registerUser(name: string, email: string, password: string): Promise<{ success: boolean }> {
-    const emailItem = await accountRepository.findOne({ email } as any);
-    if (emailItem) {
-        return { success: false };
+function checkAllowedDomain(email: string): string | null {
+    const allowedDomains = getSetting("allowed_domains");
+    if (!allowedDomains) return null;
+    const domain = email.split("@")[1]?.toLowerCase();
+    if (!domain) return "Invalid email format";
+    const domains = allowedDomains.split(",").map(d => d.trim().toLowerCase());
+    if (!domains.includes(domain)) {
+        return `Registration is limited to ${domains.join(", ")} email addresses`;
     }
-    password = hashGenerate(password);
-    accountRepository.insert({ name, email, password, is_admin: 0, api_key: "", balance: 0, last_daily_time: null } as any);
-    return { success: true };
+    return null;
+}
+
+export async function preRegisterUser(name: string, email: string, password: string): Promise<{ needsVerification?: boolean }> {
+    const domainError = checkAllowedDomain(email);
+    if (domainError) { throw domainError; }
+    const exist = await accountRepository.findIgnoreDelete({ email } as any);
+    if (exist) { return {}; }
+    const payload = [name, email, password].join("|-|");
+    const verificationToken = aesEncrypt(payload);
+    const clientUrl = getSetting("client_url") || "";
+    const verifyUrl = `${clientUrl}/verify?token=${encodeURIComponent(verificationToken)}`;
+    const fromDomain = (getSetting("allowed_from_domains") || getSetting("allowed_domains")).split(",")[0]?.trim();
+    const from = fromDomain ? `noreply@${fromDomain}` : "noreply@ehex.cc";
+    const emailSent = await sendEmail({
+        from,
+        to: email,
+        ...buildVerificationEmail(verifyUrl),
+    });
+    if (!emailSent) {
+        console.error("Failed to send verification email to:", email);
+        return {};
+    }
+    return { needsVerification: true };
+}
+
+export async function completeRegistration(token: string): Promise<{ account?: AccountEntity; token?: string } | null> {
+    const decrypted = aesDecrypt(token);
+    if (!decrypted) return null;
+    const parts = decrypted.split("|-|");
+    if (parts.length < 3) return null;
+    const [name, email, plainPassword] = parts;
+    const exist = await accountRepository.findIgnoreDelete({ email } as any);
+    if (exist) return null;
+    const password = hashGenerate(plainPassword);
+    const account = await accountRepository.insert({ name, email, password, is_admin: 0, api_key: "", balance: 0, last_daily_time: null } as any);
+    if (!account) return null;
+    return { account, token: genTokenForIdentify(email) };
 }
 
 export async function getAccountByEmail(email: string): Promise<AccountEntity | null> {
