@@ -32,7 +32,16 @@
         "PasswordError": "This is obviously required",
         "ForgetPasswordLinkText": "Forgot Password?",
         "ForgetPasswordErrorText": "Please contact the administrator 🙁",
-        "SubmitButtonText": "Login"
+        "SubmitButtonText": "Login",
+        "NoAccount": "No account?",
+        "RegisterNow": "Register now",
+        "HasAccount": "Already have an account?",
+        "BackToLogin": "Back to login",
+        "RegisterButtonText": "Register",
+        "RegisterSuccess": "Registration successful, please check your email to verify",
+        "RegisterFailed": "Registration failed, email may already exist",
+        "NameLabel": "Name",
+        "NamePlaceholder": "Please enter name"
     },
     "FieldType": {
         "text": "Text",

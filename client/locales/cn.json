@@ -32,7 +32,16 @@
         "PasswordError": "显然这是必填项",
         "ForgetPasswordLinkText": "忘记密码？",
         "ForgetPasswordErrorText": "请联系管理员🙁",
-        "SubmitButtonText": "登录"
+        "SubmitButtonText": "登录",
+        "NoAccount": "还没有账号？",
+        "RegisterNow": "立即注册",
+        "HasAccount": "已有账号？",
+        "BackToLogin": "返回登录",
+        "RegisterButtonText": "注册",
+        "RegisterSuccess": "注册成功，请查看邮箱完成验证",
+        "RegisterFailed": "注册失败，邮箱可能已存在",
+        "NameLabel": "姓名",
+        "NamePlaceholder": "请输入姓名"
     },
     "FieldType": {
         "text": "文本",

@@ -3,6 +3,7 @@ import "./App.css";
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import AuthPage from "./pages/auth/AuthPage";
+import VerifyPage from "./pages/auth/VerifyPage";
 import FormPage from "./pages/form/FormPage";
 import FormFieldPage from "./pages/field/FormFieldPage";
 import FillPage from "./pages/fill/FillPage";
@@ -44,6 +45,7 @@ const App = () => {
                 <Routes>
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/verify" element={<VerifyPage />} />
                     <Route path="/fill" element={<FillPage />} />
                     <Route element={<PrivateRoute />}>
                         <Route path="/form" element={<FormPage />} />
