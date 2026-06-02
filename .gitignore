@@ -2,4 +2,4 @@
 .env
 dist
 node_modules
-form_data/*
+data/
