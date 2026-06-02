@@ -39,31 +39,7 @@ async function all(request: RecordAllRequest) {
     if (!form_name || !page || page < 1 || !auth) throw "参数错误";
     const user = getIdentifyByVerify(auth);
     if (!user) throw "Unauthorized";
-    const records = await getAllRecord(form_name);
-    const group: Array<{
-        item_id: string;
-        code: string;
-        data: typeof records;
-    }> = [];
-    for (const r of records) {
-        const exist = group.findIndex(({ item_id }) => r.item_id == item_id);
-        if (exist !== -1) {
-            group[exist].data.push(r);
-        } else {
-            group.push({ item_id: r.item_id, code: codeGenerate(r.item_id), data: [r] });
-        }
-    }
-    if (search && search.length) {
-        const filter = group.filter((i) => i.data.some((r) => String(r.field_value).includes(search)));
-        return {
-            records: filter.slice((page - 1) * 10, page * 10),
-            total: filter.length,
-        };
-    }
-    return {
-        records: group.slice((page - 1) * 10, page * 10),
-        total: group.length,
-    };
+    return await getAllRecord(form_name, { page, pageSize: 10, search });
 }
 
 export const recordController = {

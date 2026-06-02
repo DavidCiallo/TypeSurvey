@@ -8,8 +8,10 @@ const RadioRepository = Repository.instance<FormFieldRadioEntity>("radio");
 const RecordRepository = Repository.instance<RecordEntity>("record");
 
 export async function getFormList(): Promise<string[]> {
-    const fields = await FieldRepository.find();
-    const formSet = new Set(fields.map((item) => item.form_name));
+    const formSet = new Set<string>();
+    await FieldRepository.findEach({}, (item) => {
+        formSet.add(item.form_name);
+    });
     return Array.from(formSet);
 }
 
@@ -21,25 +23,35 @@ export async function getFormBriefList(): Promise<
     }>
 > {
     const formlist = await getFormList();
-    const fieldIdsList = await Promise.all(
-        formlist.map(async (form_name) => {
-            const fields = await FieldRepository.find({ form_name } as any);
-            return fields.map((f) => f.id);
-        }),
-    );
-    const allRecords = (await RecordRepository.find()).sort((a, b) => {
-        const tA = new Date(a.update_time || a.create_time || 0);
-        const tB = new Date(b.update_time || b.create_time || 0);
-        return tB.getTime() - tA.getTime();
+    const fieldToForm = new Map<string, string>();
+    for (const form_name of formlist) {
+        await FieldRepository.findEach({ form_name } as any, (field) => {
+            fieldToForm.set(field.id, form_name);
+        });
+    }
+
+    const itemIdsByForm = new Map<string, Set<string>>();
+    const lastSubmitByForm = new Map<string, number>();
+    for (const form_name of formlist) {
+        itemIdsByForm.set(form_name, new Set());
+        lastSubmitByForm.set(form_name, 0);
+    }
+
+    await RecordRepository.findEach({}, (record) => {
+        const form_name = fieldToForm.get(record.field_id);
+        if (!form_name) return;
+        itemIdsByForm.get(form_name)!.add(record.item_id);
+        const t = new Date(record.update_time || record.create_time || 0).getTime();
+        if (t > lastSubmitByForm.get(form_name)!) {
+            lastSubmitByForm.set(form_name, t);
+        }
     });
-    const result = formlist.map((form_name, index) => {
-        const fieldIds = fieldIdsList[index];
-        const records = allRecords.filter((r) => fieldIds.includes(r.field_id));
-        const records_num = new Set(records.map((i) => i.item_id)).size;
-        const last_submit = records[0]?.update_time || records[0]?.create_time || 0;
-        return { form_name, records_num, last_submit };
-    });
-    return result;
+
+    return formlist.map((form_name) => ({
+        form_name,
+        records_num: itemIdsByForm.get(form_name)?.size || 0,
+        last_submit: lastSubmitByForm.get(form_name) || 0,
+    }));
 }
 
 export async function getFormNameByField(field_id: string): Promise<string> {
@@ -54,24 +66,34 @@ export async function getFormNameByField(field_id: string): Promise<string> {
 export async function getFieldList(
     form_name: string,
 ): Promise<Array<FormFieldEntity & { radios?: FormFieldRadioEntity[] }>> {
-    const fieldsData = await FieldRepository.find({ form_name } as any);
-    const radiosData = await RadioRepository.find();
-    const fields = fieldsData
-        .sort((a, b) => (a.position || 0) - (b.position || 0))
-        .map((fieldData) => {
-            if (
-                fieldData.field_type == "select" ||
-                fieldData.field_type == "mulselect" ||
-                fieldData.field_type == "checkbox"
-            ) {
-                const radios = radiosData
-                    .filter((radioData) => radioData.field_id === fieldData.id);
-                return { ...fieldData, radios };
-            } else {
-                return { ...fieldData };
-            }
-        });
-    return fields;
+    const fieldsData: FormFieldEntity[] = [];
+    await FieldRepository.findEach({ form_name } as any, (field) => {
+        fieldsData.push(field);
+    });
+    fieldsData.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+    const radioTypes = new Set(["select", "mulselect", "checkbox"]);
+    const fieldsNeedingRadios = fieldsData.filter((f) => radioTypes.has(f.field_type));
+    if (fieldsNeedingRadios.length === 0) {
+        return fieldsData.map((f) => ({ ...f }));
+    }
+
+    const radiosByField = new Map<string, FormFieldRadioEntity[]>();
+    for (const f of fieldsNeedingRadios) {
+        radiosByField.set(f.id, []);
+    }
+    await RadioRepository.findEach({}, (radio) => {
+        const arr = radiosByField.get(radio.field_id);
+        if (arr) arr.push(radio);
+    });
+
+    return fieldsData.map((fieldData) => {
+        if (radioTypes.has(fieldData.field_type)) {
+            const radios = radiosByField.get(fieldData.id) || [];
+            return { ...fieldData, radios };
+        }
+        return { ...fieldData };
+    });
 }
 
 export async function createField(
@@ -79,10 +101,11 @@ export async function createField(
 ): Promise<string | null> {
     const { form_name, field_name } = field;
     const exist = await FieldRepository.findOne({ form_name, field_name } as any);
-    const position = (await FieldRepository.count()) + 1;
     if (exist) {
         return null;
     }
+    const lastField = await FieldRepository.findOne({}, true);
+    const position = (lastField?.position || 0) + 1;
     const result = await FieldRepository.insert({
         ...field,
         position,

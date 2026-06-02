@@ -6,13 +6,12 @@ const settingsRepository: Repository<SettingsEntity> = Repository.instance<Setti
 let cache: Record<string, string> | null = null;
 
 async function refreshCache(): Promise<Record<string, string>> {
-    const rows = await settingsRepository.findAllIgnoreDelete();
     cache = {};
-    for (const row of rows) {
+    await settingsRepository.findEach({}, (row) => {
         if (row.key && !row.delete_time) {
-            cache[row.key] = row.value;
+            cache![row.key] = row.value;
         }
-    }
+    });
     return cache;
 }
 
@@ -30,7 +29,7 @@ export async function saveSettings(entries: { key: string; value: string }[]): P
             await settingsRepository.insert({ key, value } as any);
         }
     }
-    cache = null; // invalidate cache
+    cache = null;
     await refreshCache();
 }
 
@@ -40,13 +39,27 @@ export async function getAllData(): Promise<{ accounts: any[]; fields: any[]; ra
     const radioRepo: Repository<any> = Repository.instance<any>("radio");
     const recordRepo: Repository<any> = Repository.instance<any>("record");
 
-    const [accounts, fields, radios, records, settings] = await Promise.all([
-        accountRepo.findAllIgnoreDelete(),
-        fieldRepo.findAllIgnoreDelete(),
-        radioRepo.findAllIgnoreDelete(),
-        recordRepo.findAllIgnoreDelete(),
-        settingsRepository.findAllIgnoreDelete(),
-    ]);
+    const accounts: any[] = [];
+    const fields: any[] = [];
+    const radios: any[] = [];
+    const records: any[] = [];
+    const settings: any[] = [];
+
+    for await (const batch of accountRepo.findAllIgnoreDeleteBatch(500)) {
+        accounts.push(...batch);
+    }
+    for await (const batch of fieldRepo.findAllIgnoreDeleteBatch(500)) {
+        fields.push(...batch);
+    }
+    for await (const batch of radioRepo.findAllIgnoreDeleteBatch(500)) {
+        radios.push(...batch);
+    }
+    for await (const batch of recordRepo.findAllIgnoreDeleteBatch(500)) {
+        records.push(...batch);
+    }
+    for await (const batch of settingsRepository.findAllIgnoreDeleteBatch(500)) {
+        settings.push(...batch);
+    }
 
     return { accounts, fields, radios, records, settings };
 }
@@ -78,12 +91,7 @@ export async function importAllData(data: {
             imported[key] = 0;
             continue;
         }
-        // Hard delete all existing records for this type
-        const existing = await repo.findAllIgnoreDelete();
-        for (const row of existing) {
-            await repo.hardDelete({ id: row.id } as any);
-        }
-        // Batch insert new data
+        await repo.truncate();
         await repo.batchInsert(rows);
         imported[key] = rows.length;
     }
