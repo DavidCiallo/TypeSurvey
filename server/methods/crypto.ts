@@ -11,7 +11,7 @@ if (secret.length < 16 || noncelen < 6) {
 }
 
 const secretKey = crypto.createHash("sha256").update(secret).digest();
-const iv = crypto.randomBytes(16);
+const iv = crypto.createHash("sha256").update("cfrs-iv-" + secret).digest().subarray(0, 16);
 
 export function aesEncrypt(originalData: string): string {
     const nonce = crypto.randomBytes(128).toString("hex").slice(-noncelen);
