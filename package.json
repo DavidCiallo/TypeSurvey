@@ -9,6 +9,7 @@
         "serve": "bun run server/app"
     },
     "dependencies": {
+        "@gitlawb/openclaude": "^0.15.0",
         "@heroui/pagination": "^2.2.24",
         "@heroui/react": "^2.8.0-beta.5",
         "@heroui/select": "^2.4.28",
