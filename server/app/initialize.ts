@@ -1,12 +1,15 @@
 import { hashGenerate } from "../methods/crypto";
 import Repository from "../lib/repository";
 import { AccountEntity } from "../../shared/modules/auth/auth.entity";
+import { loadSettings } from "../modules/settings/settings.service";
 import { config } from "dotenv";
 config();
 
 const accountRepository: Repository<AccountEntity> = Repository.instance<AccountEntity>("account");
 
 export async function initialize() {
+    await loadSettings();
+
     if (process.env.ADMIN_NAME && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
         const { ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
         const exist = await accountRepository.findOne({ email: ADMIN_EMAIL } as any);

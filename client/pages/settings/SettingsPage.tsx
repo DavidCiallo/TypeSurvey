@@ -1,96 +1,101 @@
 import { Header } from "../../components/header/Header";
-import { useEffect, useRef, useState } from "react";
-import { Button, Card, Input } from "@heroui/react";
+import { useEffect, useState } from "react";
+import { Button, Card, CardBody, Input } from "@heroui/react";
 import { Locale } from "../../methods/locale";
 import { SettingsRouter, AppRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
 
-const Component = () => {
-    const locale = Locale("SettingsPage");
+interface SettingsEntry {
+    key: string;
+    value: string;
+}
 
-    const [projectName, setProjectName] = useState("");
-    const [loading, setLoading] = useState(false);
+export default function SettingsPage() {
+    const locale = Locale("SettingsPage") as any;
+    const [entries, setEntries] = useState<SettingsEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [importing, setImporting] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    async function loadSettings() {
+    async function fetchSettings() {
+        setLoading(true);
         const { success, data } = await SettingsRouter.list({});
         if (success && data) {
-            setProjectName(data["项目名称"] || "");
+            setEntries(data.entries || []);
         }
+        setLoading(false);
     }
 
     useEffect(() => {
-        loadSettings();
+        fetchSettings();
     }, []);
 
     async function handleSave() {
-        setLoading(true);
-        try {
-            const { success } = await SettingsRouter.save({ entries: [{ key: "项目名称", value: projectName }] });
-            if (success) {
-                toast({ title: locale.ToastSaveSuccess, color: "success" });
-            } else {
-                throw "";
-            }
-        } catch {
+        setSaving(true);
+        const { success } = await SettingsRouter.save({ entries });
+        if (success) {
+            toast({ title: locale.ToastSaveSuccess, color: "success" });
+        } else {
             toast({ title: locale.ToastSaveFailed, color: "danger" });
-        } finally {
-            setLoading(false);
         }
+        setSaving(false);
     }
+
+    const updateEntry = (key: string, value: string) => {
+        setEntries((prev) => prev.map((e) => (e.key === key ? { ...e, value } : e)));
+    };
 
     async function handleExport() {
         setExporting(true);
-        try {
-            const { success, data } = await AppRouter.exportData({});
-            if (success && data) {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `typeform-export-${Date.now()}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                toast({ title: locale.ToastExportSuccess, color: "success" });
-            } else {
-                throw "";
-            }
-        } catch {
+        const { success, data } = await AppRouter.exportData({});
+        if (success && data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `typeform-export-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast({ title: locale.ToastExportSuccess, color: "success" });
+        } else {
             toast({ title: locale.ToastExportFailed, color: "danger" });
-        } finally {
-            setExporting(false);
         }
+        setExporting(false);
     }
 
     async function handleImport() {
-        const file = fileInputRef.current?.files?.[0];
-        if (!file) return;
-
-        setImporting(true);
-        try {
-            const text = await file.text();
-            const json = JSON.parse(text);
-
-            if (!json.version || !json.data) {
-                throw "Invalid format";
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = async (e: any) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setImporting(true);
+            try {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                if (!json.version || !json.data) throw "Invalid format";
+                const { success, data } = await AppRouter.importData({ data: json });
+                if (success && data) {
+                    const counts = Object.entries(data.imported || {})
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(", ");
+                    toast({ title: `${locale.ToastImportSuccess} (${counts})`, color: "success" });
+                    fetchSettings();
+                } else {
+                    toast({ title: locale.ToastImportFailed, color: "danger" });
+                }
+            } catch {
+                toast({ title: locale.ToastInvalidFormat, color: "danger" });
+            } finally {
+                setImporting(false);
             }
-
-            const { success, data } = await AppRouter.importData({ data: json });
-            if (success && data) {
-                toast({ title: locale.ToastImportSuccess + " " + JSON.stringify(data.imported), color: "success" });
-                loadSettings();
-                fileInputRef.current!.value = "";
-            } else {
-                throw "";
-            }
-        } catch {
-            toast({ title: locale.ToastImportFailed, color: "danger" });
-        } finally {
-            setImporting(false);
-        }
+        };
+        input.click();
     }
+
+    const fieldLabel = (key: string) => locale.FieldLabel?.[key] || key;
 
     return (
         <div className="max-w-screen">
@@ -103,37 +108,36 @@ const Component = () => {
                     <Button size="sm" color="warning" variant="bordered" onPress={handleImport} isLoading={importing}>
                         {locale.ImportData}
                     </Button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".json"
-                        className="hidden"
-                        onChange={handleImport}
-                    />
                 </div>
-
-                <Card className="p-6">
-                    <h2 className="text-lg font-semibold mb-4">{locale.BasicSettings}</h2>
-                    <div className="flex flex-row items-center gap-4 mb-4">
-                        <span className="text-sm min-w-[80px]">{locale.ProjectName}</span>
-                        <Input
-                            className="max-w-[400px]"
-                            variant="bordered"
-                            size="sm"
-                            value={projectName}
-                            onValueChange={setProjectName}
-                            placeholder={locale.ProjectNamePlaceholder}
-                        />
-                    </div>
-                    <div>
-                        <Button color="primary" size="sm" isLoading={loading} onClick={handleSave}>
-                            {locale.SaveSettings}
-                        </Button>
-                    </div>
-                </Card>
+                {loading ? (
+                    <div className="text-center text-gray-400 py-8">Loading...</div>
+                ) : (
+                    <>
+                        <Card>
+                            <CardBody className="flex flex-col gap-4">
+                                {entries.map((e) => (
+                                    <div key={e.key} className="flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-gray-600">
+                                            {fieldLabel(e.key)}
+                                        </label>
+                                        <Input
+                                            size="sm"
+                                            variant="bordered"
+                                            value={e.value}
+                                            onValueChange={(val) => updateEntry(e.key, val)}
+                                        />
+                                    </div>
+                                ))}
+                            </CardBody>
+                        </Card>
+                        <div className="flex items-center gap-4 mt-4">
+                            <Button size="sm" color="primary" isLoading={saving} onPress={handleSave}>
+                                {locale.SaveSettings}
+                            </Button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
-};
-
-export default Component;
+}

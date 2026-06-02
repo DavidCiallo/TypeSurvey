@@ -3,6 +3,7 @@
 import { Button, Input, Form } from "@heroui/react";
 import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { toast } from "../../methods/notify";
 import { setAuthStatus, setUserInfo } from "../../methods/auth";
 import { useAuth } from "../../methods/auth-context";
@@ -20,13 +21,40 @@ export default function Component() {
     const navigate = useNavigate();
     const locale = Locale("AuthPage");
     const { setAuthInfo } = useAuth();
+    const [isRegister, setIsRegister] = useState(false);
+    const [allowRegister, setAllowRegister] = useState(false);
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        AuthRouter.config({} as any).then((res: any) => {
+            if (res.success && res.data) {
+                setAllowRegister(res.data.allow_register === true);
+            }
+        });
+    }, []);
+
+    const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const data = Object.fromEntries(new FormData(event.currentTarget));
         const email = data.email.toString();
         const password = data.password.toString();
         await login({ email, password });
+    };
+
+    const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(event.currentTarget));
+        const name = data.name.toString();
+        const email = data.email.toString();
+        const password = data.password.toString();
+        const { success, data: resData, message } = await AuthRouter.register({
+            identify: { name, email, password },
+        } as any);
+        if (success && resData?.needs_verification) {
+            toast({ title: locale.RegisterSuccess, color: "success" });
+            setIsRegister(false);
+        } else {
+            toast({ title: message || locale.RegisterFailed, color: "danger" });
+        }
     };
 
     async function login(auth: { email: string; password: string }) {
@@ -58,44 +86,99 @@ export default function Component() {
                     </span>
                     {locale.Title}
                 </p>
-                <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleSubmit}>
-                    <Input
-                        isRequired
-                        label={locale.EmailLabel}
-                        labelPlacement="outside"
-                        name="email"
-                        placeholder={locale.EmailPlaceholder}
-                        type="email"
-                        variant="bordered"
-                        errorMessage={() => locale.EmailError}
-                    />
-                    <Input
-                        isRequired
-                        label={locale.PasswordLabel}
-                        labelPlacement="outside"
-                        name="password"
-                        placeholder={locale.PasswordPlaceholder}
-                        type="password"
-                        variant="bordered"
-                        errorMessage={() => locale.PasswordError}
-                    />
-                    <div className="flex w-full items-center justify-end">
-                        <div
-                            className="text-default-500 text-sm cursor-pointer"
-                            onClick={() =>
-                                toast({
-                                    title: locale.ForgetPasswordErrorText,
-                                    color: "danger",
-                                })
-                            }
-                        >
-                            {locale.ForgetPasswordLinkText}
-                        </div>
-                    </div>
-                    <Button className="w-full" color="primary" type="submit">
-                        {locale.SubmitButtonText}
-                    </Button>
-                </Form>
+
+                {!isRegister ? (
+                    <>
+                        <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleLogin}>
+                            <Input
+                                isRequired
+                                label={locale.EmailLabel}
+                                labelPlacement="outside"
+                                name="email"
+                                placeholder={locale.EmailPlaceholder}
+                                type="email"
+                                variant="bordered"
+                                errorMessage={() => locale.EmailError}
+                            />
+                            <Input
+                                isRequired
+                                label={locale.PasswordLabel}
+                                labelPlacement="outside"
+                                name="password"
+                                placeholder={locale.PasswordPlaceholder}
+                                type="password"
+                                variant="bordered"
+                                errorMessage={() => locale.PasswordError}
+                            />
+                            <div className="flex w-full items-center justify-end">
+                                <div
+                                    className="text-default-500 text-sm cursor-pointer"
+                                    onClick={() =>
+                                        toast({
+                                            title: locale.ForgetPasswordErrorText,
+                                            color: "danger",
+                                        })
+                                    }
+                                >
+                                    {locale.ForgetPasswordLinkText}
+                                </div>
+                            </div>
+                            <Button className="w-full" color="primary" type="submit">
+                                {locale.SubmitButtonText}
+                            </Button>
+                        </Form>
+                        {allowRegister && (
+                            <p className="text-center text-sm text-gray-500">
+                                {locale.NoAccount}{" "}
+                                <span className="text-primary cursor-pointer text-sm" onClick={() => setIsRegister(true)}>
+                                    {locale.RegisterNow}
+                                </span>
+                            </p>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleRegister}>
+                            <Input
+                                isRequired
+                                label={locale.NameLabel}
+                                labelPlacement="outside"
+                                name="name"
+                                placeholder={locale.NamePlaceholder}
+                                variant="bordered"
+                            />
+                            <Input
+                                isRequired
+                                label={locale.EmailLabel}
+                                labelPlacement="outside"
+                                name="email"
+                                placeholder={locale.EmailPlaceholder}
+                                type="email"
+                                variant="bordered"
+                                errorMessage={() => locale.EmailError}
+                            />
+                            <Input
+                                isRequired
+                                label={locale.PasswordLabel}
+                                labelPlacement="outside"
+                                name="password"
+                                placeholder={locale.PasswordPlaceholder}
+                                type="password"
+                                variant="bordered"
+                                errorMessage={() => locale.PasswordError}
+                            />
+                            <Button className="w-full" color="primary" type="submit">
+                                {locale.RegisterButtonText}
+                            </Button>
+                        </Form>
+                        <p className="text-center text-sm text-gray-500">
+                            {locale.HasAccount}{" "}
+                            <span className="text-primary cursor-pointer text-sm" onClick={() => setIsRegister(false)}>
+                                {locale.BackToLogin}
+                            </span>
+                        </p>
+                    </>
+                )}
             </div>
         </div>
     );

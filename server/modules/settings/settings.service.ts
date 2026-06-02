@@ -3,20 +3,48 @@ import Repository from "../../lib/repository";
 
 const settingsRepository: Repository<SettingsEntity> = Repository.instance<SettingsEntity>("settings");
 
-let cache: Record<string, string> | null = null;
+const SETTING_KEYS: Record<string, string> = {
+    "allow_register": "ALLOW_REGISTER",
+    "allowed_domains": "ALLOWED_REGISTER_DOMAINS",
+    "allowed_from_domains": "ALLOWED_FROM_DOMAINS",
+    "resend_api_key": "RESEND_API_KEY",
+    "resend_api_keys": "RESEND_API_KEYS",
+    "client_url": "CLIENT_URL",
+};
 
-async function refreshCache(): Promise<Record<string, string>> {
+let cache: Record<string, string> = {};
+
+export async function loadSettings(): Promise<void> {
     cache = {};
     await settingsRepository.findEach({}, (row) => {
         if (row.key && !row.delete_time) {
-            cache![row.key] = row.value;
+            cache[row.key] = row.value;
         }
     });
-    return cache;
+    for (const [key, envKey] of Object.entries(SETTING_KEYS)) {
+        if (!cache[key]) {
+            const envVal = process.env[envKey];
+            if (envVal !== undefined) {
+                cache[key] = envVal;
+            }
+        }
+    }
+}
+
+export function getSetting(key: string): string {
+    return cache[key] || "";
+}
+
+export function getAllSettings(): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const key of Object.keys(SETTING_KEYS)) {
+        result[key] = cache[key] || "";
+    }
+    return result;
 }
 
 export async function getSettings(): Promise<Record<string, any>> {
-    if (!cache) await refreshCache();
+    if (Object.keys(cache).length === 0) await loadSettings();
     return { ...cache };
 }
 
@@ -28,9 +56,18 @@ export async function saveSettings(entries: { key: string; value: string }[]): P
         } else {
             await settingsRepository.insert({ key, value } as any);
         }
+        cache[key] = value;
     }
-    cache = null;
-    await refreshCache();
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+    cache[key] = value;
+    const existing = await settingsRepository.findOne({ key } as any);
+    if (existing) {
+        await settingsRepository.update({ key } as any, { value } as any);
+    } else {
+        await settingsRepository.insert({ key, value } as any);
+    }
 }
 
 export async function getAllData(): Promise<{ accounts: any[]; fields: any[]; radios: any[]; records: any[]; settings: any[] }> {
@@ -96,7 +133,7 @@ export async function importAllData(data: {
         imported[key] = rows.length;
     }
 
-    cache = null;
-    await refreshCache();
+    cache = {};
+    await loadSettings();
     return imported;
 }

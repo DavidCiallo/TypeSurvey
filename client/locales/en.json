@@ -17,7 +17,8 @@
         "FormList": "Form List",
         "FieldManage": "Form Management",
         "Feedback": "Data Feedback",
-        "Logout": "Logout"
+        "Logout": "Logout",
+        "Settings": "Settings"
     },
 
     "AuthPage": {
@@ -32,7 +33,16 @@
         "PasswordError": "This is obviously required",
         "ForgetPasswordLinkText": "Forgot Password?",
         "ForgetPasswordErrorText": "Please contact the administrator 🙁",
-        "SubmitButtonText": "Login"
+        "SubmitButtonText": "Login",
+        "NoAccount": "No account?",
+        "RegisterNow": "Register now",
+        "HasAccount": "Already have an account?",
+        "BackToLogin": "Back to login",
+        "RegisterButtonText": "Register",
+        "RegisterSuccess": "Registration successful, please check your email to verify",
+        "RegisterFailed": "Registration failed, email may already exist",
+        "NameLabel": "Name",
+        "NamePlaceholder": "Please enter name"
     },
     "FieldType": {
         "text": "Text",
@@ -150,5 +160,23 @@
         "Slogan1": "Compact, elegant, and fast.",
         "Slogan2": "No complex code or editing, just faster way to start data business.",
         "ViewSource": "View Source Code"
+    },
+
+    "SettingsPage": {
+        "Title": "Settings",
+        "ExportData": "Export",
+        "ImportData": "Import",
+        "BasicSettings": "Basic Settings",
+        "SaveSettings": "Save Settings",
+        "ToastSaveSuccess": "Saved successfully",
+        "ToastSaveFailed": "Save failed",
+        "ToastExportSuccess": "Exported successfully",
+        "ToastExportFailed": "Export failed",
+        "ToastImportSuccess": "Imported successfully",
+        "ToastImportFailed": "Import failed",
+        "ToastInvalidFormat": "Invalid file format",
+        "FieldLabel": {
+            "allow_register": "Allow Register (1=on, 0=off)"
+        }
     }
 }

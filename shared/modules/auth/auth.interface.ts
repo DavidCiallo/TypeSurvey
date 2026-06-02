@@ -50,14 +50,10 @@ export class RegisterRequest implements BaseRequest {
     }
 }
 
-export class RegisterResponse implements BaseResponse<{ token: string; is_admin?: number; roles?: { name: string; type: string }[] }> {
+export class RegisterResponse implements BaseResponse<{ needs_verification?: boolean }> {
     public success: boolean;
     public message: string;
-    public data: {
-        token: string;
-        is_admin?: number;
-        roles?: { name: string; type: string }[];
-    };
+    public data: { needs_verification?: boolean };
 
     constructor(origin: RegisterResponse) {
         this.success = origin.success;
@@ -116,10 +112,10 @@ export class AuthConfigRequest implements BaseRequest {
     }
 }
 
-export class AuthConfigResponse implements BaseResponse<{ allowed_domains: string[] }> {
+export class AuthConfigResponse implements BaseResponse<{ allowed_domains: string[]; allowed_from_domains: string[]; allow_register: boolean }> {
     public success: boolean;
     public message: string;
-    public data: { allowed_domains: string[] };
+    public data: { allowed_domains: string[]; allowed_from_domains: string[]; allow_register: boolean };
 
     constructor(origin: AuthConfigResponse) {
         this.success = origin.success;
@@ -134,6 +130,31 @@ export class AliveResponse implements BaseResponse<{ is_admin?: number; roles?: 
     public data: { is_admin?: number; roles?: { name: string; type: string }[] };
 
     constructor(origin: AliveResponse) {
+        this.success = origin.success;
+        this.message = origin.message;
+        this.data = origin.data;
+    }
+}
+
+export class VerifyEmailRequest implements BaseRequest {
+    public auth?: string;
+    public token: string;
+
+    constructor(origin: Partial<VerifyEmailRequest>) {
+        if (!origin.token) throw new Error("Token is required");
+        this.token = origin.token;
+    }
+    static self(unsafe: VerifyEmailRequest) {
+        return new VerifyEmailRequest(unsafe);
+    }
+}
+
+export class VerifyEmailResponse implements BaseResponse<{ token: string; is_admin?: number }> {
+    public success: boolean;
+    public message: string;
+    public data: { token: string; is_admin?: number };
+
+    constructor(origin: VerifyEmailResponse) {
         this.success = origin.success;
         this.message = origin.message;
         this.data = origin.data;
