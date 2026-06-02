@@ -1,7 +1,5 @@
 import { nanoid } from "nanoid";
-import {
-    RecordHistoryRequest, RecordSubmitRequest, RecordAllRequest,
-} from "../../../shared/modules/record/record.interface";
+import { RecordHistoryRequest, RecordSubmitRequest, RecordAllRequest } from "../../../shared/modules/record/record.interface";
 import { recordRoutes } from "../../../shared/modules/record/record.router";
 import { getIdentifyByVerify } from "../auth/auth.service";
 import { getFieldList, getFormNameByField } from "../form/form.service";
