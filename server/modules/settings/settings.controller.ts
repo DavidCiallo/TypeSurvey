@@ -12,7 +12,7 @@ async function list(request: SettingsListRequest) {
     request = SettingsListRequest.self(request);
     await requireAdmin(request.auth);
     const allSettings = getAllSettings();
-    const entries = [{ key: "allow_register", value: allSettings["allow_register"] || "" }];
+    const entries = Object.entries(allSettings).map(([key, value]) => ({ key, value: value || "" }));
     return { entries };
 }
 

@@ -10,18 +10,7 @@ interface SendEmailParams {
 }
 
 export async function sendEmail({ from, to, subject, html }: SendEmailParams): Promise<boolean> {
-    let api_key = getSetting("resend_api_key");
-    const keyMap = getSetting("resend_api_keys");
-    if (keyMap) {
-        const fromDomain = from.split("@")[1]?.toLowerCase();
-        for (const pair of keyMap.split(",")) {
-            const [domain, key] = pair.split(":").map(s => s.trim());
-            if (domain && key && domain.toLowerCase() === fromDomain) {
-                api_key = key;
-                break;
-            }
-        }
-    }
+    const api_key = getSetting("resend_api_key");
     if (!api_key) {
         console.error("RESEND_API_KEY is not configured for domain in:", from);
         return false;
