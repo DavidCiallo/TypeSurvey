@@ -9,6 +9,15 @@ interface props {
     openRecordEditor: (form_name: string) => void;
 }
 
+function formatTime(ts: number): string {
+    const d = new Date(ts);
+    const M = String(d.getMonth() + 1).padStart(2, "0");
+    const D = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${M}/${D} ${h}:${m}`;
+}
+
 const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
     const locale = Locale("FormPage");
     const navigate = useNavigate();
@@ -26,7 +35,7 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                     const subtitle = (
                         <div className="flex flex-row gap-3">
                             <div>{locale.RecordNumLabel + " " + records_num}</div>
-                            {!!last_submit && <div>{new Date(last_submit).toLocaleString().slice(5, 16)}</div>}
+                            {!!last_submit && <div>{formatTime(last_submit)}</div>}
                             {!last_submit && <div>{locale.EmptyNumLabel}</div>}
                         </div>
                     );

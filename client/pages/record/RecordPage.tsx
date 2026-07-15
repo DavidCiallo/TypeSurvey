@@ -109,6 +109,9 @@ const Component = () => {
                             size="sm"
                             value={search}
                             onValueChange={setSearch}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") loadUserPage();
+                            }}
                             endContent={
                                 <Button
                                     size="sm"

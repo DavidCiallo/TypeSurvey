@@ -1,1 +1,1 @@
-export type FieldType = "text" | "email" | "password" | "number" | "month" | "date" | "time" | "color" | "file" | "checkbox" | "select" | "mulselect" | "textarea";
+export type FieldType = "text" | "email" | "password" | "number" | "month" | "date" | "time" | "color" | "file" | "checkbox" | "checkboxgroup" | "select" | "mulselect" | "textarea";
