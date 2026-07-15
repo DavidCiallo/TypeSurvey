@@ -22,7 +22,7 @@
     },
 
     "AuthPage": {
-        "Title": "TypeForm",
+        "Title": "简表",
         "LoginSuccess": "Login successful",
         "LoginFailed": "Login failed",
         "EmailLabel": "Email",

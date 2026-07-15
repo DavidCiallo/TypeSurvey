@@ -20,7 +20,7 @@ const Component = () => {
                 <rect x="10" y="46" width="33" height="4" rx="2" fill="#fff" opacity="0.9" />
                 <circle cx="50" cy="48" r="4" fill="#fff" />
             </svg>
-            TypeForm
+            简表
         </span>
     );
     const auth = getAuthStatus();
@@ -58,7 +58,7 @@ const Component = () => {
                 <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
                     <div className="flex lg:flex-1">
                         <a href="#" className="-m-1.5 p-1.5">
-                            <span className="sr-only">TypeForm</span>
+                            <span className="sr-only">简表</span>
                             <Logo />
                         </a>
                     </div>

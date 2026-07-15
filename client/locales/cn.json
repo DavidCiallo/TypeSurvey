@@ -22,7 +22,7 @@
     },
 
     "AuthPage": {
-        "Title": "Type表单",
+        "Title": "简表",
         "LoginSuccess": "登录成功",
         "LoginFailed": "登录失败",
         "EmailLabel": "邮箱",
