@@ -4,6 +4,7 @@ import { pluginReact } from "@rsbuild/plugin-react";
 export default defineConfig({
     html: {
         title: "TypeForm",
+        favicon: "./client/favicon.svg",
     },
     plugins: [pluginReact()],
     source: {
