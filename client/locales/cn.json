@@ -50,6 +50,7 @@
         "password": "密码",
         "number": "数字",
         "checkbox": "复选框",
+        "checkboxgroup": "多选框",
         "select": "单选项",
         "mulselect": "多选项",
         "textarea": "多行文本"

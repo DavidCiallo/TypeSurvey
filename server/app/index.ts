@@ -14,6 +14,7 @@ import { recordController } from "../modules/record/record.controller";
 import { fileController } from "../modules/file/file.controller";
 import { settingsController, appController } from "../modules/settings/settings.controller";
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const staticPath = path.join(__dirname);
