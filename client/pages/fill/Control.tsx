@@ -254,6 +254,9 @@ export function renderControl(
                         <span>{field.field_name}</span>
                         <span className="text-red-600">{field.required ? "*" : ""}</span>
                     </label>
+                    <label className="text-xs pb-1">
+                        <span className="text-gray-500">{field.comment}</span>
+                    </label>
                     <Checkbox
                         size="sm"
                         className="pb-1"
