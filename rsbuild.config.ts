@@ -3,7 +3,8 @@ import { pluginReact } from "@rsbuild/plugin-react";
 
 export default defineConfig({
     html: {
-        title: "TypeForm",
+        title: "简表",
+        favicon: "./client/favicon.svg",
     },
     plugins: [pluginReact()],
     source: {

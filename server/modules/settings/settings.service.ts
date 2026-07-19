@@ -8,7 +8,6 @@ const SETTING_KEYS: Record<string, string> = {
     "allowed_domains": "ALLOWED_REGISTER_DOMAINS",
     "allowed_from_domains": "ALLOWED_FROM_DOMAINS",
     "resend_api_key": "RESEND_API_KEY",
-    "resend_api_keys": "RESEND_API_KEYS",
     "client_url": "CLIENT_URL",
 };
 

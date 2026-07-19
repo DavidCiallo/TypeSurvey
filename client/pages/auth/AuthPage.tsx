@@ -80,10 +80,21 @@ export default function Component() {
     return (
         <div className="flex h-full w-full items-center justify-center">
             <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-[20vh]">
-                <p className="pb-4 text-left text-3xl font-semibold">
-                    <span aria-label="emoji" className="mr-4" role="img">
-                        📝
-                    </span>
+                <p className="pb-4 text-left text-3xl font-semibold flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40" className="shrink-0">
+                        <defs>
+                            <linearGradient id="auth-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: "#3B82F6" }} />
+                                <stop offset="100%" style={{ stopColor: "#2563EB" }} />
+                            </linearGradient>
+                        </defs>
+                        <rect width="64" height="64" rx="14" fill="url(#auth-bg)" />
+                        <rect x="10" y="10" width="21" height="4" rx="2" fill="#fff" opacity="0.9" />
+                        <rect x="10" y="22" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
+                        <rect x="10" y="34" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
+                        <rect x="10" y="46" width="33" height="4" rx="2" fill="#fff" opacity="0.9" />
+                        <circle cx="50" cy="48" r="4" fill="#fff" />
+                    </svg>
                     {locale.Title}
                 </p>
 

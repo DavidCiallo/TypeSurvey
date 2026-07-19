@@ -23,6 +23,8 @@
         "grpc-web": "^1.5.0",
         "gsap": "^3.13.0",
         "nanoid": "^5.1.6",
+        "openai": "^6.46.0",
+        "pinyin-pro": "^3.28.1",
         "quoted-printable": "^1.0.1",
         "react": "19.2.4",
         "react-dom": "19.2.4",

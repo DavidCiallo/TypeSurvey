@@ -54,7 +54,7 @@ const Component = ({
         return updateField(field_id, "position", position);
     }
 
-    function DropdownPopover({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
+    function DropdownPopover({ children, trigger, disabled }: { children: React.ReactNode; trigger: React.ReactNode; disabled?: boolean }) {
         const [isOpen, setIsOpen] = useState(false);
         const [isClosing, setIsClosing] = useState(false);
         const [pos, setPos] = useState({ left: 0, top: 0, width: 0 });
@@ -70,6 +70,7 @@ const Component = ({
         };
 
         const toggle = () => {
+            if (disabled) return;
             if (isOpen) {
                 close();
             } else {
@@ -148,15 +149,18 @@ const Component = ({
         );
     }
 
+    const OptionTypes = ["checkbox", "checkboxgroup", "select", "mulselect"];
     function RadioSelect({ field }: { field: FormFieldImpl }) {
         const radios = field?.radios || [];
         const selectedCount = radios.filter((r) => r.useful).length;
+        const isOptionType = OptionTypes.includes(field.field_type);
+        const disabled = field.disabled || !isOptionType;
 
         return (
-            <DropdownPopover trigger={
+            <DropdownPopover disabled={disabled} trigger={
                 <div className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center
                     transition-colors duration-150
-                    ${field.disabled ? "opacity-50" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
+                    ${disabled ? "opacity-50 cursor-not-allowed" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
                     <span className="flex-1 truncate">
                         {selectedCount > 0 ? `${locale.TableBodyHadSetRadio} ${selectedCount}` : locale.TableBodyNoSetRadio}
                     </span>

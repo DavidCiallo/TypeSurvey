@@ -52,7 +52,7 @@ async function confirm(request: FileConfirmRequest) {
             required: false,
             disabled: !fields[i].check,
         });
-        if (!field_id || !["select", "mulselect", "checkbox"].includes(fields[i].type)) {
+        if (!field_id || !["select", "mulselect", "checkbox", "checkboxgroup"].includes(fields[i].type)) {
             continue;
         }
         for (const radio_name of header[i].sub || []) {

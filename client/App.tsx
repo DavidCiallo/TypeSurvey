@@ -10,6 +10,7 @@ import FillPage from "./pages/fill/FillPage";
 import HomePage from "./pages/home/HomePage";
 import RecordPage from "./pages/record/RecordPage";
 import SettingsPage from "./pages/settings/SettingsPage";
+
 import { AuthStatus, clearAuthData, getAuthStatus, setUserInfo } from "./methods/auth";
 import { AuthProvider, useAuth } from "./methods/auth-context";
 import { AuthRouter } from "./api/instance";
@@ -52,6 +53,7 @@ const App = () => {
                         <Route path="/form" element={<FormPage />} />
                         <Route path="/field" element={<FormFieldPage />} />
                         <Route path="/record" element={<RecordPage />} />
+
                         <Route path="/settings" element={<SettingsPage />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/home" replace />} />

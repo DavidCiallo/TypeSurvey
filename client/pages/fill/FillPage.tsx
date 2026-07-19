@@ -43,6 +43,7 @@ const Component = () => {
         setTotal(fields.length);
         setRecords([...records]);
         setPass(true);
+        if (form_name) document.title = form_name;
     }
 
     async function loadRecord(code: string) {
@@ -67,19 +68,19 @@ const Component = () => {
             toast({ title: locale.ToastErrorSubmit, color: "danger" });
             return;
         }
-        const exist = records.find((i) => i.field_id === field_id);
-        if (exist) {
-            exist.field_value = field_value;
-        } else {
-            records.push({ id: "", item_id, field_id, field_value, create_time: 0, update_time: 0 });
-        }
-        setRecords([...records]);
+        setRecords((prev) => {
+            const exist = prev.find((i) => i.field_id === field_id);
+            if (exist) {
+                return prev.map((r) => r.field_id === field_id ? { ...r, field_value } : r);
+            }
+            return [...prev, { id: "", item_id, field_id, field_value, create_time: 0, update_time: 0 }];
+        });
 
         const { success } = await RecordRouter.submit({ item_id, field_id, field_value });
         if (!success) {
             toast({ title: locale.ToastErrorSubmit, color: "danger" });
         }
-    }, [records, locale]);
+    }, [locale]);
 
     function submitRecord(field_id: string, field_value: number | string | boolean, field_type?: string) {
         if (!field_id) return;
@@ -105,6 +106,10 @@ const Component = () => {
         localStorage.setItem("entry_id", id);
         loadRecord(localStorage.getItem("code") || "");
     }, []);
+
+    useEffect(() => {
+        if (formName) document.title = formName;
+    }, [formName]);
 
     return (
         <div className="w-3/4 md:w-1/3 mx-auto">

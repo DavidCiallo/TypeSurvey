@@ -22,7 +22,7 @@
     },
 
     "AuthPage": {
-        "Title": "TypeForm",
+        "Title": "简表",
         "LoginSuccess": "Login successful",
         "LoginFailed": "Login failed",
         "EmailLabel": "Email",
@@ -49,6 +49,7 @@
         "email": "Email",
         "password": "Password",
         "checkbox": "Checkbox",
+        "checkboxgroup": "Checkbox Group",
         "select": "Single Option",
         "mulselect": "Multiple Option",
         "textarea": "Multiline Text"
