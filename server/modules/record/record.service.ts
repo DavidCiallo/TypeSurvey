@@ -111,3 +111,7 @@ export async function insertRecords(
     await RecordRepository.batchInsert(records as any);
     return true;
 }
+
+export async function deleteRecordByItem(item_id: string): Promise<void> {
+    await RecordRepository.hardDelete({ item_id } as any);
+}

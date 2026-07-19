@@ -109,7 +109,12 @@
         "TableBodyDownSort": "Down",
         "CreateFormFailed": "Failed to create form, a form with the same name may exist",
         "CreateFieldFailed": "Failed to create field, a field with the same name may exist",
-        "CreateRadioFailed": "Failed to create option, an option with the same name may exist"
+        "CreateRadioFailed": "Failed to create option, an option with the same name may exist",
+        "DeleteFormButton": "Delete This Form",
+        "DeleteFormTitle": "Delete Form",
+        "DeleteFormDesc": "Are you sure you want to delete this form? All fields and submission records will be permanently deleted. This action cannot be undone.",
+        "ToastDeleteSuccess": "Deleted successfully",
+        "ToastDeleteFailed": "Failed to delete"
     },
     "FormFieldRadioEditor": {
         "Title": "Add Selectable Option",
@@ -142,13 +147,19 @@
         "ListViewRecordButton": "View",
         "RecordFieldColumn": "Field",
         "RecordValueColumn": "Content",
-        "EmptyRecordSelect": "Please select user"
+        "EmptyRecordSelect": "Please select user",
+        "DeleteRecordButton": "Delete",
+        "DeleteRecordTitle": "Delete Record",
+        "DeleteRecordDesc": "Are you sure you want to delete this submission record? This action cannot be undone.",
+        "ToastDeleteSuccess": "Deleted successfully",
+        "ToastDeleteFailed": "Failed to delete"
     },
     "FillPage": {
         "ToastErrorSubmit": "Submission failed, possibly incorrect format",
         "ToastErrorParam": "Parameter error",
         "FormSelectPlaceholder": "Please select",
         "ButtonNext": "Next",
+        "ButtonPrev": "Previous",
         "ButtonSubmit": "Save"
     },
     "CheckModal": {

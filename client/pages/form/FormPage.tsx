@@ -33,6 +33,8 @@ const Component = () => {
     const [editMode, setEditMode] = useState<"create" | "edit">("create");
     const [focusForm, setFocusForm] = useState<string | null>(null);
 
+    const [isImportLoading, setImportLoading] = useState(false);
+
     const [isNewRecordOpen, setNewRecordOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<"common" | "collect" | null>(null);
 
@@ -115,18 +117,31 @@ const Component = () => {
 
     async function uploadImportFile(file: File | null) {
         if (!file) return;
-        const chunks = await getChunks(file);
-        chunks.forEach(async (file) => {
-            const { success, data } = await FileRouter.readxlsx({ file });
-            if (!success || !data) return;
-            const { tempid, header } = data;
-            setTempid(tempid);
-            setImportOpen(true);
-            setImportHeader(header);
-        });
+        setImportLoading(true);
+        try {
+            const chunks = await getChunks(file);
+            let result: { tempid: string; header: Array<XlsxHeader> } | null = null;
+            for (const chunk of chunks) {
+                const { success, data } = await FileRouter.readxlsx({ file: chunk });
+                if (!success) {
+                    toast({ title: Locale("Common").ToastNetworkError, color: "danger" });
+                    return;
+                }
+                if (data?.tempid) {
+                    result = data;
+                }
+            }
+            if (result) {
+                setTempid(result.tempid);
+                setImportHeader(result.header);
+                setImportOpen(true);
+            }
+        } finally {
+            setImportLoading(false);
+        }
     }
-    async function comfirmImport(fields: Array<FieldCache>) {
-        const { success } = await FileRouter.confirm({ fields, usedata: true, tempid });
+    async function comfirmImport(fields: Array<FieldCache>, usedata: boolean, timeFieldIndex?: number) {
+        const { success } = await FileRouter.confirm({ fields, usedata, tempid, time_field_index: timeFieldIndex });
         if (success) {
             toast({ title: "Success", color: "success" });
         } else {
@@ -163,7 +178,7 @@ const Component = () => {
     return (
         <div className="mx-auto w-full max-w-5xl space-y-4">
             <div className="flex justify-end">
-                <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} />
+                <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} importing={isImportLoading} />
             </div>
             <div>
                 <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />

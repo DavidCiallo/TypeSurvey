@@ -30,7 +30,7 @@ const Component = () => {
 
     const [total, setTotal] = useState<number>(1);
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(7);
+    const [pageSize] = useState(10);
     const [pageKey, setPageKey] = useState(Math.random());
     const prePage = useRef(1);
     const [submitting, setSubmitting] = useState(false);
@@ -120,8 +120,11 @@ const Component = () => {
                     setSubmitting(true);
                     try {
                         await new Promise((r) => setTimeout(r, 300));
+                        const isLastPage = page >= Math.ceil(total / pageSize);
                         setPage(Number(prePage.current));
-                        toast({ title: locale.ButtonSubmit, color: "success" });
+                        if (isLastPage) {
+                            toast({ title: locale.ButtonSubmit, color: "success" });
+                        }
                     } finally {
                         setSubmitting(false);
                     }
@@ -160,15 +163,29 @@ const Component = () => {
                             submitRecord("", "");
                         }}
                     />
-                    <Button
-                        className="my-2 px-8"
-                        disabled={submitting}
-                        onClick={() => {
-                            submitBtn.current?.click();
-                        }}
-                    >
-                        {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext}
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="px-6"
+                            disabled={page <= 1}
+                            onClick={() => {
+                                prePage.current = page - 1;
+                                setPage(page - 1);
+                            }}
+                        >
+                            {locale.ButtonPrev || "上一页"}
+                        </Button>
+                        <Button
+                            className="px-6"
+                            disabled={submitting}
+                            onClick={() => {
+                                prePage.current = page + 1;
+                                submitBtn.current?.click();
+                            }}
+                        >
+                            {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext || "下一页"}
+                        </Button>
+                    </div>
                 </div>
             )}
             {!pass && <CheckModal value={code} change={changeCode} />}

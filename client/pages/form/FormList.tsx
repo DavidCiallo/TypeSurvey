@@ -4,7 +4,6 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/client/components/ui/accordion";
-import { Button } from "@/client/components/ui/button";
 import { Locale } from "../../methods/locale";
 import { useNavigate } from "react-router-dom";
 import { EmptyComp } from "../../components/empty/Empty";
@@ -42,9 +41,9 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                         <AccordionTrigger
                             indicator={
                                 <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
+                                    <span
+                                        role="button"
+                                        className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -52,10 +51,10 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                                         }}
                                     >
                                         {locale.ViewRecordsButton}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
+                                    </span>
+                                    <span
+                                        role="button"
+                                        className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -63,11 +62,10 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                                         }}
                                     >
                                         {locale.RenameButton}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive"
+                                    </span>
+                                    <span
+                                        role="button"
+                                        className="text-destructive hover:bg-destructive/10 inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -75,7 +73,7 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
                                         }}
                                     >
                                         {locale.CreateRecordButton}
-                                    </Button>
+                                    </span>
                                 </div>
                             }
                         >

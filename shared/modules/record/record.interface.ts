@@ -167,3 +167,29 @@ export class RecordAllResponse implements BaseResponse<{
         this.data = origin.data;
     }
 }
+
+export class RecordDeleteRequest implements BaseRequest {
+    public auth?: string;
+    public item_id: string;
+
+    constructor(origin: Partial<RecordDeleteRequest>) {
+        if (!origin.item_id) throw new Error("Item ID is required");
+        origin.auth && (this.auth = origin.auth);
+        this.item_id = origin.item_id;
+    }
+
+    static self(unsafe: RecordDeleteRequest) {
+        return new RecordDeleteRequest(unsafe);
+    }
+}
+
+export class RecordDeleteResponse implements BaseResponse<{}> {
+    public success: boolean;
+    public message?: string;
+    public data?: {};
+    constructor(origin: RecordDeleteResponse) {
+        this.success = origin.success;
+        this.message = origin.message;
+        this.data = origin.data;
+    }
+}

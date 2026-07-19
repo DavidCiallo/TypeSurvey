@@ -124,7 +124,12 @@
         "TableBodyDownSort": "下降",
         "CreateFormFailed": "创建表单失败，可能存在同名项",
         "CreateFieldFailed": "创建字段失败，可能存在同名项",
-        "CreateRadioFailed": "创建选项失败，可能存在同名项"
+        "CreateRadioFailed": "创建选项失败，可能存在同名项",
+        "DeleteFormButton": "删除此表单",
+        "DeleteFormTitle": "删除表单",
+        "DeleteFormDesc": "确定要删除当前表单吗？所有字段和提交记录都会被永久删除，此操作不可撤销。",
+        "ToastDeleteSuccess": "删除成功",
+        "ToastDeleteFailed": "删除失败"
     },
     "FormFieldRadioEditor": {
         "Title": "新增可选项",
@@ -160,13 +165,19 @@
         "RecordFieldColumn": "字段",
         "RecordValueColumn": "内容",
         "RecordActionColumn": "操作",
-        "EmptyRecordSelect": "等待数据"
+        "EmptyRecordSelect": "等待数据",
+        "DeleteRecordButton": "删除",
+        "DeleteRecordTitle": "删除记录",
+        "DeleteRecordDesc": "确定要删除这条提交记录吗？此操作不可撤销。",
+        "ToastDeleteSuccess": "删除成功",
+        "ToastDeleteFailed": "删除失败"
     },
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
         "ToastErrorParam": "参数错误",
         "FormSelectPlaceholder": "请选择",
         "ButtonNext": "继续",
+        "ButtonPrev": "上一页",
         "ButtonSubmit": "保存"
     },
     "CheckModal": {

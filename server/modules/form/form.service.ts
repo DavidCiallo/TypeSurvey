@@ -132,3 +132,21 @@ export async function updateFormName(form_name: string, new_name: string): Promi
     const result = await FieldRepository.update({ form_name } as any, { form_name: new_name } as any);
     return result;
 }
+
+export async function deleteForm(form_name: string): Promise<void> {
+    // Collect all field ids for this form
+    const fieldIds: string[] = [];
+    await FieldRepository.findEach({ form_name } as any, (field) => {
+        fieldIds.push(field.id);
+    });
+
+    if (fieldIds.length > 0) {
+        // Delete all records belonging to these fields in one pass
+        await RecordRepository.hardDelete({ field_id: { $in: fieldIds } } as any);
+        // Delete all radios for these fields in one pass
+        await RadioRepository.hardDelete({ field_id: { $in: fieldIds } } as any);
+    }
+
+    // Delete all fields
+    await FieldRepository.hardDelete({ form_name } as any);
+}

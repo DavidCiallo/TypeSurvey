@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/client/components/ui/table";
-import { ArrowUp, ArrowDown, X, Check } from "lucide-react";
+import { ArrowUp, ArrowDown, Eye, EyeOff, Check } from "lucide-react";
 import { Locale } from "../../methods/locale";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FieldTypeList } from "../form/types";
@@ -264,7 +264,7 @@ const Component = ({
                                         />
                                     </TableCell>
                                     <TableCell className="min-w-32 max-w-32">
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center justify-center gap-1">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
@@ -284,10 +284,10 @@ const Component = ({
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className={`size-7 ${field.disabled ? "text-green-600" : "text-destructive"}`}
+                                                className={`size-7 ${field.disabled ? "text-muted-foreground" : "text-foreground"}`}
                                                 onClick={() => updateField(field.id, "disabled", !field.disabled)}
                                             >
-                                                {field.disabled ? <Check className="size-3" /> : <X className="size-3" />}
+                                                {field.disabled ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                                             </Button>
                                         </div>
                                     </TableCell>

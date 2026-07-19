@@ -3,7 +3,7 @@ import {
 } from "../../../shared/modules/form/form.interface";
 import { formRoutes } from "../../../shared/modules/form/form.router";
 import { getIdentifyByVerify } from "../auth/auth.service";
-import { createField, getFormBriefList, getFormList, updateFormName } from "./form.service";
+import { createField, deleteForm, getFormBriefList, getFormList, updateFormName } from "./form.service";
 
 async function list(request: FormListRequest) {
     const { page, auth } = request;
@@ -43,10 +43,11 @@ async function update(request: FormUpdateRequest) {
 }
 
 async function del(request: FormDeleteRequest) {
-    const { auth } = request;
-    if (!auth) throw "参数错误";
+    const { form_name, auth } = request;
+    if (!form_name || !auth) throw "参数错误";
     const user = getIdentifyByVerify(auth);
     if (!user) throw "Unauthorized";
+    await deleteForm(form_name);
     return {};
 }
 

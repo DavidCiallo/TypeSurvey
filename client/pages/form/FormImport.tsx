@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/client/components/ui/button";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Badge } from "@/client/components/ui/badge";
@@ -39,28 +40,36 @@ type props = {
             field: string;
             type: FieldType;
         }>,
+        usedata: boolean,
+        timeFieldIndex?: number,
     ) => void;
 };
 
 const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
-    const checks = header.map(() => true);
-    const fields = header.map((i) => i.field);
-    const types = header.map((i) => i.type);
+    const [checks, setChecks] = useState<boolean[]>([]);
+    const [fields, setFields] = useState<string[]>([]);
+    const [types, setTypes] = useState<FieldType[]>([]);
+    const [timeFieldIndex, setTimeFieldIndex] = useState<string>("none");
+
+    useEffect(() => {
+        if (header.length > 0) {
+            setChecks(header.map(() => true));
+            setFields(header.map((i) => i.field));
+            setTypes(header.map((i) => i.type));
+            setTimeFieldIndex("none");
+        }
+    }, [header]);
 
     const locale = Locale("FormImport");
-    const handleCustomSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
-        if (event) {
-            event.preventDefault();
-        }
+
+    const handleSubmit = (usedata: boolean) => {
         const fieldData = checks.map((_, index) => ({
             check: checks[index],
             field: fields[index],
             type: types[index],
         }));
-        onSubmit(fieldData);
-    };
-    const triggerSubmit = () => {
-        handleCustomSubmit();
+        const tfi = timeFieldIndex === "none" ? undefined : Number(timeFieldIndex);
+        onSubmit(fieldData, usedata, tfi);
     };
 
     return (
@@ -84,20 +93,32 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
                                 <TableRow key={index}>
                                     <TableCell className="text-center">
                                         <Checkbox
-                                            defaultChecked={true}
-                                            onCheckedChange={(e) => (checks[index] = e === true)}
+                                            checked={checks[index] ?? true}
+                                            onCheckedChange={(e) => {
+                                                const next = [...checks];
+                                                next[index] = e === true;
+                                                setChecks(next);
+                                            }}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Input
-                                            defaultValue={i.field}
-                                            onChange={(e) => (fields[index] = e.target.value)}
+                                            value={fields[index] ?? ""}
+                                            onChange={(e) => {
+                                                const next = [...fields];
+                                                next[index] = e.target.value;
+                                                setFields(next);
+                                            }}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Select
-                                            defaultValue={i.type}
-                                            onValueChange={(value) => (types[index] = value as FieldType)}
+                                            value={types[index] ?? "text"}
+                                            onValueChange={(value) => {
+                                                const next = [...types];
+                                                next[index] = value as FieldType;
+                                                setTypes(next);
+                                            }}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
@@ -125,11 +146,28 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
                         </TableBody>
                     </Table>
                 </div>
+                <div className="flex items-center gap-3 pt-2">
+                    <span className="text-muted-foreground text-sm whitespace-nowrap">时间字段</span>
+                    <Select value={timeFieldIndex} onValueChange={setTimeFieldIndex}>
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="不使用" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">不使用</SelectItem>
+                            {header.map((h, idx) => (
+                                <SelectItem key={idx} value={String(idx)}>
+                                    {fields[idx] || h.field}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <span className="text-muted-foreground/60 text-xs">选择一列作为记录的创建/更新时间</span>
+                </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={triggerSubmit}>
+                    <Button variant="outline" onClick={() => handleSubmit(false)}>
                         {locale.SaveEmpty}
                     </Button>
-                    <Button onClick={triggerSubmit}>
+                    <Button onClick={() => handleSubmit(true)}>
                         {locale.SaveData}
                     </Button>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>

@@ -18,6 +18,14 @@ import {
     TableHeader,
     TableRow,
 } from "@/client/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/client/components/ui/dialog";
 import { Inbox, Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/client/components/ui/tooltip";
 import { FieldRouter, RecordRouter } from "../../api/instance";
@@ -43,6 +51,8 @@ const Component = () => {
     const [search, setSearch] = useState("");
 
     const [_, setFieldTotal] = useState(1);
+
+    const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
     async function loadUserPage(page: number = 1) {
         setItemChoose(null);
@@ -175,6 +185,14 @@ const Component = () => {
                                                     >
                                                         {locale.ListItemLinkButton}
                                                     </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-destructive"
+                                                        onClick={() => setDeleteTarget(i.item_id)}
+                                                    >
+                                                        {locale.DeleteRecordButton}
+                                                    </Button>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -222,8 +240,15 @@ const Component = () => {
                                             record?.field_value;
                                         return (
                                             <TableRow key={field_id}>
-                                                <TableCell className="min-w-24 text-center">
-                                                    {field_name}
+                                                <TableCell className="text-center">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <span className="block max-w-full truncate">{field_name}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent side="top" className="max-w-xs break-all">
+                                                            {field_name}
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {value ? (
@@ -261,6 +286,37 @@ const Component = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{locale.DeleteRecordTitle}</DialogTitle>
+                        <DialogDescription>{locale.DeleteRecordDesc}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+                            {Locale("Common").ButtonCancel}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={async () => {
+                                if (!deleteTarget) return;
+                                const { success } = await RecordRouter.del({ item_id: deleteTarget });
+                                if (success) {
+                                    toast({ title: locale.ToastDeleteSuccess, color: "success" });
+                                    if (itemChoose === deleteTarget) setItemChoose(null);
+                                    loadUserPage(userpage);
+                                } else {
+                                    toast({ title: locale.ToastDeleteFailed, color: "danger" });
+                                }
+                                setDeleteTarget(null);
+                            }}
+                        >
+                            {Locale("Common").ButtonConfirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

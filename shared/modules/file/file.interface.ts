@@ -60,6 +60,7 @@ export class FileConfirmRequest implements BaseRequest {
     public tempid: string;
     public usedata: boolean;
     public fields: FieldCache[];
+    public time_field_index?: number;
 
     constructor(origin: Partial<FileConfirmRequest>) {
         if (!origin.tempid) throw new Error("Temp ID is required");
@@ -68,6 +69,7 @@ export class FileConfirmRequest implements BaseRequest {
         this.tempid = origin.tempid;
         this.usedata = origin.usedata || false;
         this.fields = origin.fields;
+        this.time_field_index = origin.time_field_index;
     }
 
     static self(unsafe: FileConfirmRequest) {

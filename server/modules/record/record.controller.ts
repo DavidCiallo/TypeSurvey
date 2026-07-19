@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
-import { RecordHistoryRequest, RecordSubmitRequest, RecordAllRequest } from "../../../shared/modules/record/record.interface";
+import { RecordHistoryRequest, RecordSubmitRequest, RecordAllRequest, RecordDeleteRequest } from "../../../shared/modules/record/record.interface";
 import { recordRoutes } from "../../../shared/modules/record/record.router";
 import { getIdentifyByVerify } from "../auth/auth.service";
 import { getFieldList, getFormNameByField } from "../form/form.service";
-import { getAllRecord, getRecords, submitRecord } from "./record.service";
+import { deleteRecordByItem, getAllRecord, getRecords, submitRecord } from "./record.service";
 import { codeGenerate } from "../../methods/crypto";
 
 async function history(request: RecordHistoryRequest) {
@@ -40,7 +40,16 @@ async function all(request: RecordAllRequest) {
     return await getAllRecord(form_name, { page, pageSize: 10, search });
 }
 
+async function del(request: RecordDeleteRequest) {
+    const { item_id, auth } = request;
+    if (!item_id || !auth) throw "参数错误";
+    const user = getIdentifyByVerify(auth);
+    if (!user) throw "Unauthorized";
+    await deleteRecordByItem(item_id);
+    return {};
+}
+
 export const recordController = {
     routes: recordRoutes,
-    handlers: { history, submit, all },
+    handlers: { history, submit, all, del },
 };
