@@ -122,9 +122,10 @@ const Component = () => {
                     try {
                         await new Promise((r) => setTimeout(r, 300));
                         const isLastPage = page >= Math.ceil(total / pageSize);
-                        setPage(Number(prePage.current));
                         if (isLastPage) {
                             toast({ title: locale.ButtonSubmit, color: "success" });
+                        } else {
+                            setPage(Number(prePage.current));
                         }
                     } finally {
                         setSubmitting(false);
