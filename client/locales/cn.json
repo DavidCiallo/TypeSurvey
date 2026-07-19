@@ -53,7 +53,8 @@
         "checkboxgroup": "多选框",
         "select": "单选项",
         "mulselect": "多选项",
-        "textarea": "多行文本"
+        "textarea": "多行文本",
+        "file": "文件上传"
     },
     "FormPage": {
         "Title": "表单列表",

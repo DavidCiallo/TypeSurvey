@@ -87,3 +87,32 @@ export class FileConfirmResponse implements BaseResponse<{}> {
         this.data = origin.data;
     }
 }
+
+export class FileUploadRequest implements BaseRequest {
+    public auth?: string;
+    public filename: string;
+    public data: string; // base64
+
+    constructor(origin: Partial<FileUploadRequest>) {
+        if (!origin.filename) throw new Error("Filename is required");
+        if (!origin.data) throw new Error("File data is required");
+        origin.auth && (this.auth = origin.auth);
+        this.filename = origin.filename;
+        this.data = origin.data;
+    }
+
+    static self(unsafe: FileUploadRequest) {
+        return new FileUploadRequest(unsafe);
+    }
+}
+
+export class FileUploadResponse implements BaseResponse<{ url: string }> {
+    public success: boolean;
+    public message?: string;
+    public data?: { url: string };
+    constructor(origin: FileUploadResponse) {
+        this.success = origin.success;
+        this.message = origin.message;
+        this.data = origin.data;
+    }
+}

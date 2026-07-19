@@ -24,6 +24,10 @@ export default defineConfig({
                 target: "http://127.0.0.1:3400",
                 changeOrigin: true,
             },
+            "/uploads": {
+                target: "http://127.0.0.1:3400",
+                changeOrigin: true,
+            },
             "/ws": {
                 target: "http://127.0.0.1:61207",
                 changeOrigin: true,

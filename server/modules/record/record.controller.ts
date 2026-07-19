@@ -7,14 +7,21 @@ import { deleteRecordByItem, getAllRecord, getRecords, submitRecord } from "./re
 import { codeGenerate } from "../../methods/crypto";
 
 async function history(request: RecordHistoryRequest) {
-    const { id, code } = request;
-    const records = await getRecords(id);
+    const { id, code, item_id: stored_item_id } = request;
+    // Try stored item_id first (for common forms where URL has field_id)
+    const records = stored_item_id ? await getRecords(stored_item_id) : await getRecords(id);
     if (records.length) {
         const { field_id, item_id } = records[0];
         const form_name = await getFormNameByField(field_id);
         const fields = await getFieldList(form_name);
         if (!code || code !== codeGenerate(item_id)) throw "鉴权失败";
         return { form_name, item_id, code, fields, records };
+    } else if (stored_item_id && code === codeGenerate(stored_item_id)) {
+        // No records yet but valid item_id+code — reuse it
+        const form_name = await getFormNameByField(id);
+        if (!form_name) throw "表单不存在";
+        const fields = await getFieldList(form_name);
+        return { form_name, item_id: stored_item_id, code, fields, records: [] };
     } else {
         const form_name = await getFormNameByField(request.id);
         if (!form_name) throw "表单不存在";

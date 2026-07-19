@@ -1,6 +1,7 @@
 import {
     FileXlsxRequest, FileXlsxResponse,
     FileConfirmRequest, FileConfirmResponse,
+    FileUploadRequest, FileUploadResponse,
 } from "./file.interface";
 
 export const fileRoutes = {
@@ -8,4 +9,5 @@ export const fileRoutes = {
     prefix: "/file",
     readxlsx: { path: "/readxlsx", request: {} as FileXlsxRequest,    response: {} as FileXlsxResponse },
     confirm:  { path: "/confirm",  request: {} as FileConfirmRequest, response: {} as FileConfirmResponse },
+    upload:   { path: "/upload",   request: {} as FileUploadRequest,  response: {} as FileUploadResponse },
 } as const;

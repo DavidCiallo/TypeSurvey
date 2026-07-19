@@ -1,7 +1,10 @@
 import { nanoid } from "nanoid";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import {
     Chunk,
-    FileXlsxRequest, FileConfirmRequest,
+    FileXlsxRequest, FileConfirmRequest, FileUploadRequest,
     XlsxHeader,
 } from "../../../shared/modules/file/file.interface";
 import { fileRoutes } from "../../../shared/modules/file/file.router";
@@ -9,6 +12,11 @@ import { analyzeCellType, analyzeXlsx, assembly } from "../../methods/xlsx";
 import { createField, getFieldList } from "../form/form.service";
 import { createRadio } from "../radio/radio.service";
 import { insertRecords } from "../record/record.service";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const UPLOAD_DIR = path.resolve(__dirname, "../../../data/uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const chunkList: Array<Chunk> = [];
 const dataList: Array<{ tempid: string; filename: string; header: XlsxHeader[]; data: string[][] }> = [];
@@ -118,7 +126,26 @@ async function confirm(request: FileConfirmRequest) {
     return { success: true };
 }
 
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+async function upload(request: FileUploadRequest) {
+    const { filename, data } = request;
+    if (!filename || !data) throw "参数错误";
+
+    const buffer = Buffer.from(data, "base64");
+    if (buffer.length > MAX_SIZE) throw "文件超过10MB限制";
+
+    const ext = path.extname(filename).toLowerCase();
+    const allowed = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx"];
+    if (!allowed.includes(ext)) throw "不支持的文件类型";
+
+    const safename = `${nanoid(10)}${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, safename), buffer);
+
+    return { url: `/uploads/${safename}` };
+}
+
 export const fileController = {
     routes: fileRoutes,
-    handlers: { readxlsx, confirm },
+    handlers: { readxlsx, confirm, upload },
 };

@@ -18,6 +18,7 @@ import { settingsController, appController } from "../modules/settings/settings.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const staticPath = path.join(__dirname);
+const uploadsPath = path.resolve(__dirname, "../../data/uploads");
 
 await initialize();
 
@@ -35,6 +36,18 @@ Bun.serve({
         // API routes
         const apiResponse = await mounthttp(req, mounts);
         if (apiResponse) return apiResponse;
+
+        // Uploaded files
+        if (pathName.startsWith("/uploads/")) {
+            const filePath = path.join(uploadsPath, pathName.slice(9));
+            const resolved = path.resolve(filePath);
+            if (!resolved.startsWith(path.resolve(uploadsPath) + path.sep)) {
+                return new Response("Forbidden", { status: 403 });
+            }
+            const file = Bun.file(filePath);
+            if (await file.exists()) return new Response(file);
+            return new Response("Not Found", { status: 404 });
+        }
 
         // Static files
         const staticResponse = await mountstatic(staticPath, pathName);

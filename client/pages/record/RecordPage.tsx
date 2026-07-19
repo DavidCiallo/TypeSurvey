@@ -185,14 +185,6 @@ const Component = () => {
                                                     >
                                                         {locale.ListItemLinkButton}
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-destructive"
-                                                        onClick={() => setDeleteTarget(i.item_id)}
-                                                    >
-                                                        {locale.DeleteRecordButton}
-                                                    </Button>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -211,7 +203,8 @@ const Component = () => {
                 </Card>
 
                 <Card className="h-auto w-full lg:h-[70vh] lg:w-2/3">
-                    <CardContent className="h-full overflow-auto">
+                    <CardContent className="flex h-full flex-col overflow-auto">
+                        <div className="flex-1 overflow-auto">
                         <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow>
@@ -252,14 +245,26 @@ const Component = () => {
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {value ? (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <span className="block max-w-full truncate">{value}</span>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top" className="max-w-xs break-all">
-                                                                {value}
-                                                            </TooltipContent>
-                                                        </Tooltip>
+                                                        String(value).startsWith("/uploads/") ? (
+                                                            /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(String(value)) ? (
+                                                                <a href={String(value)} target="_blank" rel="noreferrer">
+                                                                    <img src={String(value)} alt="file" className="mx-auto h-12 w-12 rounded border object-cover" />
+                                                                </a>
+                                                            ) : (
+                                                                <a href={String(value)} target="_blank" rel="noreferrer" className="text-primary text-sm underline">
+                                                                    {String(value).split("/").pop()}
+                                                                </a>
+                                                            )
+                                                        ) : (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="block max-w-full truncate">{value}</span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="top" className="max-w-xs break-all">
+                                                                    {value}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )
                                                     ) : (
                                                         <span className="text-muted-foreground/50">-</span>
                                                     )}
@@ -283,6 +288,17 @@ const Component = () => {
                                 )}
                             </TableBody>
                         </Table>
+                        </div>
+                        <div className="flex justify-end pt-3">
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={!itemChoose}
+                                onClick={() => setDeleteTarget(itemChoose)}
+                            >
+                                {locale.DeleteRecordButton}
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

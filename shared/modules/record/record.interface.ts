@@ -5,12 +5,14 @@ export class RecordHistoryRequest implements BaseRequest {
     public auth?: string;
     public id: string;
     public code?: string;
+    public item_id?: string;
 
     constructor(origin: Partial<RecordHistoryRequest>) {
         if (!origin.id) throw new Error("ID is required");
         origin.auth && (this.auth = origin.auth);
         this.id = origin.id;
         this.code = origin.code;
+        this.item_id = origin.item_id;
     }
 
     static self(unsafe: RecordHistoryRequest) {

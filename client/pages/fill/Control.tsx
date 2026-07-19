@@ -9,8 +9,11 @@ import {
     SelectValue,
 } from "@/client/components/ui/select";
 import { Textarea } from "@/client/components/ui/textarea";
+import { Button } from "@/client/components/ui/button";
+import { Upload, FileImage, X } from "lucide-react";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
+import { FileRouter } from "../../api/instance";
 
 export function renderControl(
     records: RecordImpl[],
@@ -219,6 +222,66 @@ export function renderControl(
                         />
                         <span className="text-sm">{radio_name}</span>
                     </div>
+                </div>
+            );
+        }
+        case "file": {
+            const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(render_value);
+            const fileInput = (
+                <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        e.target.value = "";
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                            const base64 = (reader.result as string).split(",")[1];
+                            const { success, data } = await FileRouter.upload({ filename: file.name, data: base64 });
+                            if (success && data?.url) {
+                                submitRecord(field.id, data.url);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }}
+                />
+            );
+            return (
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
+                    {render_value ? (
+                        <div className="flex items-center gap-3">
+                            {isImage ? (
+                                <img
+                                    src={render_value}
+                                    alt="uploaded"
+                                    className="h-20 w-20 rounded-md border object-cover"
+                                />
+                            ) : (
+                                <FileImage className="text-muted-foreground size-8" />
+                            )}
+                            <label className="hover:bg-accent cursor-pointer rounded-md border px-3 py-1.5 text-sm transition-colors">
+                                重新上传
+                                {fileInput}
+                            </label>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-7"
+                                onClick={() => submitRecord(field.id, "")}
+                            >
+                                <X className="size-3" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <label className="border-input hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm transition-colors">
+                            <Upload className="text-muted-foreground size-4" />
+                            <span className="text-muted-foreground">{field.placeholder || "点击上传文件"}</span>
+                            {fileInput}
+                        </label>
+                    )}
                 </div>
             );
         }

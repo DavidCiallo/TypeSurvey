@@ -50,16 +50,17 @@ const Component = () => {
     async function loadRecord(code: string) {
         let id = localStorage.getItem("entry_id");
         if (!id) return;
-        const { success, data, message } = await RecordRouter.history({ id, code });
+        const item_id = localStorage.getItem("item_id") || undefined;
+        const { success, data, message } = await RecordRouter.history({ id, code, item_id });
         if (!success || !data) {
             toast({ title: message });
             setCode("");
             setPass(false);
             return;
         }
-        const { form_name, fields, records, item_id, code: newCode } = data;
+        const { form_name, fields, records, item_id: newItemId, code: newCode } = data;
         setAuthData(form_name, fields, records);
-        localStorage.setItem("item_id", item_id);
+        localStorage.setItem("item_id", newItemId);
         localStorage.setItem("code", newCode);
     }
 
