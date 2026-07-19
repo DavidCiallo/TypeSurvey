@@ -1,16 +1,17 @@
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@/client/components/ui/button";
+import { Checkbox } from "@/client/components/ui/checkbox";
+import { Input } from "@/client/components/ui/input";
 import {
-    Button,
-    Checkbox,
-    Input,
     Table,
     TableBody,
     TableCell,
-    TableColumn,
+    TableHead,
     TableHeader,
     TableRow,
-} from "@heroui/react";
+} from "@/client/components/ui/table";
+import { ArrowUp, ArrowDown, X, Check } from "lucide-react";
 import { Locale } from "../../methods/locale";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FieldTypeList } from "../form/types";
@@ -107,12 +108,13 @@ const Component = ({
                 {visible && createPortal(
                     <div
                         ref={popoverRef}
-                        className="fixed z-[9999] py-1 rounded-xl border-2 border-default-200 bg-content1 shadow-lg"
+                        className="bg-popover fixed z-[9999] rounded-md border p-1 shadow-md"
                         style={{
                             left: pos.left,
                             top: pos.top,
                             width: pos.width,
-                            animation: isClosing ? "fadeOut 100ms ease-in forwards" : "fadeIn 150ms ease-out forwards",
+                            opacity: isClosing ? 0 : 1,
+                            transition: "opacity 100ms ease-in-out",
                         }}
                     >
                         {children}
@@ -128,18 +130,17 @@ const Component = ({
 
         return (
             <DropdownPopover trigger={
-                <div className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center
-                    transition-colors duration-150
-                    ${field.disabled ? "opacity-50" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
+                <div className={`border-input flex h-9 w-full items-center rounded-md border px-3 text-sm transition-colors
+                    ${field.disabled ? "opacity-50" : "hover:border-input bg-transparent"}`}>
                     <span className="flex-1 truncate">{current?.name || ""}</span>
-                    <svg className="text-default-400 flex-shrink-0 ml-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg className="text-muted-foreground ml-1 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
             }>
                 {FieldTypeList.map(({ name, type }) => (
                     <div
                         key={type}
-                        className={`px-3 py-2 text-sm cursor-pointer transition-colors duration-75 whitespace-nowrap
-                            ${type === field.field_type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-default-100"}`}
+                        className={`cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors
+                            ${type === field.field_type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-accent"}`}
                         onClick={() => updateField(field.id, "field_type", type)}
                     >
                         {name}
@@ -158,32 +159,29 @@ const Component = ({
 
         return (
             <DropdownPopover disabled={disabled} trigger={
-                <div className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center
-                    transition-colors duration-150
-                    ${disabled ? "opacity-50 cursor-not-allowed" : "border-default-200 hover:border-default-400 bg-transparent"}`}>
+                <div className={`border-input flex h-9 w-full items-center rounded-md border px-3 text-sm transition-colors
+                    ${disabled ? "cursor-not-allowed opacity-50" : "hover:border-input bg-transparent"}`}>
                     <span className="flex-1 truncate">
                         {selectedCount > 0 ? `${locale.TableBodyHadSetRadio} ${selectedCount}` : locale.TableBodyNoSetRadio}
                     </span>
-                    <svg className="text-default-400 flex-shrink-0 ml-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg className="text-muted-foreground ml-1 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
             }>
                 <div className="max-h-48 overflow-y-auto">
                     {radios.length === 0
-                        ? <div className="px-3 py-2 text-sm text-default-400 text-center">{locale.TableBodyEmptyRadio}</div>
+                        ? <div className="text-muted-foreground px-2 py-1.5 text-center text-sm">{locale.TableBodyEmptyRadio}</div>
                         : radios.map((radio) => (
                             <div
                                 key={radio.radio_name}
-                                className="px-3 py-2 text-sm cursor-pointer transition-colors duration-75 flex items-center gap-2 hover:bg-default-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     updateRadio(radio.id, "useful", !radio.useful);
                                 }}
                             >
-                                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors
-                                    ${radio.useful ? "bg-primary border-primary" : "border-default-300"}`}>
-                                    {radio.useful && (
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6 9 17l-5-5"/></svg>
-                                    )}
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors
+                                    ${radio.useful ? "bg-primary border-primary" : "border-input"}`}>
+                                    {radio.useful && <Check className="size-3 text-primary-foreground" />}
                                 </span>
                                 <span className="truncate">{radio.radio_name}</span>
                             </div>
@@ -191,7 +189,7 @@ const Component = ({
                     }
                 </div>
                 <div
-                    className="px-3 py-2 text-sm text-primary cursor-pointer hover:bg-default-100 border-t border-default-200 text-center"
+                    className="text-primary cursor-pointer rounded-sm border-t px-2 py-1.5 text-center text-sm hover:bg-accent"
                     onClick={() => {
                         changeFocusField(field.id);
                         changeRadioEditorOpen(true);
@@ -202,103 +200,102 @@ const Component = ({
             </DropdownPopover>
         );
     }
-    const TableHeaders = (
-        <TableHeader>
-            <TableColumn align="center">{locale.TableHeaderFieldNameColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderFieldTypeColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderOptionsColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderRequiredColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderRemarkColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderHintColumn}</TableColumn>
-            <TableColumn align="center">{locale.TableHeaderActionsColumn}</TableColumn>
-        </TableHeader>
-    );
-    const TableBodyContent = (
-        <TableBody emptyContent={<EmptyComp height="min-h-[30vh]" />}>
-            {formFieldList.map((field) => {
-                if (!field.radios) field.radios = [];
-                return (
-                    <TableRow key={field.id}>
-                        <TableCell className="min-w-48" align="center">
-                            <Input
-                                variant="bordered"
-                                isDisabled={field.disabled}
-                                defaultValue={field.field_name}
-                                onValueChange={(field_name) => updateField(field.id, "field_name", field_name)}
-                            />
-                        </TableCell>
-                        <TableCell align="center" className="min-w-36">
-                            <TypeSelect field={field} />
-                        </TableCell>
-                        <TableCell align="center" className="min-w-44">
-                            <RadioSelect field={field} />
-                        </TableCell>
-                        <TableCell align="center" className="w-12">
-                            <Checkbox
-                                isDisabled={field.disabled}
-                                defaultSelected={field.required}
-                                onValueChange={(required) => updateField(field.id, "required", required)}
-                            />
-                        </TableCell>
-                        <TableCell align="center" className="min-w-36">
-                            <Input
-                                isDisabled={field.disabled}
-                                placeholder={locale.TableBodyNoRemark}
-                                variant="bordered"
-                                defaultValue={field.comment}
-                                onValueChange={(comment) => updateField(field.id, "comment", comment)}
-                            />
-                        </TableCell>
-                        <TableCell align="center" className="min-w-36">
-                            <Input
-                                isDisabled={field.disabled}
-                                placeholder={locale.TableBodyNoHint}
-                                variant="bordered"
-                                defaultValue={field.placeholder}
-                                onValueChange={(ph) => updateField(field.id, "placeholder", ph)}
-                            />
-                        </TableCell>
-                        <TableCell className="min-w-32 max-w-32">
-                            <Button
-                                className="mr-1"
-                                isIconOnly
-                                variant="bordered"
-                                color="primary"
-                                size="sm"
-                                onClick={() => changeFieldPosition(field.id, false)}
-                            >
-                                {"↑"}
-                            </Button>
-                            <Button
-                                className="mr-1"
-                                isIconOnly
-                                variant="bordered"
-                                color="primary"
-                                size="sm"
-                                onClick={() => changeFieldPosition(field.id, true)}
-                            >
-                                {"↓"}
-                            </Button>
-                            <Button
-                                isIconOnly
-                                variant="bordered"
-                                color={field.disabled ? "success" : "danger"}
-                                size="sm"
-                                onClick={() => updateField(field.id, "disabled", !field.disabled)}
-                            >
-                                {field.disabled ? "O" : "X"}
-                            </Button>
-                        </TableCell>
-                    </TableRow>
-                );
-            })}
-        </TableBody>
-    );
+
     return (
-        <div className="w-full px-[5vw] py-2 overflow-x-auto">
-            <Table className="min-w-[900px]" aria-label="table">
-                {TableHeaders}
-                {TableBodyContent}
+        <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="text-center">{locale.TableHeaderFieldNameColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderFieldTypeColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderOptionsColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderRequiredColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderRemarkColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderHintColumn}</TableHead>
+                        <TableHead className="text-center">{locale.TableHeaderActionsColumn}</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {formFieldList.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={7} className="py-8">
+                                <EmptyComp height="min-h-[20vh]" />
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        formFieldList.map((field) => {
+                            if (!field.radios) field.radios = [];
+                            return (
+                                <TableRow key={field.id}>
+                                    <TableCell className="min-w-48">
+                                        <Input
+                                            disabled={field.disabled}
+                                            defaultValue={field.field_name}
+                                            onChange={(e) => updateField(field.id, "field_name", e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="min-w-36">
+                                        <TypeSelect field={field} />
+                                    </TableCell>
+                                    <TableCell className="min-w-44">
+                                        <RadioSelect field={field} />
+                                    </TableCell>
+                                    <TableCell className="w-12 text-center">
+                                        <Checkbox
+                                            disabled={field.disabled}
+                                            defaultChecked={field.required}
+                                            onCheckedChange={(checked) => updateField(field.id, "required", checked === true)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="min-w-36">
+                                        <Input
+                                            disabled={field.disabled}
+                                            placeholder={locale.TableBodyNoRemark}
+                                            defaultValue={field.comment}
+                                            onChange={(e) => updateField(field.id, "comment", e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="min-w-36">
+                                        <Input
+                                            disabled={field.disabled}
+                                            placeholder={locale.TableBodyNoHint}
+                                            defaultValue={field.placeholder}
+                                            onChange={(e) => updateField(field.id, "placeholder", e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="min-w-32 max-w-32">
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="size-7"
+                                                onClick={() => changeFieldPosition(field.id, false)}
+                                            >
+                                                <ArrowUp className="size-3" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="size-7"
+                                                onClick={() => changeFieldPosition(field.id, true)}
+                                            >
+                                                <ArrowDown className="size-3" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className={`size-7 ${field.disabled ? "text-green-600" : "text-destructive"}`}
+                                                onClick={() => updateField(field.id, "disabled", !field.disabled)}
+                                            >
+                                                {field.disabled ? <Check className="size-3" /> : <X className="size-3" />}
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })
+                    )}
+                </TableBody>
             </Table>
         </div>
     );

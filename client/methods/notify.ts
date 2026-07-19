@@ -1,4 +1,20 @@
-import { addToast, closeAll, ToastProps } from "@heroui/react";
+import {
+    toast as sonnerToast,
+} from "@/client/components/ui/sonner";
+
+type HeroUIColor = "success" | "danger" | "warning" | "default" | "primary" | "secondary" | undefined;
+
+type LegacyToastProps = {
+    title?: string;
+    description?: string;
+    color?: HeroUIColor;
+};
+
+const colorToType = (color?: HeroUIColor): "success" | "error" | "info" => {
+    if (color === "success") return "success";
+    if (color === "danger") return "error";
+    return "info";
+};
 
 export function notify() {
     const AudioContext = window.AudioContext;
@@ -6,11 +22,11 @@ export function notify() {
 
     const notes = [
         { frequency: 20000, duration: 0.3 },
-        { frequency: 783.99, duration: 0.25 }, // G5
-        { frequency: 659.25, duration: 0.25 }, // E5
-        { frequency: 880.0, duration: 0.25 }, // A5
-        { frequency: 698.46, duration: 0.25 }, // F5
-        { frequency: 1046.5, duration: 0.5 }, // C6
+        { frequency: 783.99, duration: 0.25 },
+        { frequency: 659.25, duration: 0.25 },
+        { frequency: 880.0, duration: 0.25 },
+        { frequency: 698.46, duration: 0.25 },
+        { frequency: 1046.5, duration: 0.5 },
     ];
 
     let currentTime = audioCtx.currentTime;
@@ -36,7 +52,6 @@ export function notify() {
     });
 }
 
-export function toast({ ...props }: Partial<ToastProps>) {
-    closeAll();
-    addToast(props);
+export function toast({ title, color }: LegacyToastProps) {
+    sonnerToast(title || "", colorToType(color));
 }

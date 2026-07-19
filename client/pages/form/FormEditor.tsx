@@ -1,5 +1,14 @@
 import { useRef } from "react";
-import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/client/components/ui/dialog";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { FormCreateRequest, FormUpdateRequest } from "../../../shared/modules/form/form.interface";
 import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
@@ -30,49 +39,33 @@ const FormEditorModal = ({ isOpen, formName, onOpenChange, onSubmit }: props) =>
         onSubmit({ form_name: form_name.toString() });
     };
 
-    const triggerSubmit = () => {
-        handleCustomSubmit();
-    };
-
-    const ModalBodyContent = () => {
-        return (
-            <div className="flex flex-col w-full md:w-3/4 mx-auto">
-                <Form ref={formRef} onSubmit={handleCustomSubmit}>
-                    <Input
-                        isRequired
-                        label={locale.FormNameLabel}
-                        name="form_name"
-                        labelPlacement="outside"
-                        defaultValue={formName || ""}
-                        placeholder={locale.FormNamePlaceholder}
-                        variant="bordered"
-                        className="mb-4"
-                    />
-                </Form>
-            </div>
-        );
-    };
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange} className="w-full">
-            <ModalContent className="md:min-w-[400px] max-h-[60vh]">
-                {(onClose) => (
-                    <>
-                        <ModalHeader className="flex flex-col"></ModalHeader>
-                        <ModalBody className="overflow-y-auto">
-                            <ModalBodyContent />
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button color="primary" size="sm" variant="light" onPress={triggerSubmit}>
-                                {Locale("Common").ButtonSave}
-                            </Button>
-                            <Button color="danger" size="sm" variant="light" onPress={onClose}>
-                                {Locale("Common").ButtonCancel}
-                            </Button>
-                        </ModalFooter>
-                    </>
-                )}
-            </ModalContent>
-        </Modal>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{locale.FormNameLabel}</DialogTitle>
+                </DialogHeader>
+                <form ref={formRef} onSubmit={handleCustomSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="form_name">{locale.FormNameLabel}</Label>
+                        <Input
+                            id="form_name"
+                            name="form_name"
+                            defaultValue={formName || ""}
+                            placeholder={locale.FormNamePlaceholder}
+                        />
+                    </div>
+                </form>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        {Locale("Common").ButtonCancel}
+                    </Button>
+                    <Button type="button" onClick={() => handleCustomSubmit()}>
+                        {Locale("Common").ButtonSave}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
 

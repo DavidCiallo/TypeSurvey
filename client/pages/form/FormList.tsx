@@ -1,4 +1,10 @@
-import { Accordion, AccordionItem } from "@heroui/react";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/client/components/ui/accordion";
+import { Button } from "@/client/components/ui/button";
 import { Locale } from "../../methods/locale";
 import { useNavigate } from "react-router-dom";
 import { EmptyComp } from "../../components/empty/Empty";
@@ -26,42 +32,68 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
         localStorage.setItem("formname", formname);
         navigate("/record");
     }
+
     return (
-        <div className="w-full flex flex-col">
-            {formList.length == 0 && <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />}
-            <Accordion selectedKeys={[]}>
-                {formList.map(({ form_name, records_num, last_submit }) => {
-                    const title = <div className="text-lg font-bold">{form_name}</div>;
-                    const subtitle = (
-                        <div className="flex flex-row gap-3">
-                            <div>{locale.RecordNumLabel + " " + records_num}</div>
-                            {!!last_submit && <div>{formatTime(last_submit)}</div>}
-                            {!last_submit && <div>{locale.EmptyNumLabel}</div>}
-                        </div>
-                    );
-                    const indicator = (
-                        <div className="flex flex-row gap-3">
-                            <div className="text-sm text-primary" onClick={() => viewRecords(form_name)}>
-                                {locale.ViewRecordsButton}
+        <div className="flex w-full flex-col">
+            {formList.length === 0 && <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />}
+            <Accordion type="multiple">
+                {formList.map(({ form_name, records_num, last_submit }) => (
+                    <AccordionItem key={form_name} value={form_name}>
+                        <AccordionTrigger
+                            indicator={
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            viewRecords(form_name);
+                                        }}
+                                    >
+                                        {locale.ViewRecordsButton}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openFormEditor(form_name);
+                                        }}
+                                    >
+                                        {locale.RenameButton}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openRecordEditor(form_name);
+                                        }}
+                                    >
+                                        {locale.CreateRecordButton}
+                                    </Button>
+                                </div>
+                            }
+                        >
+                            <div className="flex flex-1 items-center justify-between gap-4 pr-4">
+                                <div className="text-base font-semibold">{form_name}</div>
+                                <div className="text-muted-foreground flex items-center gap-3 text-sm">
+                                    <span>{locale.RecordNumLabel + " " + records_num}</span>
+                                    {last_submit ? (
+                                        <span>{formatTime(last_submit)}</span>
+                                    ) : (
+                                        <span>{locale.EmptyNumLabel}</span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="text-sm text-primary" onClick={() => openFormEditor(form_name)}>
-                                {locale.RenameButton}
-                            </div>
-                            <div className="text-sm text-danger" onClick={() => openRecordEditor(form_name)}>
-                                {locale.CreateRecordButton}
-                            </div>
-                        </div>
-                    );
-                    return (
-                        <AccordionItem
-                            key={form_name}
-                            aria-label={form_name}
-                            title={title}
-                            subtitle={subtitle}
-                            indicator={indicator}
-                        ></AccordionItem>
-                    );
-                })}
+                        </AccordionTrigger>
+                        <AccordionContent />
+                    </AccordionItem>
+                ))}
             </Accordion>
         </div>
     );

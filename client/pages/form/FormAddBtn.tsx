@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
 import { AcceptType, FileUpload } from "../../components/control/FileUpload";
 import { Locale } from "../../methods/locale";
 
@@ -11,15 +11,13 @@ const FormAddBtn = ({ openFormEditor, uploadXlsx }: props) => {
     const locale = Locale("FormAddBtn");
 
     return (
-        <div className="flex flex-row">
-            <Button onClick={() => openFormEditor()} color="default" variant="bordered" className="text-black-500">
+        <div className="flex flex-row gap-2">
+            <Button variant="outline" onClick={() => openFormEditor()}>
                 {locale.CreateNewForm}
             </Button>
             <FileUpload
                 element={
-                    <Button color="default" variant="bordered" className="text-black-500 ml-1">
-                        {locale.ImportXlsx}
-                    </Button>
+                    <Button variant="outline">{locale.ImportXlsx}</Button>
                 }
                 accept={[AcceptType.CSV, AcceptType.XLS, AcceptType.XLSX]}
                 upload={uploadXlsx}

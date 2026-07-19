@@ -1,5 +1,6 @@
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
+import path from "node:path";
 
 export default defineConfig({
     html: {
@@ -10,6 +11,11 @@ export default defineConfig({
     source: {
         entry: {
             index: "./client/index.tsx",
+        },
+    },
+    resolve: {
+        alias: {
+            "@": path.resolve(__dirname, "./"),
         },
     },
     server: {

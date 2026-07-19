@@ -1,6 +1,6 @@
-"use client";
-
-import { Button, Input, Form } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -78,70 +78,57 @@ export default function Component() {
     }
 
     return (
-        <div className="flex h-full w-full items-center justify-center">
-            <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-[20vh]">
-                <p className="pb-4 text-left text-3xl font-semibold flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40" className="shrink-0">
-                        <defs>
-                            <linearGradient id="auth-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style={{ stopColor: "#3B82F6" }} />
-                                <stop offset="100%" style={{ stopColor: "#2563EB" }} />
-                            </linearGradient>
-                        </defs>
-                        <rect width="64" height="64" rx="14" fill="url(#auth-bg)" />
-                        <rect x="10" y="10" width="21" height="4" rx="2" fill="#fff" opacity="0.9" />
-                        <rect x="10" y="22" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
-                        <rect x="10" y="34" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
-                        <rect x="10" y="46" width="33" height="4" rx="2" fill="#fff" opacity="0.9" />
-                        <circle cx="50" cy="48" r="4" fill="#fff" />
-                    </svg>
+        <div className="bg-background flex min-h-screen items-center justify-center px-4">
+            <div className="flex w-full max-w-sm flex-col gap-6">
+                <div className="text-3xl font-semibold tracking-tight">
                     {locale.Title}
-                </p>
+                </div>
 
                 {!isRegister ? (
                     <>
-                        <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleLogin}>
-                            <Input
-                                isRequired
-                                label={locale.EmailLabel}
-                                labelPlacement="outside"
-                                name="email"
-                                placeholder={locale.EmailPlaceholder}
-                                type="email"
-                                variant="bordered"
-                                errorMessage={() => locale.EmailError}
-                            />
-                            <Input
-                                isRequired
-                                label={locale.PasswordLabel}
-                                labelPlacement="outside"
-                                name="password"
-                                placeholder={locale.PasswordPlaceholder}
-                                type="password"
-                                variant="bordered"
-                                errorMessage={() => locale.PasswordError}
-                            />
-                            <div className="flex w-full items-center justify-end">
-                                <div
-                                    className="text-default-500 text-sm cursor-pointer"
-                                    onClick={() =>
-                                        toast({
-                                            title: locale.ForgetPasswordErrorText,
-                                            color: "danger",
-                                        })
-                                    }
-                                >
-                                    {locale.ForgetPasswordLinkText}
-                                </div>
+                        <form className="flex flex-col gap-4" onSubmit={handleLogin}>
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="email">{locale.EmailLabel}</Label>
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    required
+                                    type="email"
+                                    placeholder={locale.EmailPlaceholder}
+                                />
                             </div>
-                            <Button className="w-full" color="primary" type="submit">
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="password">{locale.PasswordLabel}</Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    required
+                                    type="password"
+                                    placeholder={locale.PasswordPlaceholder}
+                                />
+                            </div>
+                            <div
+                                className="text-muted-foreground flex w-full cursor-pointer justify-end text-sm"
+                                onClick={() =>
+                                    toast({
+                                        title: locale.ForgetPasswordErrorText,
+                                        color: "danger",
+                                    })
+                                }
+                            >
+                                {locale.ForgetPasswordLinkText}
+                            </div>
+                            <Button type="submit" className="w-full">
                                 {locale.SubmitButtonText}
                             </Button>
-                        </Form>
+                        </form>
                         {allowRegister && (
-                            <p className="text-center text-sm text-gray-500">
+                            <p className="text-muted-foreground text-center text-sm">
                                 {locale.NoAccount}{" "}
-                                <span className="text-primary cursor-pointer text-sm" onClick={() => setIsRegister(true)}>
+                                <span
+                                    className="text-primary cursor-pointer text-sm"
+                                    onClick={() => setIsRegister(true)}
+                                >
                                     {locale.RegisterNow}
                                 </span>
                             </p>
@@ -149,42 +136,46 @@ export default function Component() {
                     </>
                 ) : (
                     <>
-                        <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleRegister}>
-                            <Input
-                                isRequired
-                                label={locale.NameLabel}
-                                labelPlacement="outside"
-                                name="name"
-                                placeholder={locale.NamePlaceholder}
-                                variant="bordered"
-                            />
-                            <Input
-                                isRequired
-                                label={locale.EmailLabel}
-                                labelPlacement="outside"
-                                name="email"
-                                placeholder={locale.EmailPlaceholder}
-                                type="email"
-                                variant="bordered"
-                                errorMessage={() => locale.EmailError}
-                            />
-                            <Input
-                                isRequired
-                                label={locale.PasswordLabel}
-                                labelPlacement="outside"
-                                name="password"
-                                placeholder={locale.PasswordPlaceholder}
-                                type="password"
-                                variant="bordered"
-                                errorMessage={() => locale.PasswordError}
-                            />
-                            <Button className="w-full" color="primary" type="submit">
+                        <form className="flex flex-col gap-4" onSubmit={handleRegister}>
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="name">{locale.NameLabel}</Label>
+                                <Input
+                                    id="name"
+                                    name="name"
+                                    required
+                                    placeholder={locale.NamePlaceholder}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="reg-email">{locale.EmailLabel}</Label>
+                                <Input
+                                    id="reg-email"
+                                    name="email"
+                                    required
+                                    type="email"
+                                    placeholder={locale.EmailPlaceholder}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="reg-password">{locale.PasswordLabel}</Label>
+                                <Input
+                                    id="reg-password"
+                                    name="password"
+                                    required
+                                    type="password"
+                                    placeholder={locale.PasswordPlaceholder}
+                                />
+                            </div>
+                            <Button type="submit" className="w-full">
                                 {locale.RegisterButtonText}
                             </Button>
-                        </Form>
-                        <p className="text-center text-sm text-gray-500">
+                        </form>
+                        <p className="text-muted-foreground text-center text-sm">
                             {locale.HasAccount}{" "}
-                            <span className="text-primary cursor-pointer text-sm" onClick={() => setIsRegister(false)}>
+                            <span
+                                className="text-primary cursor-pointer text-sm"
+                                onClick={() => setIsRegister(false)}
+                            >
                                 {locale.BackToLogin}
                             </span>
                         </p>

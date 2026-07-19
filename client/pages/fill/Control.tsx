@@ -1,4 +1,14 @@
-import { Checkbox, Input, NumberInput, Select, SelectItem, Textarea } from "@heroui/react";
+import { Checkbox } from "@/client/components/ui/checkbox";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/client/components/ui/select";
+import { Textarea } from "@/client/components/ui/textarea";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 
@@ -8,9 +18,9 @@ export function renderControl(
     submitRecord: (field_id: string, field_value: number | string) => void
 ) {
     const field_value = records.find((r) => r.field_id === field.id)?.field_value || "";
-    let render_value: string; // for origin from input
-    let choose_value: string; // for origin from select
-    let choose_keys: string[] = []; // for multi-select
+    let render_value: string;
+    let choose_value: string;
+    let choose_keys: string[] = [];
     if (field.field_type === "mulselect" || field.field_type === "checkboxgroup") {
         const ids = String(field_value).split(",").filter(Boolean);
         choose_keys = ids.filter((id) => field.radios?.some((r) => r.id === id));
@@ -25,26 +35,30 @@ export function renderControl(
         choose_value = String(field_value);
         render_value = String(field_value);
     }
+
+    const fieldLabel = (
+        <div className="flex flex-col">
+            <Label className="pb-1">
+                <span>{field.field_name}</span>
+                {field.required && <span className="ml-1 text-destructive">*</span>}
+            </Label>
+            {field.comment && (
+                <span className="text-muted-foreground pb-1 text-xs">{field.comment}</span>
+            )}
+        </div>
+    );
+
     switch (field.field_type) {
         case "text": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <Input
                         type="text"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        isRequired={field.required}
+                        required={field.required}
                         placeholder={field.placeholder || " "}
                         defaultValue={render_value}
-                        onValueChange={(text) => submitRecord(field.id, text)}
-                        className="w-full"
+                        onChange={(e) => submitRecord(field.id, e.target.value)}
                         autoComplete="off"
                     />
                 </div>
@@ -52,193 +66,140 @@ export function renderControl(
         }
         case "email": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <Input
                         type="email"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        isRequired={field.required}
+                        required={field.required}
                         placeholder={field.placeholder || "mail@example.com"}
                         defaultValue={render_value}
-                        onValueChange={(text) => submitRecord(field.id, text)}
-                        className="w-full"
+                        onChange={(e) => submitRecord(field.id, e.target.value)}
                     />
                 </div>
             );
         }
         case "password": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <Input
                         type="password"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        isRequired={field.required}
+                        required={field.required}
                         placeholder={field.placeholder}
                         defaultValue={render_value}
-                        onValueChange={(text) => submitRecord(field.id, text)}
-                        className="w-full"
+                        onChange={(e) => submitRecord(field.id, e.target.value)}
                     />
                 </div>
             );
         }
         case "textarea": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <Textarea
-                        classNames={{ label: "text-[rgb(17, 24, 28)]" }}
-                        variant="bordered"
-                        labelPlacement="outside"
                         placeholder={field.placeholder}
-                        isRequired={field.required}
+                        required={field.required}
                         defaultValue={render_value}
-                        onValueChange={(text) => submitRecord(field.id, text)}
-                        className="w-full"
-                        minRows={4}
+                        onChange={(e) => submitRecord(field.id, e.target.value)}
+                        className="min-h-[80px]"
                     />
                 </div>
             );
         }
         case "number": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
-                    <NumberInput
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
+                    <Input
                         type="number"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        isRequired={field.required}
+                        required={field.required}
                         placeholder={field.placeholder}
                         defaultValue={
                             !field_value && field_value !== 0
-                                ? undefined
+                                ? ""
                                 : isNaN(Number(render_value))
-                                ? undefined
-                                : Number(render_value)
+                                ? ""
+                                : String(render_value)
                         }
-                        onValueChange={(number) => submitRecord(field.id, number)}
-                        className="w-full"
+                        onChange={(e) => submitRecord(field.id, e.target.valueAsNumber)}
                     />
                 </div>
             );
         }
         case "select": {
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <Select
-                        aria-label="select"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        className="w-full"
-                        isRequired={field.required}
-                        defaultSelectedKeys={[choose_value]}
-                        onSelectionChange={({ currentKey }) => currentKey && submitRecord(field.id, currentKey)}
-                        placeholder={field.placeholder || Locale("Common").DefaultSelectPlaceholder}
+                        value={choose_value}
+                        onValueChange={(value) => submitRecord(field.id, value)}
                     >
-                        {(field.radios || []).map((radio) => (
-                            <SelectItem key={radio.id}>{radio.radio_name}</SelectItem>
-                        ))}
+                        <SelectTrigger>
+                            <SelectValue placeholder={field.placeholder || Locale("Common").DefaultSelectPlaceholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {(field.radios || []).map((radio) => (
+                                <SelectItem key={radio.id} value={radio.id}>
+                                    {radio.radio_name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
                     </Select>
                 </div>
             );
         }
         case "mulselect": {
+            const current = choose_keys.map((id) => field.radios?.find((r) => r.id === id)?.radio_name).filter(Boolean);
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
-                    <Select
-                        key={field.id}
-                        aria-label="mulselect"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        className="w-full"
-                        isRequired={field.required}
-                        selectionMode="multiple"
-                        selectedKeys={new Set(choose_keys)}
-                        onSelectionChange={(keys) => {
-                            if (keys === "all") return;
-                            const values = Array.from(keys).map(String);
-                            submitRecord(field.id, values.join(","));
-                        }}
-                        placeholder={field.placeholder || Locale("Common").DefaultSelectPlaceholder}
-                    >
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
+                    <div className="text-muted-foreground border-input mb-2 flex min-h-9 items-center rounded-md border px-3 text-sm">
+                        {current.length ? current.join(", ") : (field.placeholder || Locale("Common").DefaultSelectPlaceholder)}
+                    </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
                         {(field.radios || []).map((radio) => (
-                            <SelectItem key={radio.id}>{radio.radio_name}</SelectItem>
+                            <div key={radio.id} className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={choose_keys.includes(radio.id)}
+                                    onCheckedChange={(checked) => {
+                                        const current = new Set(choose_keys);
+                                        if (checked) {
+                                            current.add(radio.id);
+                                        } else {
+                                            current.delete(radio.id);
+                                        }
+                                        submitRecord(field.id, Array.from(current).join(","));
+                                    }}
+                                />
+                                <span className="text-sm">{radio.radio_name}</span>
+                            </div>
                         ))}
-                    </Select>
+                    </div>
                 </div>
             );
         }
         case "checkboxgroup": {
             if (!field.radios || !field.radios.length) return <div />;
             return (
-                <div className="w-full flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
                     <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
                         {field.radios.map((radio) => (
-                            <Checkbox
-                                key={radio.id}
-                                size="sm"
-                                radius="sm"
-                                isSelected={choose_keys.includes(radio.id)}
-                                onValueChange={(checked) => {
-                                    const current = new Set(choose_keys);
-                                    if (checked) {
-                                        current.add(radio.id);
-                                    } else {
-                                        current.delete(radio.id);
-                                    }
-                                    submitRecord(field.id, Array.from(current).join(","));
-                                }}
-                            >
-                                {radio.radio_name}
-                            </Checkbox>
+                            <div key={radio.id} className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={choose_keys.includes(radio.id)}
+                                    onCheckedChange={(checked) => {
+                                        const current = new Set(choose_keys);
+                                        if (checked) {
+                                            current.add(radio.id);
+                                        } else {
+                                            current.delete(radio.id);
+                                        }
+                                        submitRecord(field.id, Array.from(current).join(","));
+                                    }}
+                                />
+                                <span className="text-sm">{radio.radio_name}</span>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -250,23 +211,18 @@ export function renderControl(
             if (!id || !radio_name) return <div />;
             return (
                 <div className="flex flex-col">
-                    <label className="text-sm pb-1">
-                        <span>{field.field_name}</span>
-                        <span className="text-red-600">{field.required ? "*" : ""}</span>
-                    </label>
-                    <label className="text-xs pb-1">
-                        <span className="text-gray-500">{field.comment}</span>
-                    </label>
-                    <Checkbox
-                        size="sm"
-                        className="pb-1"
-                        defaultSelected={id === choose_value}
-                        onValueChange={(check) => submitRecord(field.id, check ? id : "")}
-                    >
-                        {radio_name}
-                    </Checkbox>
+                    {fieldLabel}
+                    <div className="flex items-center gap-2 pb-1">
+                        <Checkbox
+                            defaultChecked={id === choose_value}
+                            onCheckedChange={(check) => submitRecord(field.id, check ? id : "")}
+                        />
+                        <span className="text-sm">{radio_name}</span>
+                    </div>
                 </div>
             );
         }
     }
+
+    return null;
 }

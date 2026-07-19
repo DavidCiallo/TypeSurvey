@@ -5,6 +5,10 @@
       "DOM.Iterable",
       "ES2021"
     ],
+    "types": [
+      "node",
+      "bun"
+    ],
     "jsx": "react-jsx",
     "target": "ES2021",
     "noEmit": true,
@@ -20,7 +24,11 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "shared",

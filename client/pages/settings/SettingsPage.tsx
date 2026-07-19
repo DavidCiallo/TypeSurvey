@@ -1,6 +1,8 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody, Input } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/client/components/ui/card";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { Locale } from "../../methods/locale";
 import { SettingsRouter, AppRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
@@ -98,46 +100,43 @@ export default function SettingsPage() {
     const fieldLabel = (key: string) => locale.FieldLabel?.[key] || key;
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
-            <div className="w-full flex flex-col px-[5vw] pt-6">
-                <div className="w-full flex flex-row justify-end items-center mb-4 gap-2">
-                    <Button size="sm" color="primary" variant="bordered" onPress={handleExport} isLoading={exporting}>
-                        {locale.ExportData}
-                    </Button>
-                    <Button size="sm" color="warning" variant="bordered" onPress={handleImport} isLoading={importing}>
-                        {locale.ImportData}
-                    </Button>
-                </div>
-                {loading ? (
-                    <div className="text-center text-gray-400 py-8">Loading...</div>
-                ) : (
-                    <>
-                        <Card>
-                            <CardBody className="flex flex-col gap-4">
-                                {entries.map((e) => (
-                                    <div key={e.key} className="flex flex-col gap-1">
-                                        <label className="text-sm font-medium text-gray-600">
-                                            {fieldLabel(e.key)}
-                                        </label>
-                                        <Input
-                                            size="sm"
-                                            variant="bordered"
-                                            value={e.value}
-                                            onValueChange={(val) => updateEntry(e.key, val)}
-                                        />
-                                    </div>
-                                ))}
-                            </CardBody>
-                        </Card>
-                        <div className="flex items-center gap-4 mt-4">
-                            <Button size="sm" color="primary" isLoading={saving} onPress={handleSave}>
-                                {locale.SaveSettings}
-                            </Button>
-                        </div>
-                    </>
-                )}
+        <div className="mx-auto w-full max-w-3xl space-y-4">
+            <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                    {locale.ExportData}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleImport} disabled={importing}>
+                    {locale.ImportData}
+                </Button>
             </div>
+            {loading ? (
+                <div className="text-muted-foreground py-8 text-center">Loading...</div>
+            ) : (
+                <>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{locale.BasicSettings}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                            {entries.map((e) => (
+                                <div key={e.key} className="flex flex-col gap-2">
+                                    <Label htmlFor={`field-${e.key}`}>{fieldLabel(e.key)}</Label>
+                                    <Input
+                                        id={`field-${e.key}`}
+                                        value={e.value}
+                                        onChange={(e2) => updateEntry(e.key, e2.target.value)}
+                                    />
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                    <div className="flex items-center gap-4">
+                        <Button onClick={handleSave} disabled={saving}>
+                            {locale.SaveSettings}
+                        </Button>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

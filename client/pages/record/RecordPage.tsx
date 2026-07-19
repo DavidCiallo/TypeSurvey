@@ -1,25 +1,30 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
+import { Button } from "@/client/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/client/components/ui/card";
+import { Input } from "@/client/components/ui/input";
+import { Pagination } from "@/client/components/ui/pagination";
 import {
-    Button,
-    Card,
-    Input,
-    Pagination,
     Select,
+    SelectContent,
     SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/client/components/ui/select";
+import {
     Table,
     TableBody,
     TableCell,
-    TableColumn,
+    TableHead,
     TableHeader,
     TableRow,
-} from "@heroui/react";
+} from "@/client/components/ui/table";
+import { Inbox, Search } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/client/components/ui/tooltip";
 import { FieldRouter, RecordRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { copytext } from "../../methods/text";
-import SearchIcon from "../../images/svg/Search";
 
 const Component = () => {
     const locale = Locale("RecordPage");
@@ -84,115 +89,89 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
-            <div className="w-full flex flex-col px-[5vw] pt-6">
-                <div className="flex flex-row justify-between items-center w-full py-2 gap-2">
-                    <div className="flex flex-row flex-1 min-w-0 gap-1">
-                        <Select
-                            aria-label="select"
-                            className="min-w-[120px] max-w-[200px]"
-                            variant="bordered"
-                            size="sm"
-                            selectedKeys={[fieldChoose?.id || ""]}
-                            onSelectionChange={(key) => setFieldChoose(fieldList.find((f) => f.id === key.currentKey)!)}
-                        >
+        <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-1 items-center gap-2">
+                    <Select
+                        value={fieldChoose?.id || ""}
+                        onValueChange={(value) => setFieldChoose(fieldList.find((f) => f.id === value)!)}
+                    >
+                        <SelectTrigger className="w-40">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
                             {fieldList
                                 .filter((i) => !i.disabled)
-                                .map((f) => {
-                                    return <SelectItem key={f.id}>{f.field_name}</SelectItem>;
-                                })}
-                        </Select>
+                                .map((f) => (
+                                    <SelectItem key={f.id} value={f.id}>
+                                        {f.field_name}
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                        <Search className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
                         <Input
-                            className="min-w-[120px] flex-1"
-                            variant="bordered"
-                            size="sm"
+                            className="pl-8"
                             value={search}
-                            onValueChange={setSearch}
+                            onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") loadUserPage();
                             }}
-                            endContent={
-                                <Button
-                                    size="sm"
-                                    isIconOnly
-                                    className="p-[5px] ml-[-10px] mr-[-5px]"
-                                    variant="light"
-                                    onClick={() => loadUserPage()}
-                                >
-                                    <SearchIcon />
-                                </Button>
-                            }
                             onBlur={() => loadUserPage()}
                         />
                     </div>
-
-                    <div className="flex-shrink-0">
-                        <Button
-                            color="default"
-                            variant="bordered"
-                            size="sm"
-                            onClick={() => loadUserPage(userpage)}
-                        >
-                            {locale.ReloadButton}
-                        </Button>
-                    </div>
                 </div>
-                <div className="mt-2 flex flex-col lg:flex-row justify-between items-start gap-4">
-                    <Card className="w-full lg:w-1/3 h-auto lg:h-[70vh] overflow-auto">
-                        <Table
-                            isStriped
-                            aria-label="table"
-                            removeWrapper
-                            bottomContent={
-                                <div className="flex items-center py-1">
-                                    <Pagination
-                                        className="mx-auto"
-                                        size="sm"
-                                        initialPage={1}
-                                        total={usertotal}
-                                        onChange={loadUserPage}
-                                    />
-                                </div>
-                            }
-                        >
+                <div className="shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => loadUserPage(userpage)}>
+                        {locale.ReloadButton}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-4 lg:flex-row">
+                <Card className="h-auto w-full lg:h-[70vh] lg:w-1/3">
+                    <CardContent className="h-full overflow-auto">
+                        <Table>
                             <TableHeader>
-                                <TableColumn align="center">{locale.ListFieldValueColumn}</TableColumn>
-                                <TableColumn align="center">{locale.ListUpdateTimeColumn}</TableColumn>
-                                <TableColumn align="center">{locale.ListActionColumn}</TableColumn>
+                                <TableRow>
+                                    <TableHead className="text-center">{locale.ListFieldValueColumn}</TableHead>
+                                    <TableHead className="text-center">{locale.ListUpdateTimeColumn}</TableHead>
+                                    <TableHead className="text-center">{locale.ListActionColumn}</TableHead>
+                                </TableRow>
                             </TableHeader>
-                            <TableBody className="h-full">
+                            <TableBody>
                                 {recordList.map((i) => {
                                     const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
                                     const record = i.data[index] || null;
                                     const raw = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
                                     const time = `${String(raw.getMonth() + 1).padStart(2, "0")}-${String(raw.getDate()).padStart(2, "0")} ${String(raw.getHours()).padStart(2, "0")}:${String(raw.getMinutes()).padStart(2, "0")}`;
                                     return (
-                                        <TableRow>
-                                            <TableCell className="min-w-24" align="center">
+                                        <TableRow key={i.item_id}>
+                                            <TableCell className="min-w-24 text-center">
                                                 {record?.field_value}
                                             </TableCell>
-                                            <TableCell align="center" className="min-w-24">
+                                            <TableCell className="min-w-24 text-center">
                                                 {time}
                                             </TableCell>
-                                            <TableCell align="center">
-                                                <div className="flex flex-row justify-center gap-1 flex-wrap">
+                                            <TableCell className="text-center">
+                                                <div className="flex flex-wrap justify-center gap-1">
                                                     <Button
-                                                        variant="bordered"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => setItemChoose(i.item_id)}
-                                                        color={i.item_id === itemChoose ? "primary" : "default"}
+                                                        className={i.item_id === itemChoose ? "border-primary" : ""}
                                                     >
                                                         {locale.ListViewRecordButton}
                                                     </Button>
                                                     <Button
-                                                        variant="bordered"
+                                                        variant="outline"
                                                         size="sm"
+                                                        className="text-destructive"
                                                         onClick={() => {
                                                             copytext(`${baseurl + i.item_id}#code:${i.code}`);
                                                             toast({ title: locale.ToastCopySuccess, color: "success" });
                                                         }}
-                                                        color="danger"
                                                     >
                                                         {locale.ListItemLinkButton}
                                                     </Button>
@@ -203,19 +182,38 @@ const Component = () => {
                                 })}
                             </TableBody>
                         </Table>
-                    </Card>
+                        <div className="flex items-center justify-center py-2">
+                            <Pagination
+                                page={userpage}
+                                total={usertotal}
+                                onChange={loadUserPage}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card className="w-full lg:w-2/3 h-auto lg:h-[70vh] overflow-auto">
-                        <Table isStriped aria-label="table" removeWrapper>
+                <Card className="h-auto w-full lg:h-[70vh] lg:w-2/3">
+                    <CardContent className="h-full overflow-auto">
+                        <Table className="table-fixed">
                             <TableHeader>
-                                <TableColumn align="center">{locale.RecordFieldColumn}</TableColumn>
-                                <TableColumn align="center">{locale.RecordValueColumn}</TableColumn>
-                                <TableColumn align="center">{locale.RecordActionColumn}</TableColumn>
+                                <TableRow>
+                                    <TableHead className="w-[25%] text-center">{locale.RecordFieldColumn}</TableHead>
+                                    <TableHead className="w-[55%] text-center">{locale.RecordValueColumn}</TableHead>
+                                    <TableHead className="w-[20%] text-center">{locale.RecordActionColumn}</TableHead>
+                                </TableRow>
                             </TableHeader>
-                            <TableBody emptyContent={<div>{locale.EmptyRecordSelect}</div>}>
-                                {fieldList
-                                    .filter(() => itemChoose)
-                                    .map(({ id: field_id, field_name, radios }) => {
+                            <TableBody>
+                                {!itemChoose ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="py-16">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Inbox className="text-muted-foreground/40 size-10" strokeWidth={1.2} />
+                                                <span className="text-muted-foreground text-sm">{locale.EmptyRecordSelect}</span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    fieldList.map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
@@ -223,29 +221,45 @@ const Component = () => {
                                             radios?.find((r) => r.id === record?.field_value)?.radio_name ||
                                             record?.field_value;
                                         return (
-                                            <TableRow>
-                                                <TableCell className="min-w-24" align="center">
+                                            <TableRow key={field_id}>
+                                                <TableCell className="min-w-24 text-center">
                                                     {field_name}
                                                 </TableCell>
-                                                <TableCell className="min-w-24" align="center">
-                                                    {value}
+                                                <TableCell className="text-center">
+                                                    {value ? (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <span className="block max-w-full truncate">{value}</span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="max-w-xs break-all">
+                                                                {value}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <span className="text-muted-foreground/50">-</span>
+                                                    )}
                                                 </TableCell>
-                                                <TableCell align="center">
+                                                <TableCell className="text-center">
                                                     <Button
-                                                        variant="bordered"
+                                                        variant="outline"
                                                         size="sm"
-                                                        onClick={() => value && copytext(String(value))}
+                                                        onClick={() => {
+                                                            if (!value) return;
+                                                            copytext(String(value));
+                                                            toast({ title: "已复制到剪贴板", color: "success" });
+                                                        }}
                                                     >
                                                         复制
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
                                         );
-                                    })}
+                                    })
+                                )}
                             </TableBody>
                         </Table>
-                    </Card>
-                </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Form, Pagination } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import { Pagination } from "@/client/components/ui/pagination";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { RecordRouter } from "../../api/instance";
 import CheckModal from "./CheckModal";
@@ -112,11 +113,8 @@ const Component = () => {
     }, [formName]);
 
     return (
-        <div className="w-3/4 md:w-1/3 mx-auto">
-            <Form
-                onInvalid={() => {
-                    setPageKey(Math.random());
-                }}
+        <div className="mx-auto w-full max-w-sm px-4">
+            <form
                 onSubmit={async (e) => {
                     e.preventDefault();
                     setSubmitting(true);
@@ -129,31 +127,27 @@ const Component = () => {
                     }
                 }}
             >
-                <div className="w-full flex flex-col px-2 py-2">
-                    <div className="text-lg mx-auto font-bold py-4">{formName}</div>
+                <div className="flex w-full flex-col py-2">
+                    <div className="mx-auto py-4 text-lg font-bold">{formName}</div>
                     <div className="flex flex-col">
                         {fieldList
                             .filter((i) => !i.disabled)
                             .slice((page - 1) * pageSize, page * pageSize)
                             .map((field) => {
                                 return (
-                                    <div className="w-full flex flex-row flex-wrap pt-3" key={field.id}>
+                                    <div className="flex w-full flex-row flex-wrap pt-3" key={field.id}>
                                         {renderControl(records, field, (fid, val) => submitRecord(fid, val, field.field_type))}
                                     </div>
                                 );
                             })}
                     </div>
                 </div>
-                <Button ref={submitBtn} hidden type="submit" />
-            </Form>
+                <button ref={submitBtn} type="submit" className="hidden" />
+            </form>
             {total > 0 && (
-                <div className="flex flex-col justify-center items-center w-full mt-2 py-4 gap-2">
+                <div className="flex flex-col items-center gap-2 py-4">
                     <Pagination
-                        siblings={0}
                         key={pageKey}
-                        showControls
-                        size="sm"
-                        initialPage={1}
                         page={page}
                         total={Math.ceil(total / pageSize)}
                         onChange={(changePage) => {
@@ -167,10 +161,9 @@ const Component = () => {
                         }}
                     />
                     <Button
-                        color="primary"
-                        className="px-8 py-1 my-2"
-                        isLoading={submitting}
-                        onPress={() => {
+                        className="my-2 px-8"
+                        disabled={submitting}
+                        onClick={() => {
                             submitBtn.current?.click();
                         }}
                     >

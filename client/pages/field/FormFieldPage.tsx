@@ -1,4 +1,3 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useRef, useState } from "react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FormRouter, FieldRouter, RadioRouter } from "../../api/instance";
@@ -126,8 +125,7 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
+        <div className="space-y-4">
             <FormFieldHeader
                 total={total}
                 page={page}

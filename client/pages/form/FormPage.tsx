@@ -1,4 +1,3 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
 import { FileRouter, FieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
@@ -162,15 +161,12 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
-            <div className="w-full flex flex-col flex-wrap px-[5vw] pt-6 pb-2">
-                <div className="flex flex-row justify-end items-center w-full py-2">
-                    <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} />
-                </div>
-                <div className="flex flex-row justify-center">
-                    <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
-                </div>
+        <div className="mx-auto w-full max-w-5xl space-y-4">
+            <div className="flex justify-end">
+                <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} />
+            </div>
+            <div>
+                <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
             </div>
 
             <FormEditor
