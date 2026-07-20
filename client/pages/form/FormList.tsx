@@ -1,9 +1,16 @@
+import { FileText } from "lucide-react";
+
+import { Card, CardContent } from "@/client/components/ui/card";
+import { Badge } from "@/client/components/ui/badge";
+import { Button } from "@/client/components/ui/button";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/client/components/ui/accordion";
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/client/components/ui/table";
 import { Locale } from "../../methods/locale";
 import { useNavigate } from "react-router-dom";
 import { EmptyComp } from "../../components/empty/Empty";
@@ -33,67 +40,88 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
     }
 
     return (
-        <div className="flex w-full flex-col">
-            {formList.length === 0 && <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />}
-            <Accordion type="multiple">
-                {formList.map(({ form_name, records_num, last_submit }) => (
-                    <AccordionItem key={form_name} value={form_name}>
-                        <AccordionTrigger
-                            indicator={
-                                <div className="flex items-center gap-2">
-                                    <span
-                                        role="button"
-                                        className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            viewRecords(form_name);
-                                        }}
-                                    >
-                                        {locale.ViewRecordsButton}
-                                    </span>
-                                    <span
-                                        role="button"
-                                        className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            openFormEditor(form_name);
-                                        }}
-                                    >
-                                        {locale.RenameButton}
-                                    </span>
-                                    <span
-                                        role="button"
-                                        className="text-destructive hover:bg-destructive/10 inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            openRecordEditor(form_name);
-                                        }}
-                                    >
-                                        {locale.CreateRecordButton}
-                                    </span>
-                                </div>
-                            }
-                        >
-                            <div className="flex flex-1 items-center justify-between gap-4 pr-4">
-                                <div className="text-base font-semibold">{form_name}</div>
-                                <div className="text-muted-foreground flex items-center gap-3 text-sm">
-                                    <span>{locale.RecordNumLabel + " " + records_num}</span>
-                                    {last_submit ? (
-                                        <span>{formatTime(last_submit)}</span>
-                                    ) : (
-                                        <span>{locale.EmptyNumLabel}</span>
-                                    )}
-                                </div>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent />
-                    </AccordionItem>
-                ))}
-            </Accordion>
-        </div>
+        <Card>
+            <CardContent className="p-0">
+                {formList.length === 0 ? (
+                    <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />
+                ) : (
+                    <>
+                        {/* Desktop table */}
+                        <div className="hidden md:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="pl-6">{locale.TableHeaderName}</TableHead>
+                                        <TableHead>{locale.TableHeaderRecords}</TableHead>
+                                        <TableHead>{locale.TableHeaderLastSubmit}</TableHead>
+                                        <TableHead className="text-center">{locale.TableHeaderActions}</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {formList.map(({ form_name, records_num, last_submit }) => (
+                                        <TableRow key={form_name}>
+                                            <TableCell className="pl-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+                                                        <FileText className="size-4" />
+                                                    </div>
+                                                    <span className="font-medium">{form_name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">{records_num}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                                {last_submit ? formatTime(last_submit) : locale.EmptyNumLabel}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Button variant="ghost" size="sm" onClick={() => viewRecords(form_name)}>
+                                                        {locale.ViewRecordsButton}
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => openFormEditor(form_name)}>
+                                                        {locale.RenameButton}
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => openRecordEditor(form_name)}>
+                                                        {locale.CreateRecordButton}
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Mobile list */}
+                        <ul className="divide-y md:hidden">
+                            {formList.map(({ form_name, records_num, last_submit }) => (
+                                <li key={form_name} className="flex items-center gap-3 px-4 py-3">
+                                    <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                                        <FileText className="size-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                        <p className="truncate text-sm font-medium">{form_name}</p>
+                                        <p className="text-muted-foreground text-xs">
+                                            {locale.RecordNumLabel} {records_num}
+                                            {last_submit ? ` · ${formatTime(last_submit)}` : ""}
+                                        </p>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => viewRecords(form_name)}>
+                                            {locale.ViewRecordsButton}
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => openRecordEditor(form_name)}>
+                                            {locale.CreateRecordButton}
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
+            </CardContent>
+        </Card>
     );
 };
 

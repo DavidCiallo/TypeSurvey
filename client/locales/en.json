@@ -14,6 +14,8 @@
     },
 
     "Menu": {
+        "Workspace": "Workspace",
+        "General": "General",
         "FormList": "Form List",
         "FieldManage": "Form Management",
         "Feedback": "Data Feedback",
@@ -57,6 +59,7 @@
     },
     "FormPage": {
         "Title": "Form List",
+        "Description": "All forms created in your workspace",
         "CreateNewForm": "Create New Form",
         "TitleCreate": "Create Form",
         "TitleEdit": "Edit Form",
@@ -67,6 +70,10 @@
         "CreateRecordButton": "Generate Link",
         "FormNameLabel": "Form Name",
         "FormNamePlaceholder": "Please enter form name",
+        "TableHeaderName": "Form Name",
+        "TableHeaderRecords": "Records",
+        "TableHeaderLastSubmit": "Last Submit",
+        "TableHeaderActions": "Actions",
         "ToastCopySuccess": "Link copied successfully",
         "ToastFormListEmpty": "Form error, may not exist or is empty",
         "ToastCreateFormFailed": "Failed to create form, a form with the same name may exist",

@@ -176,13 +176,16 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="mx-auto w-full max-w-5xl space-y-4">
-            <div className="flex justify-end">
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-semibold tracking-tight">{locale.Title}</h2>
+                    <p className="text-muted-foreground text-sm">{locale.Description}</p>
+                </div>
                 <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} importing={isImportLoading} />
             </div>
-            <div>
-                <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
-            </div>
+
+            <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
 
             <FormEditor
                 formName={focusForm}

@@ -14,6 +14,8 @@
     },
 
     "Menu": {
+        "Workspace": "工作区",
+        "General": "管理",
         "FormList": "表单列表",
         "FieldManage": "表单管理",
         "Feedback": "数据反馈",
@@ -58,6 +60,7 @@
     },
     "FormPage": {
         "Title": "表单列表",
+        "Description": "当前工作区中创建的所有表单",
         "CreateNewForm": "新建表单",
         "TitleCreate": "新建表单",
         "TitleEdit": "编辑表单",
@@ -68,6 +71,10 @@
         "CreateRecordButton": "生成链接",
         "FormNameLabel": "表单名",
         "FormNamePlaceholder": "请输入表单名称",
+        "TableHeaderName": "表单名称",
+        "TableHeaderRecords": "记录数",
+        "TableHeaderLastSubmit": "最近提交",
+        "TableHeaderActions": "操作",
         "ToastCopySuccess": "复制链接成功",
         "ToastFormListEmpty": "表单错误，可能不存在或者为空",
         "ToastCreateFormFailed": "创建表单失败，可能存在同名项",
