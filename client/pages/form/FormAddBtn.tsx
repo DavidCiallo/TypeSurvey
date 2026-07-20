@@ -1,23 +1,26 @@
-import { Button } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { AcceptType, FileUpload } from "../../components/control/FileUpload";
 import { Locale } from "../../methods/locale";
 
 type props = {
     openFormEditor: () => void;
     uploadXlsx: (file: File | null) => void;
+    importing?: boolean;
 };
 
-const FormAddBtn = ({ openFormEditor, uploadXlsx }: props) => {
+const FormAddBtn = ({ openFormEditor, uploadXlsx, importing }: props) => {
     const locale = Locale("FormAddBtn");
 
     return (
-        <div className="flex flex-row">
-            <Button onClick={() => openFormEditor()} color="default" variant="bordered" className="text-black-500">
+        <div className="flex flex-row gap-2">
+            <Button variant="outline" onClick={() => openFormEditor()}>
                 {locale.CreateNewForm}
             </Button>
             <FileUpload
                 element={
-                    <Button color="default" variant="bordered" className="text-black-500 ml-1">
+                    <Button variant="outline" disabled={importing}>
+                        {importing && <Loader2 className="mr-1.5 size-4 animate-spin" />}
                         {locale.ImportXlsx}
                     </Button>
                 }

@@ -60,6 +60,7 @@ export class FileConfirmRequest implements BaseRequest {
     public tempid: string;
     public usedata: boolean;
     public fields: FieldCache[];
+    public time_field_index?: number;
 
     constructor(origin: Partial<FileConfirmRequest>) {
         if (!origin.tempid) throw new Error("Temp ID is required");
@@ -68,6 +69,7 @@ export class FileConfirmRequest implements BaseRequest {
         this.tempid = origin.tempid;
         this.usedata = origin.usedata || false;
         this.fields = origin.fields;
+        this.time_field_index = origin.time_field_index;
     }
 
     static self(unsafe: FileConfirmRequest) {
@@ -80,6 +82,35 @@ export class FileConfirmResponse implements BaseResponse<{}> {
     public message?: string;
     public data?: {};
     constructor(origin: FileConfirmResponse) {
+        this.success = origin.success;
+        this.message = origin.message;
+        this.data = origin.data;
+    }
+}
+
+export class FileUploadRequest implements BaseRequest {
+    public auth?: string;
+    public filename: string;
+    public data: string; // base64
+
+    constructor(origin: Partial<FileUploadRequest>) {
+        if (!origin.filename) throw new Error("Filename is required");
+        if (!origin.data) throw new Error("File data is required");
+        origin.auth && (this.auth = origin.auth);
+        this.filename = origin.filename;
+        this.data = origin.data;
+    }
+
+    static self(unsafe: FileUploadRequest) {
+        return new FileUploadRequest(unsafe);
+    }
+}
+
+export class FileUploadResponse implements BaseResponse<{ url: string }> {
+    public success: boolean;
+    public message?: string;
+    public data?: { url: string };
+    constructor(origin: FileUploadResponse) {
         this.success = origin.success;
         this.message = origin.message;
         this.data = origin.data;

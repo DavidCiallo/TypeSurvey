@@ -1,25 +1,11 @@
-import { Button } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
 import { AuthStatus, getAuthStatus } from "../../methods/auth";
 import { Locale } from "../../methods/locale";
 
 const Component = () => {
     const locale = Locale("HomePage");
     const Logo = () => (
-        <span className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-gray-900">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" className="shrink-0">
-                <defs>
-                    <linearGradient id="home-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{ stopColor: "#3B82F6" }} />
-                        <stop offset="100%" style={{ stopColor: "#2563EB" }} />
-                    </linearGradient>
-                </defs>
-                <rect width="64" height="64" rx="14" fill="url(#home-bg)" />
-                <rect x="10" y="10" width="21" height="4" rx="2" fill="#fff" opacity="0.9" />
-                <rect x="10" y="22" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
-                <rect x="10" y="34" width="44" height="4" rx="2" fill="#fff" opacity="0.9" />
-                <rect x="10" y="46" width="33" height="4" rx="2" fill="#fff" opacity="0.9" />
-                <circle cx="50" cy="48" r="4" fill="#fff" />
-            </svg>
+        <span className="text-foreground flex items-center gap-2.5 text-2xl font-bold tracking-tight">
             简表
         </span>
     );
@@ -35,25 +21,15 @@ const Component = () => {
     }
     function Language() {
         const locale = localStorage.getItem("locale") || "cn";
-        let lan = "";
-        switch (locale) {
-            case "cn":
-                lan = "中文";
-                break;
-            case "en":
-                lan = "EN";
-                break;
-            default:
-                lan = "中文";
-        }
+        const lan = locale === "cn" ? "中文" : "EN";
         return (
-            <Button size="sm" variant="bordered" className="text-xs text-gray-600 w-16 border-gray-300 hover:border-blue-400 hover:text-blue-600" onClick={changeLan}>
+            <Button size="sm" variant="outline" onClick={changeLan}>
                 {lan}
             </Button>
         );
     }
     return (
-        <div className="h-screen relative isolate overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 pt-10">
+        <div className="bg-background relative min-h-screen overflow-hidden pt-10">
             <header className="absolute inset-x-0 top-0 z-50">
                 <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
                     <div className="flex lg:flex-1">
@@ -62,10 +38,13 @@ const Component = () => {
                             <Logo />
                         </a>
                     </div>
-                    <div className="flex flex-row flex-between items-center gap-4">
+                    <div className="flex flex-row items-center gap-4">
                         {auth !== AuthStatus.AUTH && (
                             <div className="lg:flex lg:flex-1 lg:justify-end">
-                                <a href="/auth" className="text-sm font-semibold leading-6 text-gray-700 hover:text-blue-600 transition-colors">
+                                <a
+                                    href="/auth"
+                                    className="text-muted-foreground hover:text-foreground text-sm font-semibold leading-6 transition-colors"
+                                >
                                     Log in
                                 </a>
                             </div>
@@ -77,53 +56,106 @@ const Component = () => {
 
             <div className="mx-auto max-w-7xl px-6 py-24 sm:py-24 lg:pb-40 lg:pt-40">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-8">
-                    <div className="mx-auto max-w-2xl lg:mx-0 lg:col-span-6 lg:flex lg:flex-col lg:justify-center">
-                        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+                    <div className="mx-auto max-w-2xl lg:col-span-6 lg:mx-0 lg:flex lg:flex-col lg:justify-center">
+                        <h1 className="text-foreground text-4xl font-bold tracking-tight sm:text-6xl">
                             {locale.MainText1}
-                            <span className="text-blue-600">{locale.MainText2}</span>
+                            <span className="text-primary">{locale.MainText2}</span>
                             {locale.MainText3}
                         </h1>
-                        <p className="mt-6 text-lg leading-8 text-gray-500">{locale.Slogan1}</p>
-                        <p className="text-lg leading-8 text-gray-500">{locale.Slogan2}</p>
-                        <p className="mt-6 text-md leading-8 text-gray-400">Powered by React. </p>
+                        <p className="text-muted-foreground mt-6 text-lg leading-8">{locale.Slogan1}</p>
+                        <p className="text-muted-foreground text-lg leading-8">{locale.Slogan2}</p>
+                        <p className="text-muted-foreground/70 mt-6 text-md leading-8">Powered by React.</p>
 
                         <div className="mt-10 flex items-center gap-x-6">
-                            <a
-                                href="/form"
-                                className="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline"
-                            >
-                                Start Free
+                            <a href="/form">
+                                <Button>Start Free</Button>
                             </a>
-
                             <a
                                 href="https://github.com/DavidCiallo/TypeForm"
                                 target="_blank"
-                                className="text-sm font-semibold leading-6 text-gray-700 hover:text-blue-600 transition-colors"
+                                className="text-muted-foreground hover:text-foreground text-sm font-semibold leading-6 transition-colors"
                             >
                                 {locale.ViewSource} <span>→</span>
                             </a>
                         </div>
                     </div>
 
-                    <div className="relative mt-16 lg:col-span-6 lg:mt-0 flex justify-center items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" className="w-96 h-[26rem] drop-shadow-xl">
-                            <defs>
-                                <linearGradient id="form-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style={{ stopColor: "#ffffff" }} />
-                                    <stop offset="100%" style={{ stopColor: "#EBF4FF" }} />
-                                </linearGradient>
-                            </defs>
-                            <rect width="160" height="200" rx="16" fill="url(#form-bg)" stroke="#BFDBFE" strokeWidth="1.5"/>
-                            <rect x="30" y="28" width="100" height="10" rx="3" fill="#BFDBFE"/>
-                            <rect x="20" y="50" width="120" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="64" width="80" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="78" width="120" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="92" width="100" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="106" width="120" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="120" width="80" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="20" y="134" width="100" height="6" rx="2" fill="#DBEAFE"/>
-                            <rect x="40" y="160" width="80" height="16" rx="8" fill="#3B82F6" opacity="0.8"/>
-                        </svg>
+                    {/* Right side abstract geometric pattern */}
+                    <div className="relative hidden lg:col-span-6 lg:block">
+                        <div className="relative flex h-full min-h-[420px] items-center justify-center">
+                            {/* Concentric circles */}
+                            <div className="border-foreground/10 absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full border-2" />
+                            <div className="border-foreground/[0.06] absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full border" />
+
+                            {/* Form card - main */}
+                            <div className="bg-card border-border/60 absolute top-1/2 left-1/2 w-52 -translate-x-1/2 -translate-y-1/2 rounded-xl border p-4 shadow-lg">
+                                <div className="bg-foreground/80 mb-3 h-2.5 w-20 rounded-full" />
+                                <div className="border-border/80 bg-background mb-2 h-8 w-full rounded-md border" />
+                                <div className="border-border/80 bg-background mb-2 h-8 w-full rounded-md border" />
+                                <div className="flex gap-2">
+                                    <div className="border-border/80 bg-background h-4 w-4 rounded border" />
+                                    <div className="bg-foreground/20 h-4 w-16 rounded" />
+                                </div>
+                                <div className="mt-2 flex gap-2">
+                                    <div className="bg-foreground/80 h-4 w-4 rounded-full" />
+                                    <div className="bg-foreground/20 h-4 w-12 rounded" />
+                                </div>
+                            </div>
+
+                            {/* Floating card - top left */}
+                            <div className="bg-card border-border/40 absolute top-8 left-6 w-32 rounded-lg border p-3 shadow-md">
+                                <div className="bg-foreground/60 mb-2 h-2 w-12 rounded-full" />
+                                <div className="bg-foreground/15 h-2 w-full rounded-full" />
+                            </div>
+
+                            {/* Floating card - bottom right */}
+                            <div className="bg-card border-border/40 absolute right-4 bottom-12 w-36 rounded-lg border p-3 shadow-md">
+                                <div className="mb-2 flex items-center gap-2">
+                                    <div className="bg-foreground/70 h-3 w-3 rounded-sm" />
+                                    <div className="bg-foreground/20 h-2 w-14 rounded-full" />
+                                </div>
+                                <div className="bg-foreground/10 h-6 w-full rounded" />
+                            </div>
+
+                            {/* Geometric dots */}
+                            <div className="bg-foreground/20 absolute top-16 right-16 h-3 w-3 rounded-full" />
+                            <div className="bg-foreground/10 absolute bottom-24 left-12 h-4 w-4 rounded-sm" />
+                            <div className="border-foreground/20 absolute top-32 left-16 h-5 w-5 rotate-45 border" />
+                            <div className="bg-foreground/15 absolute right-20 bottom-32 h-2.5 w-2.5 rounded-full" />
+                            <div className="bg-foreground/[0.08] absolute top-20 left-1/3 h-6 w-6 rounded-full" />
+
+                            {/* Cross marks */}
+                            <div className="absolute top-40 right-10 text-foreground/15">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 0v16M0 8h16" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                            </div>
+                            <div className="absolute bottom-16 left-1/4 text-foreground/10">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 0v16M0 8h16" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                            </div>
+
+                            {/* Arc decorations */}
+                            <svg
+                                className="absolute top-6 right-1/4 text-foreground/[0.07]"
+                                width="80"
+                                height="80"
+                                viewBox="0 0 80 80"
+                                fill="none"
+                            >
+                                <path d="M0 80A80 80 0 0 1 80 0" stroke="currentColor" strokeWidth="2" />
+                            </svg>
+                            <svg
+                                className="absolute bottom-8 left-8 text-foreground/[0.07]"
+                                width="60"
+                                height="60"
+                                viewBox="0 0 60 60"
+                                fill="none"
+                            >
+                                <path d="M60 0A60 60 0 0 0 0 60" stroke="currentColor" strokeWidth="2" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>

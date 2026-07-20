@@ -1,4 +1,16 @@
-import { Accordion, AccordionItem } from "@heroui/react";
+import { FileText } from "lucide-react";
+
+import { Card, CardContent } from "@/client/components/ui/card";
+import { Badge } from "@/client/components/ui/badge";
+import { Button } from "@/client/components/ui/button";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/client/components/ui/table";
 import { Locale } from "../../methods/locale";
 import { useNavigate } from "react-router-dom";
 import { EmptyComp } from "../../components/empty/Empty";
@@ -26,44 +38,90 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
         localStorage.setItem("formname", formname);
         navigate("/record");
     }
+
     return (
-        <div className="w-full flex flex-col">
-            {formList.length == 0 && <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />}
-            <Accordion selectedKeys={[]}>
-                {formList.map(({ form_name, records_num, last_submit }) => {
-                    const title = <div className="text-lg font-bold">{form_name}</div>;
-                    const subtitle = (
-                        <div className="flex flex-row gap-3">
-                            <div>{locale.RecordNumLabel + " " + records_num}</div>
-                            {!!last_submit && <div>{formatTime(last_submit)}</div>}
-                            {!last_submit && <div>{locale.EmptyNumLabel}</div>}
+        <Card>
+            <CardContent className="p-0">
+                {formList.length === 0 ? (
+                    <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />
+                ) : (
+                    <>
+                        {/* Desktop table */}
+                        <div className="hidden md:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="pl-6">{locale.TableHeaderName}</TableHead>
+                                        <TableHead>{locale.TableHeaderRecords}</TableHead>
+                                        <TableHead>{locale.TableHeaderLastSubmit}</TableHead>
+                                        <TableHead className="text-center">{locale.TableHeaderActions}</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {formList.map(({ form_name, records_num, last_submit }) => (
+                                        <TableRow key={form_name}>
+                                            <TableCell className="pl-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+                                                        <FileText className="size-4" />
+                                                    </div>
+                                                    <span className="font-medium">{form_name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">{records_num}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                                {last_submit ? formatTime(last_submit) : locale.EmptyNumLabel}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Button variant="ghost" size="sm" onClick={() => viewRecords(form_name)}>
+                                                        {locale.ViewRecordsButton}
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => openFormEditor(form_name)}>
+                                                        {locale.RenameButton}
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => openRecordEditor(form_name)}>
+                                                        {locale.CreateRecordButton}
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
-                    );
-                    const indicator = (
-                        <div className="flex flex-row gap-3">
-                            <div className="text-sm text-primary" onClick={() => viewRecords(form_name)}>
-                                {locale.ViewRecordsButton}
-                            </div>
-                            <div className="text-sm text-primary" onClick={() => openFormEditor(form_name)}>
-                                {locale.RenameButton}
-                            </div>
-                            <div className="text-sm text-danger" onClick={() => openRecordEditor(form_name)}>
-                                {locale.CreateRecordButton}
-                            </div>
-                        </div>
-                    );
-                    return (
-                        <AccordionItem
-                            key={form_name}
-                            aria-label={form_name}
-                            title={title}
-                            subtitle={subtitle}
-                            indicator={indicator}
-                        ></AccordionItem>
-                    );
-                })}
-            </Accordion>
-        </div>
+
+                        {/* Mobile list */}
+                        <ul className="divide-y md:hidden">
+                            {formList.map(({ form_name, records_num, last_submit }) => (
+                                <li key={form_name} className="flex items-center gap-3 px-4 py-3">
+                                    <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                                        <FileText className="size-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                        <p className="truncate text-sm font-medium">{form_name}</p>
+                                        <p className="text-muted-foreground text-xs">
+                                            {locale.RecordNumLabel} {records_num}
+                                            {last_submit ? ` · ${formatTime(last_submit)}` : ""}
+                                        </p>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => viewRecords(form_name)}>
+                                            {locale.ViewRecordsButton}
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => openRecordEditor(form_name)}>
+                                            {locale.CreateRecordButton}
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
+            </CardContent>
+        </Card>
     );
 };
 

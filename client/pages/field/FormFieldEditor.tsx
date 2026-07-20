@@ -1,14 +1,14 @@
 import { useRef, useState, useEffect } from "react";
+import { Button } from "@/client/components/ui/button";
 import {
-    Button,
-    Form,
-    Input,
-    Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-} from "@heroui/react";
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/client/components/ui/dialog";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { FieldCreateRequest, FieldUpdateRequest } from "../../../shared/modules/field/field.interface";
 import { toast } from "../../methods/notify";
 import { FieldType } from "../../../shared/impl/field";
@@ -77,38 +77,31 @@ const FieldTypeSelect = ({ locale }: { locale: any }) => {
         <div className="relative w-full" ref={containerRef} onKeyDown={handleKeyDown}>
             <button
                 type="button"
-                className={`w-full h-10 px-3 rounded-xl border-2 text-sm text-left flex items-center justify-between
-                    transition-colors duration-150 cursor-pointer
-                    ${isOpen
-                        ? "border-primary ring-2 ring-primary/20"
-                        : "border-default-200 hover:border-default-400 bg-transparent"
-                    }
-                    ${selectedType ? "text-foreground" : "text-default-400"}`}
+                className={`border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm transition-colors ${
+                    isOpen ? "ring-ring ring-2" : "hover:border-input"
+                } ${selectedType ? "text-foreground" : "text-muted-foreground"}`}
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <span>{selectedType ? selectedName : locale.FieldTypePlaceholder}</span>
                 <svg
-                    className={`text-default-400 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+                    className={`text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                     width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 >
                     <path d="m6 9 6 6 6-6" />
                 </svg>
             </button>
             {isOpen && (
-                <div
-                    className="absolute left-0 top-full z-50 w-full mt-1 py-1 rounded-xl border-2 border-default-200 bg-content1 shadow-lg overflow-hidden"
-                    style={{ animation: "fadeIn 150ms ease-out forwards" } as React.CSSProperties}
-                >
+                <div className="bg-popover absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-md border p-1 shadow-md">
                     {FieldTypeList.map(({ name, type }, idx) => (
                         <div
                             key={type}
-                            className={`px-3 py-2 text-sm cursor-pointer transition-colors duration-75
-                                ${type === selectedType
+                            className={`cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors ${
+                                type === selectedType
                                     ? "bg-primary/10 text-primary font-medium"
                                     : focusedIdx === idx
-                                        ? "bg-default-100 text-foreground"
-                                        : "text-foreground hover:bg-default-100"
-                                }`}
+                                        ? "bg-accent text-accent-foreground"
+                                        : "text-foreground hover:bg-accent"
+                            }`}
                             onClick={() => selectItem({ name, type })}
                             onMouseEnter={() => setFocusedIdx(idx)}
                         >
@@ -141,57 +134,44 @@ const FieldEditorModal = ({ form_name, isOpen, onOpenChange, onSubmit }: props) 
         });
     };
 
-    const triggerSubmit = () => {
-        handleCustomSubmit();
-    };
-
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange} className="w-full">
-            <ModalContent className="md:min-w-[800px] max-h-[80vh] overflow-visible">
-                {(onClose) => (
-                    <>
-                        <ModalHeader className="flex flex-col">{locale.Title}</ModalHeader>
-                        <ModalBody className="overflow-visible">
-                            <div className="flex flex-col w-full md:w-1/2 mx-auto">
-                                <Form ref={formRef} onSubmit={handleCustomSubmit}>
-                                    <Input
-                                        isRequired
-                                        label={locale.FormNameLabel}
-                                        name="form_name"
-                                        labelPlacement="outside"
-                                        isReadOnly
-                                        value={form_name}
-                                        placeholder={locale.FormNamePlaceholder}
-                                        variant="bordered"
-                                        className="mb-4"
-                                    />
-                                    <Input
-                                        label={locale.FieldNameLabel}
-                                        name="field_name"
-                                        labelPlacement="outside"
-                                        placeholder={locale.FieldNamePlaceholder}
-                                        variant="bordered"
-                                        className="mb-4"
-                                    />
-                                    <div className="mb-4 w-full">
-                                        <label className="text-sm text-default-600 block pb-1.5">{locale.FieldTypeLabel}</label>
-                                        <FieldTypeSelect locale={locale} />
-                                    </div>
-                                </Form>
-                            </div>
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button color="primary" size="sm" variant="light" onPress={triggerSubmit}>
-                                {Locale("Common").ButtonSave}
-                            </Button>
-                            <Button color="danger" size="sm" variant="light" onPress={onClose}>
-                                {Locale("Common").ButtonClose}
-                            </Button>
-                        </ModalFooter>
-                    </>
-                )}
-            </ModalContent>
-        </Modal>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>{locale.Title}</DialogTitle>
+                </DialogHeader>
+                <form ref={formRef} onSubmit={handleCustomSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <Label>{locale.FormNameLabel}</Label>
+                        <Input
+                            name="form_name"
+                            readOnly
+                            value={form_name}
+                            placeholder={locale.FormNamePlaceholder}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Label>{locale.FieldNameLabel}</Label>
+                        <Input
+                            name="field_name"
+                            placeholder={locale.FieldNamePlaceholder}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Label>{locale.FieldTypeLabel}</Label>
+                        <FieldTypeSelect locale={locale} />
+                    </div>
+                </form>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        {Locale("Common").ButtonClose}
+                    </Button>
+                    <Button onClick={() => handleCustomSubmit()}>
+                        {Locale("Common").ButtonSave}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
 

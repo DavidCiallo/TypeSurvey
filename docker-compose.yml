@@ -1,0 +1,20 @@
+services:
+    typesurvey:
+        build:
+            context: .
+            dockerfile: DockerFile
+        image: typesurvey:latest
+        container_name: typesurvey
+        restart: unless-stopped
+        ports:
+            - "3000:3000"
+        env_file:
+            - .env
+        environment:
+            SERVER_PORT: 3000
+        volumes:
+            - typesurvey-data:/data
+
+volumes:
+    typesurvey-data:
+        name: typesurvey-data

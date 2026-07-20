@@ -1,7 +1,10 @@
 import { nanoid } from "nanoid";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import {
     Chunk,
-    FileXlsxRequest, FileConfirmRequest,
+    FileXlsxRequest, FileConfirmRequest, FileUploadRequest,
     XlsxHeader,
 } from "../../../shared/modules/file/file.interface";
 import { fileRoutes } from "../../../shared/modules/file/file.router";
@@ -9,7 +12,11 @@ import { analyzeCellType, analyzeXlsx, assembly } from "../../methods/xlsx";
 import { createField, getFieldList } from "../form/form.service";
 import { createRadio } from "../radio/radio.service";
 import { insertRecords } from "../record/record.service";
-import { RecordEntity } from "../../../shared/modules/record/record.entity";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const UPLOAD_DIR = path.resolve(__dirname, "../../../data/uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const chunkList: Array<Chunk> = [];
 const dataList: Array<{ tempid: string; filename: string; header: XlsxHeader[]; data: string[][] }> = [];
@@ -19,7 +26,8 @@ async function readxlsx(request: FileXlsxRequest) {
     const { fileid, filename, size, chunk_site, chunk_data } = file;
     chunkList.push({ fileid, filename, size, chunk_site, chunk_data });
     const chunks = chunkList.filter((chunk) => fileid === chunk.fileid);
-    if (chunks.every((chunk) => chunk.chunk_site < size)) throw "文件不完整";
+    const totalReceived = chunks.reduce((sum, chunk) => sum + chunk.chunk_data.length, 0);
+    if (totalReceived < size) return { tempid: "", header: [], size: 0 };
     const buffer = await assembly(chunks);
     if (!buffer) throw "文件组装失败";
     const { header, data } = await analyzeXlsx(buffer);
@@ -38,7 +46,7 @@ async function readxlsx(request: FileXlsxRequest) {
 }
 
 async function confirm(request: FileConfirmRequest) {
-    const { tempid, fields, usedata } = request;
+    const { tempid, fields, usedata, time_field_index } = request;
     const existIndex = dataList.findIndex((i) => i.tempid === tempid);
     if (existIndex === -1) throw "数据不存在";
     const existData = dataList[existIndex];
@@ -77,10 +85,18 @@ async function confirm(request: FileConfirmRequest) {
     }
 
     const BATCH_SIZE = 500;
-    let batch: Omit<RecordEntity, "id" | "create_time" | "update_time" | "delete_time">[] = [];
+    let batch: any[] = [];
 
     for (const row of data) {
         const item_id = nanoid(6);
+
+        // Parse timestamp from selected time field
+        let rowTime: number | undefined;
+        if (time_field_index !== undefined && row[time_field_index]) {
+            const parsed = new Date(row[time_field_index]).getTime();
+            if (!isNaN(parsed)) rowTime = parsed;
+        }
+
         for (let index = 0; index < row.length; index++) {
             const cell = row[index];
             if (!cell) continue;
@@ -92,7 +108,12 @@ async function confirm(request: FileConfirmRequest) {
                 field_value = cell;
             }
             if (field_id) {
-                batch.push({ item_id, field_id, field_value });
+                const record: any = { item_id, field_id, field_value };
+                if (rowTime) {
+                    record.create_time = rowTime;
+                    record.update_time = rowTime;
+                }
+                batch.push(record);
                 if (batch.length >= BATCH_SIZE) {
                     await insertRecords(batch.splice(0, BATCH_SIZE));
                 }
@@ -105,7 +126,26 @@ async function confirm(request: FileConfirmRequest) {
     return { success: true };
 }
 
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+async function upload(request: FileUploadRequest) {
+    const { filename, data } = request;
+    if (!filename || !data) throw "参数错误";
+
+    const buffer = Buffer.from(data, "base64");
+    if (buffer.length > MAX_SIZE) throw "文件超过10MB限制";
+
+    const ext = path.extname(filename).toLowerCase();
+    const allowed = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx"];
+    if (!allowed.includes(ext)) throw "不支持的文件类型";
+
+    const safename = `${nanoid(10)}${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, safename), buffer);
+
+    return { url: `/uploads/${safename}` };
+}
+
 export const fileController = {
     routes: fileRoutes,
-    handlers: { readxlsx, confirm },
+    handlers: { readxlsx, confirm, upload },
 };

@@ -90,14 +90,11 @@ export class FormUpdateResponse implements BaseResponse<{}> {
 export class FormDeleteRequest implements BaseRequest {
     public auth?: string;
     public form_name: string;
-    public creater: string;
 
     constructor(origin: Partial<FormDeleteRequest>) {
         if (!origin.form_name) throw new Error("Form name is required");
-        if (!origin.creater) throw new Error("Creater is required");
         origin.auth && (this.auth = origin.auth);
         this.form_name = origin.form_name;
-        this.creater = origin.creater;
     }
 
     static self(unsafe: FormDeleteRequest) {

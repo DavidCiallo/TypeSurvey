@@ -1,5 +1,13 @@
 import { useRef } from "react";
-import { Button, Form, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+} from "@/client/components/ui/dialog";
+import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { RadioCreateRequest, RadioUpdateRequest } from "../../../shared/modules/radio/radio.interface";
 import { toast } from "../../methods/notify";
 import { Locale } from "../../methods/locale";
@@ -34,47 +42,26 @@ const RadioEditorModal = ({ field_id, isOpen, onOpenChange, onSubmit }: props) =
         onSubmit({ field_id: field_id, radio_name: radio_name.toString() });
     };
 
-    const triggerSubmit = () => {
-        handleCustomSubmit();
-    };
-
-    const ModalBodyContent = () => {
-        return (
-            <div className="flex flex-col w-full md:w-3/4 mx-auto">
-                <Form ref={formRef} onSubmit={handleCustomSubmit}>
-                    <Input
-                        isRequired
-                        label={locale.Title}
-                        name="radio_name"
-                        labelPlacement="outside"
-                        variant="bordered"
-                        className="mb-4"
-                    />
-                </Form>
-            </div>
-        );
-    };
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange} className="w-full">
-            <ModalContent className="md:min-w-[400px] max-h-[60vh]">
-                {(onClose) => (
-                    <>
-                        <ModalHeader className="flex flex-col"></ModalHeader>
-                        <ModalBody className="overflow-y-auto">
-                            <ModalBodyContent />
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button color="primary" size="sm" variant="light" onPress={triggerSubmit}>
-                                {Locale("Common").ButtonSave}
-                            </Button>
-                            <Button color="danger" size="sm" variant="light" onPress={onClose}>
-                                {Locale("Common").ButtonClose}
-                            </Button>
-                        </ModalFooter>
-                    </>
-                )}
-            </ModalContent>
-        </Modal>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader />
+                <form ref={formRef} onSubmit={handleCustomSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <Label>{locale.Title}</Label>
+                        <Input name="radio_name" placeholder={locale.Title} />
+                    </div>
+                </form>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        {Locale("Common").ButtonClose}
+                    </Button>
+                    <Button onClick={() => handleCustomSubmit()}>
+                        {Locale("Common").ButtonSave}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
 

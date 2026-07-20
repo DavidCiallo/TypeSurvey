@@ -1,4 +1,3 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useState } from "react";
 import { FileRouter, FieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import FormEditor from "./FormEditor";
@@ -33,6 +32,8 @@ const Component = () => {
     const [importHeader, setImportHeader] = useState<Array<XlsxHeader>>([]);
     const [editMode, setEditMode] = useState<"create" | "edit">("create");
     const [focusForm, setFocusForm] = useState<string | null>(null);
+
+    const [isImportLoading, setImportLoading] = useState(false);
 
     const [isNewRecordOpen, setNewRecordOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<"common" | "collect" | null>(null);
@@ -116,18 +117,31 @@ const Component = () => {
 
     async function uploadImportFile(file: File | null) {
         if (!file) return;
-        const chunks = await getChunks(file);
-        chunks.forEach(async (file) => {
-            const { success, data } = await FileRouter.readxlsx({ file });
-            if (!success || !data) return;
-            const { tempid, header } = data;
-            setTempid(tempid);
-            setImportOpen(true);
-            setImportHeader(header);
-        });
+        setImportLoading(true);
+        try {
+            const chunks = await getChunks(file);
+            let result: { tempid: string; header: Array<XlsxHeader> } | null = null;
+            for (const chunk of chunks) {
+                const { success, data } = await FileRouter.readxlsx({ file: chunk });
+                if (!success) {
+                    toast({ title: Locale("Common").ToastNetworkError, color: "danger" });
+                    return;
+                }
+                if (data?.tempid) {
+                    result = data;
+                }
+            }
+            if (result) {
+                setTempid(result.tempid);
+                setImportHeader(result.header);
+                setImportOpen(true);
+            }
+        } finally {
+            setImportLoading(false);
+        }
     }
-    async function comfirmImport(fields: Array<FieldCache>) {
-        const { success } = await FileRouter.confirm({ fields, usedata: true, tempid });
+    async function comfirmImport(fields: Array<FieldCache>, usedata: boolean, timeFieldIndex?: number) {
+        const { success } = await FileRouter.confirm({ fields, usedata, tempid, time_field_index: timeFieldIndex });
         if (success) {
             toast({ title: "Success", color: "success" });
         } else {
@@ -162,16 +176,16 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
-            <div className="w-full flex flex-col flex-wrap px-[5vw] pt-6 pb-2">
-                <div className="flex flex-row justify-end items-center w-full py-2">
-                    <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} />
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-semibold tracking-tight">{locale.Title}</h2>
+                    <p className="text-muted-foreground text-sm">{locale.Description}</p>
                 </div>
-                <div className="flex flex-row justify-center">
-                    <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
-                </div>
+                <FormAddBtn openFormEditor={openFormEditor} uploadXlsx={uploadImportFile} importing={isImportLoading} />
             </div>
+
+            <FormList formList={formList} openFormEditor={openFormEditor} openRecordEditor={openRecordEditor} />
 
             <FormEditor
                 formName={focusForm}

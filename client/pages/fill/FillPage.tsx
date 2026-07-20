@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Form, Pagination } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import { Pagination } from "@/client/components/ui/pagination";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { RecordRouter } from "../../api/instance";
 import CheckModal from "./CheckModal";
@@ -29,7 +30,7 @@ const Component = () => {
 
     const [total, setTotal] = useState<number>(1);
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(7);
+    const [pageSize] = useState(10);
     const [pageKey, setPageKey] = useState(Math.random());
     const prePage = useRef(1);
     const [submitting, setSubmitting] = useState(false);
@@ -49,16 +50,17 @@ const Component = () => {
     async function loadRecord(code: string) {
         let id = localStorage.getItem("entry_id");
         if (!id) return;
-        const { success, data, message } = await RecordRouter.history({ id, code });
+        const item_id = localStorage.getItem("item_id") || undefined;
+        const { success, data, message } = await RecordRouter.history({ id, code, item_id });
         if (!success || !data) {
             toast({ title: message });
             setCode("");
             setPass(false);
             return;
         }
-        const { form_name, fields, records, item_id, code: newCode } = data;
+        const { form_name, fields, records, item_id: newItemId, code: newCode } = data;
         setAuthData(form_name, fields, records);
-        localStorage.setItem("item_id", item_id);
+        localStorage.setItem("item_id", newItemId);
         localStorage.setItem("code", newCode);
     }
 
@@ -112,48 +114,45 @@ const Component = () => {
     }, [formName]);
 
     return (
-        <div className="w-3/4 md:w-1/3 mx-auto">
-            <Form
-                onInvalid={() => {
-                    setPageKey(Math.random());
-                }}
+        <div className="mx-auto w-full max-w-sm px-4">
+            <form
                 onSubmit={async (e) => {
                     e.preventDefault();
                     setSubmitting(true);
                     try {
                         await new Promise((r) => setTimeout(r, 300));
-                        setPage(Number(prePage.current));
-                        toast({ title: locale.ButtonSubmit, color: "success" });
+                        const isLastPage = page >= Math.ceil(total / pageSize);
+                        if (isLastPage) {
+                            toast({ title: locale.ButtonSubmit, color: "success" });
+                        } else {
+                            setPage(Number(prePage.current));
+                        }
                     } finally {
                         setSubmitting(false);
                     }
                 }}
             >
-                <div className="w-full flex flex-col px-2 py-2">
-                    <div className="text-lg mx-auto font-bold py-4">{formName}</div>
+                <div className="flex w-full flex-col py-2">
+                    <div className="mx-auto py-4 text-lg font-bold">{formName}</div>
                     <div className="flex flex-col">
                         {fieldList
                             .filter((i) => !i.disabled)
                             .slice((page - 1) * pageSize, page * pageSize)
                             .map((field) => {
                                 return (
-                                    <div className="w-full flex flex-row flex-wrap pt-3" key={field.id}>
+                                    <div className="flex w-full flex-row flex-wrap pt-3" key={field.id}>
                                         {renderControl(records, field, (fid, val) => submitRecord(fid, val, field.field_type))}
                                     </div>
                                 );
                             })}
                     </div>
                 </div>
-                <Button ref={submitBtn} hidden type="submit" />
-            </Form>
+                <button ref={submitBtn} type="submit" className="hidden" />
+            </form>
             {total > 0 && (
-                <div className="flex flex-col justify-center items-center w-full mt-2 py-4 gap-2">
+                <div className="flex flex-col items-center gap-2 py-4">
                     <Pagination
-                        siblings={0}
                         key={pageKey}
-                        showControls
-                        size="sm"
-                        initialPage={1}
                         page={page}
                         total={Math.ceil(total / pageSize)}
                         onChange={(changePage) => {
@@ -166,16 +165,29 @@ const Component = () => {
                             submitRecord("", "");
                         }}
                     />
-                    <Button
-                        color="primary"
-                        className="px-8 py-1 my-2"
-                        isLoading={submitting}
-                        onPress={() => {
-                            submitBtn.current?.click();
-                        }}
-                    >
-                        {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext}
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="px-6"
+                            disabled={page <= 1}
+                            onClick={() => {
+                                prePage.current = page - 1;
+                                setPage(page - 1);
+                            }}
+                        >
+                            {locale.ButtonPrev || "上一页"}
+                        </Button>
+                        <Button
+                            className="px-6"
+                            disabled={submitting}
+                            onClick={() => {
+                                prePage.current = page + 1;
+                                submitBtn.current?.click();
+                            }}
+                        >
+                            {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext || "下一页"}
+                        </Button>
+                    </div>
                 </div>
             )}
             {!pass && <CheckModal value={code} change={changeCode} />}

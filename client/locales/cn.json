@@ -14,6 +14,8 @@
     },
 
     "Menu": {
+        "Workspace": "工作区",
+        "General": "管理",
         "FormList": "表单列表",
         "FieldManage": "表单管理",
         "Feedback": "数据反馈",
@@ -53,10 +55,12 @@
         "checkboxgroup": "多选框",
         "select": "单选项",
         "mulselect": "多选项",
-        "textarea": "多行文本"
+        "textarea": "多行文本",
+        "file": "文件上传"
     },
     "FormPage": {
         "Title": "表单列表",
+        "Description": "当前工作区中创建的所有表单",
         "CreateNewForm": "新建表单",
         "TitleCreate": "新建表单",
         "TitleEdit": "编辑表单",
@@ -67,6 +71,10 @@
         "CreateRecordButton": "生成链接",
         "FormNameLabel": "表单名",
         "FormNamePlaceholder": "请输入表单名称",
+        "TableHeaderName": "表单名称",
+        "TableHeaderRecords": "记录数",
+        "TableHeaderLastSubmit": "最近提交",
+        "TableHeaderActions": "操作",
         "ToastCopySuccess": "复制链接成功",
         "ToastFormListEmpty": "表单错误，可能不存在或者为空",
         "ToastCreateFormFailed": "创建表单失败，可能存在同名项",
@@ -124,7 +132,12 @@
         "TableBodyDownSort": "下降",
         "CreateFormFailed": "创建表单失败，可能存在同名项",
         "CreateFieldFailed": "创建字段失败，可能存在同名项",
-        "CreateRadioFailed": "创建选项失败，可能存在同名项"
+        "CreateRadioFailed": "创建选项失败，可能存在同名项",
+        "DeleteFormButton": "删除此表单",
+        "DeleteFormTitle": "删除表单",
+        "DeleteFormDesc": "确定要删除当前表单吗？所有字段和提交记录都会被永久删除，此操作不可撤销。",
+        "ToastDeleteSuccess": "删除成功",
+        "ToastDeleteFailed": "删除失败"
     },
     "FormFieldRadioEditor": {
         "Title": "新增可选项",
@@ -160,13 +173,19 @@
         "RecordFieldColumn": "字段",
         "RecordValueColumn": "内容",
         "RecordActionColumn": "操作",
-        "EmptyRecordSelect": "等待数据"
+        "EmptyRecordSelect": "等待数据",
+        "DeleteRecordButton": "删除",
+        "DeleteRecordTitle": "删除记录",
+        "DeleteRecordDesc": "确定要删除这条提交记录吗？此操作不可撤销。",
+        "ToastDeleteSuccess": "删除成功",
+        "ToastDeleteFailed": "删除失败"
     },
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
         "ToastErrorParam": "参数错误",
         "FormSelectPlaceholder": "请选择",
         "ButtonNext": "继续",
+        "ButtonPrev": "上一页",
         "ButtonSubmit": "保存"
     },
     "CheckModal": {

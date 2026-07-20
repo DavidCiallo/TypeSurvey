@@ -1,4 +1,16 @@
-import { Button, Modal, ModalBody, ModalContent, Input, Select, SelectItem } from "@heroui/react";
+import { Button } from "@/client/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+} from "@/client/components/ui/dialog";
+import { Input } from "@/client/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/client/components/ui/select";
 import CommonImg from "../../images/png/Common.png";
 import CollectImg from "../../images/png/Collect.png";
 import { useRef } from "react";
@@ -17,8 +29,8 @@ interface Prop {
 const CreateRecordEditor = ({ isOpen, fields, selectedType, setSelectedType, onOpenChange, onCreate }: Prop) => {
     const locale = Locale("CreateRecordEditor");
 
-    const fieldSelect = useRef<HTMLSelectElement>(null);
-    const valueSelect = useRef<HTMLInputElement>(null);
+    const fieldValueRef = useRef<{ value: string }>({ value: "" });
+    const fieldIndexRef = useRef<number>(0);
 
     function handleOpenChange(v: boolean) {
         if (!v) {
@@ -28,63 +40,72 @@ const CreateRecordEditor = ({ isOpen, fields, selectedType, setSelectedType, onO
     }
 
     const CommonMode = (
-        <div className="w-full flex flex-col gap-6">
-            <div className="w-full flex flex-row gap-4 items-center">
-                <Input size="md" readOnly isDisabled value={locale.CommonPlaceholder} />
-            </div>
-            <div>
-                <Button color="primary" className="w-full" onClick={() => onCreate()}>
-                    {locale.CopyLinkButton}
-                </Button>
-            </div>
+        <div className="flex w-full flex-col gap-6">
+            <Input readOnly disabled value={locale.CommonPlaceholder} />
+            <Button className="w-full" onClick={() => onCreate()}>
+                {locale.CopyLinkButton}
+            </Button>
         </div>
     );
     const CollectMode = (
-        <div className="w-full flex flex-col gap-6">
-            <div className="w-full flex flex-row gap-4 items-center">
-                <Select ref={fieldSelect} aria-label="select" size="md" placeholder={locale.FieldPlaceholder}>
-                    {fields.map((field) => {
-                        return (
-                            <SelectItem key={field.id} isDisabled={!!field.radios?.length}>
+        <div className="flex w-full flex-col gap-6">
+            <div className="flex w-full flex-row gap-4 items-center">
+                <Select
+                    onValueChange={(value) => {
+                        const idx = fields.findIndex((f) => f.id === value);
+                        fieldIndexRef.current = idx;
+                    }}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder={locale.FieldPlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {fields.map((field) => (
+                            <SelectItem
+                                key={field.id}
+                                value={field.id}
+                                disabled={!!field.radios?.length}
+                            >
                                 {field.field_name}
                             </SelectItem>
-                        );
-                    })}
+                        ))}
+                    </SelectContent>
                 </Select>
-                <Input ref={valueSelect} size="md" placeholder={locale.ValuePlaceholder} />
+                <Input
+                    placeholder={locale.ValuePlaceholder}
+                    onChange={(e) => (fieldValueRef.current.value = e.target.value)}
+                />
             </div>
-            <div>
-                <Button
-                    color="primary"
-                    className="w-full"
-                    onClick={() =>
-                        onCreate({
-                            field_index: (fieldSelect.current?.selectedIndex || 0) - 1,
-                            field_value: valueSelect.current?.value || "",
-                        })
-                    }
-                >
-                    {locale.CreateCopyLinkButton}
-                </Button>
-            </div>
+            <Button
+                className="w-full"
+                onClick={() =>
+                    onCreate({
+                        field_index: fieldIndexRef.current,
+                        field_value: fieldValueRef.current.value || "",
+                    })
+                }
+            >
+                {locale.CreateCopyLinkButton}
+            </Button>
         </div>
     );
+
     return (
-        <Modal className="w-full" isOpen={isOpen} onOpenChange={handleOpenChange} isDismissable={false}>
-            <ModalContent className="w-full">
-                <ModalBody className="w-full flex flex-col items-center p-6">
-                    <div className="mb-4 text-center font-bold text-xl">
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+            <DialogContent>
+                <div className="flex w-full flex-col items-center p-2">
+                    <div className="mb-4 text-center text-xl font-bold">
                         {selectedType === null ? locale.NullSelectedType : ""}
                         {selectedType === "common" ? locale.CommonType : ""}
                         {selectedType === "collect" ? locale.CollectType : ""}
                     </div>
-                    <div className="flex flex-row gap-5 mb-6">
+                    <div className="mb-6 flex flex-row gap-5">
                         <img
                             src={CommonImg}
                             alt="common"
-                            className={`w-32 h-32 object-cover cursor-pointer rounded-lg border-4 transition-all ${
+                            className={`h-32 w-32 cursor-pointer rounded-lg border-4 object-cover transition-all ${
                                 selectedType === "common"
-                                    ? "border-primary-500 scale-105"
+                                    ? "border-primary scale-105"
                                     : "border-transparent hover:border-gray-300"
                             }`}
                             onClick={() => setSelectedType("common")}
@@ -92,23 +113,22 @@ const CreateRecordEditor = ({ isOpen, fields, selectedType, setSelectedType, onO
                         <img
                             src={CollectImg}
                             alt="collect"
-                            className={`w-32 h-32 object-cover cursor-pointer rounded-lg border-4 transition-all ${
+                            className={`h-32 w-32 cursor-pointer rounded-lg border-4 object-cover transition-all ${
                                 selectedType === "collect"
-                                    ? "border-primary-500 scale-105"
+                                    ? "border-primary scale-105"
                                     : "border-transparent hover:border-gray-300"
                             }`}
                             onClick={() => setSelectedType("collect")}
                         />
                     </div>
 
-                    <div className="w-full h-24 max-w-xs flex flex-row">
+                    <div className="flex h-24 w-full max-w-xs flex-row">
                         {selectedType === "common" && CommonMode}
                         {selectedType === "collect" && CollectMode}
                     </div>
-                    <div className="px-10 w-full"></div>
-                </ModalBody>
-            </ModalContent>
-        </Modal>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 };
 

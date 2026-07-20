@@ -1,4 +1,3 @@
-import { Header } from "../../components/header/Header";
 import { useEffect, useRef, useState } from "react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FormRouter, FieldRouter, RadioRouter } from "../../api/instance";
@@ -10,12 +9,23 @@ import { Locale } from "../../methods/locale";
 import { FieldCreateRequest, FieldUpdateRequest } from "../../../shared/modules/field/field.interface";
 import { RadioCreateRequest, RadioUpdateRequest } from "../../../shared/modules/radio/radio.interface";
 import FormFieldHeader from "./FormFieldHeader";
+import { Button } from "@/client/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/client/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const DEBOUNCE_KEYS = ["field_name", "comment", "placeholder"];
 
 const Component = () => {
     const locale = Locale("FormFieldPage");
     const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const navigate = useNavigate();
 
     const [formName, setFormName] = useState<string>("");
     const [formList, setFormList] = useState<string[]>([]);
@@ -26,6 +36,7 @@ const Component = () => {
     const [focusFormField, setFocusFormField] = useState<FormFieldImpl | null>(null);
     const [isFieldEditorOpen, setFieldEditorOpen] = useState(false);
     const [isRadioEditorOpen, setRadioEditorOpen] = useState(false);
+    const [isDeleteOpen, setDeleteOpen] = useState(false);
 
     async function loadFormFields(form_name: string, page: number = 1) {
         if (formName !== form_name) {
@@ -126,8 +137,7 @@ const Component = () => {
     }, []);
 
     return (
-        <div className="max-w-screen">
-            <Header name={locale.Title} />
+        <div className="space-y-4">
             <FormFieldHeader
                 total={total}
                 page={page}
@@ -159,6 +169,46 @@ const Component = () => {
                 onOpenChange={setRadioEditorOpen}
                 onSubmit={saveRadio}
             />
+
+            <div className="flex justify-end">
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={!formName}
+                    onClick={() => setDeleteOpen(true)}
+                >
+                    {locale.DeleteFormButton}
+                </Button>
+            </div>
+
+            <Dialog open={isDeleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{locale.DeleteFormTitle}</DialogTitle>
+                        <DialogDescription>{locale.DeleteFormDesc}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                            {Locale("Common").ButtonCancel}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={async () => {
+                                const { success } = await FormRouter.del({ form_name: formName });
+                                if (success) {
+                                    toast({ title: locale.ToastDeleteSuccess, color: "success" });
+                                    setDeleteOpen(false);
+                                    navigate("/form");
+                                } else {
+                                    toast({ title: locale.ToastDeleteFailed, color: "danger" });
+                                }
+                            }}
+                        >
+                            {Locale("Common").ButtonConfirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
