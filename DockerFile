@@ -1,5 +1,7 @@
 FROM oven/bun:1.1.13 AS builder
 
+ENV NODE_ENV=development
+
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -7,8 +9,7 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN rsbuild build && \
-    bun build --target=node --outfile=./dist/typesurvey.mjs ./server/app
+RUN bun run build
 
 FROM oven/bun:1.1.13-slim AS runner
 
