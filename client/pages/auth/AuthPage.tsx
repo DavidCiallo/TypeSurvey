@@ -1,6 +1,9 @@
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
+import { BrandIcon } from "@/client/components/logo";
+import { LanguageToggle } from "@/client/components/language-toggle";
+import { ThemeToggle } from "@/client/components/theme-toggle";
 import { AuthRouter } from "../../api/instance";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -78,9 +81,14 @@ export default function Component() {
     }
 
     return (
-        <div className="bg-background flex min-h-screen items-center justify-center px-4">
+        <div className="bg-background relative flex min-h-screen items-center justify-center px-4">
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+                <LanguageToggle variant="ghost" />
+                <ThemeToggle />
+            </div>
             <div className="flex w-full max-w-sm flex-col gap-6">
-                <div className="text-3xl font-semibold tracking-tight">
+                <div className="flex items-center gap-3 text-3xl font-semibold tracking-tight">
+                    <BrandIcon className="size-9" />
                     {locale.Title}
                 </div>
 

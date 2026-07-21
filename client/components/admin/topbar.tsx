@@ -3,6 +3,7 @@ import { Menu } from "lucide-react"
 
 import { Button } from "@/client/components/ui/button"
 import { Separator } from "@/client/components/ui/separator"
+import { LanguageToggle } from "@/client/components/language-toggle"
 import { ThemeToggle } from "@/client/components/theme-toggle"
 import { UserMenu } from "@/client/components/admin/user-menu"
 import { Locale } from "@/client/methods/locale"
@@ -18,19 +19,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
     const { pathname } = useLocation()
     const locale = Locale("Menu")
     const key = titleMap[pathname] || ""
-    const title = key ? locale[key] : "简表"
-
-    function changeLan() {
-        const lanList = ["cn", "en"];
-        const current = localStorage.getItem("locale") || "cn";
-        const index = lanList.indexOf(current);
-        const nextIndex = (index + 1) % lanList.length;
-        localStorage.setItem("locale", lanList[nextIndex]);
-        window.location.reload();
-    }
-
-    const currentLan = localStorage.getItem("locale") || "cn";
-    const lanLabel = currentLan === "cn" ? "中文" : "EN";
+    const title = key ? locale[key] : Locale("Common").AppName
 
     return (
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 flex h-16 items-center gap-2 border-b px-4 backdrop-blur sm:gap-4 sm:px-6">
@@ -50,9 +39,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
 
             <div className="ml-auto flex items-center gap-1 sm:gap-2">
-                <Button variant="ghost" size="sm" onClick={changeLan}>
-                    {lanLabel}
-                </Button>
+                <LanguageToggle variant="ghost" />
                 <ThemeToggle />
                 <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
                 <UserMenu />

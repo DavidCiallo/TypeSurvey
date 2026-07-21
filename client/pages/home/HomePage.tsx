@@ -1,55 +1,44 @@
 import { Button } from "@/client/components/ui/button";
+import { BrandIcon } from "@/client/components/logo";
+import { LanguageToggle } from "@/client/components/language-toggle";
+import { ThemeToggle } from "@/client/components/theme-toggle";
 import { AuthStatus, getAuthStatus } from "../../methods/auth";
 import { Locale } from "../../methods/locale";
 
 const Component = () => {
     const locale = Locale("HomePage");
+    const appName = Locale("Common").AppName;
     const Logo = () => (
         <span className="text-foreground flex items-center gap-2.5 text-2xl font-bold tracking-tight">
-            简表
+            <BrandIcon className="size-9" />
+            {appName}
         </span>
     );
     const auth = getAuthStatus();
 
-    function changeLan() {
-        const lanList = ["cn", "en"];
-        const locale = localStorage.getItem("locale") || "cn";
-        const index = lanList.indexOf(locale);
-        const nextIndex = (index + 1) % lanList.length;
-        localStorage.setItem("locale", lanList[nextIndex]);
-        window.location.reload();
-    }
-    function Language() {
-        const locale = localStorage.getItem("locale") || "cn";
-        const lan = locale === "cn" ? "中文" : "EN";
-        return (
-            <Button size="sm" variant="outline" onClick={changeLan}>
-                {lan}
-            </Button>
-        );
-    }
     return (
         <div className="bg-background relative min-h-screen overflow-hidden pt-10">
             <header className="absolute inset-x-0 top-0 z-50">
                 <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
                     <div className="flex lg:flex-1">
                         <a href="#" className="-m-1.5 p-1.5">
-                            <span className="sr-only">简表</span>
+                            <span className="sr-only">{appName}</span>
                             <Logo />
                         </a>
                     </div>
-                    <div className="flex flex-row items-center gap-4">
+                    <div className="flex flex-row items-center gap-2">
                         {auth !== AuthStatus.AUTH && (
                             <div className="lg:flex lg:flex-1 lg:justify-end">
                                 <a
                                     href="/auth"
-                                    className="text-muted-foreground hover:text-foreground text-sm font-semibold leading-6 transition-colors"
+                                    className="text-muted-foreground hover:text-foreground mr-2 text-sm font-semibold leading-6 transition-colors"
                                 >
                                     Log in
                                 </a>
                             </div>
                         )}
-                        <Language />
+                        <LanguageToggle variant="ghost" />
+                        <ThemeToggle />
                     </div>
                 </nav>
             </header>

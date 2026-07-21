@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/client/lib/utils"
+import { BrandIcon } from "@/client/components/logo"
 import { Locale } from "@/client/methods/locale"
 import { useAuth } from "@/client/methods/auth-context"
 
@@ -22,6 +23,7 @@ const ALL_MENUS = ["form", "field", "record", "settings"] as const
 
 export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
     const locale = Locale("Menu")
+    const common = Locale("Common")
     const { isAdmin, hasPermission } = useAuth()
 
     const mainItems: NavItem[] = [
@@ -43,13 +45,8 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
     return (
         <>
             <div className="flex h-16 items-center gap-2 border-b px-6">
-                <svg className="size-8 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="32" height="32" rx="8" fill="currentColor" />
-                    <rect x="8" y="8" width="10" height="3" rx="1.5" style={{ fill: "var(--sidebar)" }} />
-                    <rect x="8" y="14.5" width="16" height="3" rx="1.5" style={{ fill: "var(--sidebar)" }} opacity="0.8" />
-                    <rect x="8" y="21" width="13" height="3" rx="1.5" style={{ fill: "var(--sidebar)" }} opacity="0.6" />
-                </svg>
-                <span className="text-lg font-semibold tracking-tight">简表</span>
+                <BrandIcon className="size-8" />
+                <span className="text-lg font-semibold tracking-tight">{common.AppName}</span>
             </div>
 
             <nav className="flex-1 space-y-1 overflow-y-auto p-3">

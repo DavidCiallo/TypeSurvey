@@ -1,5 +1,6 @@
 {
     "Common": {
+        "AppName": "简表",
         "ButtonAdd": "新增",
         "ButtonSave": "保存",
         "ButtonConfirm": "确认",

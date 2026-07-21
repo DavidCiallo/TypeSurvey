@@ -1,5 +1,6 @@
 {
     "Common": {
+        "AppName": "TypeSurvey",
         "ButtonAdd": "Add",
         "ButtonSave": "Save",
         "ButtonConfirm": "Confirm",
@@ -24,7 +25,7 @@
     },
 
     "AuthPage": {
-        "Title": "简表",
+        "Title": "TypeSurvey",
         "LoginSuccess": "Login successful",
         "LoginFailed": "Login failed",
         "EmailLabel": "Email",
