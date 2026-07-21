@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/client/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/client/components/ui/card";
+import { Card, CardContent } from "@/client/components/ui/card";
+import { Checkbox } from "@/client/components/ui/checkbox";
 import { Input } from "@/client/components/ui/input";
+import { Label } from "@/client/components/ui/label";
 import { Pagination } from "@/client/components/ui/pagination";
 import {
     Select,
@@ -53,6 +55,8 @@ const Component = () => {
     const [_, setFieldTotal] = useState(1);
 
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+    const [wrapText, setWrapText] = useState(false);
 
     async function loadUserPage(page: number = 1) {
         setItemChoose(null);
@@ -132,7 +136,17 @@ const Component = () => {
                         />
                     </div>
                 </div>
-                <div className="shrink-0">
+                <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="wrap-text"
+                            checked={wrapText}
+                            onCheckedChange={(v) => setWrapText(v === true)}
+                        />
+                        <Label htmlFor="wrap-text" className="cursor-pointer text-sm font-normal">
+                            {locale.WrapTextToggle}
+                        </Label>
+                    </div>
                     <Button variant="outline" size="sm" onClick={() => loadUserPage(userpage)}>
                         {locale.ReloadButton}
                     </Button>
@@ -234,14 +248,18 @@ const Component = () => {
                                         return (
                                             <TableRow key={field_id}>
                                                 <TableCell className="text-center">
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <span className="block max-w-full truncate">{field_name}</span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top" className="max-w-xs break-all">
-                                                            {field_name}
-                                                        </TooltipContent>
-                                                    </Tooltip>
+                                                    {wrapText ? (
+                                                        <span className="block max-w-full break-all whitespace-normal">{field_name}</span>
+                                                    ) : (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <span className="block max-w-full truncate">{field_name}</span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="max-w-xs break-all">
+                                                                {field_name}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {value ? (
@@ -255,6 +273,8 @@ const Component = () => {
                                                                     {String(value).split("/").pop()}
                                                                 </a>
                                                             )
+                                                        ) : wrapText ? (
+                                                            <span className="block max-w-full break-all whitespace-normal">{value}</span>
                                                         ) : (
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>

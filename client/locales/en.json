@@ -156,6 +156,7 @@
         "ListViewRecordButton": "View",
         "RecordFieldColumn": "Field",
         "RecordValueColumn": "Content",
+        "WrapTextToggle": "Wrap text",
         "EmptyRecordSelect": "Please select user",
         "DeleteRecordButton": "Delete",
         "DeleteRecordTitle": "Delete Record",
