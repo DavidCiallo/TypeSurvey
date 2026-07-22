@@ -1,4 +1,5 @@
 import path from "path";
+import { resolveApiKeyAuth } from "../modules/auth/auth.service";
 
 export interface RouteMount {
     routes: { base: string; prefix: string; [key: string]: any };
@@ -22,6 +23,7 @@ export async function mounthttp(req: Request, mounts: RouteMount[]): Promise<Res
             if (!handler) continue;
 
             const auth = req.headers.get("token") || req.headers.get("x-api-key") || req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+            const resolvedAuth = resolveApiKeyAuth(auth, route.apikey === true);
             let requestBody: Record<string, any> | null = {};
             try {
                 const contentType = req.headers.get("content-type") || "";
@@ -51,7 +53,7 @@ export async function mounthttp(req: Request, mounts: RouteMount[]): Promise<Res
                 requestQuery = {};
             }
             try {
-                const result = handler && (await handler({ ...requestQuery, ...requestBody, auth }));
+                const result = handler && (await handler({ ...requestQuery, ...requestBody, auth: resolvedAuth }));
 
                 if (result instanceof Response || (result && result.constructor?.name === "Response")) {
                     return result as any;
