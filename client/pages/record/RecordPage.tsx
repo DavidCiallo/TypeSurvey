@@ -56,7 +56,7 @@ const Component = () => {
 
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-    const [wrapText, setWrapText] = useState(false);
+    const [wrapText, setWrapText] = useState(() => localStorage.getItem("record-wrap-text") === "true");
 
     async function loadUserPage(page: number = 1) {
         setItemChoose(null);
@@ -141,7 +141,11 @@ const Component = () => {
                         <Checkbox
                             id="wrap-text"
                             checked={wrapText}
-                            onCheckedChange={(v) => setWrapText(v === true)}
+                            onCheckedChange={(v) => {
+                                const checked = v === true;
+                                setWrapText(checked);
+                                localStorage.setItem("record-wrap-text", String(checked));
+                            }}
                         />
                         <Label htmlFor="wrap-text" className="cursor-pointer text-sm font-normal">
                             {locale.WrapTextToggle}
