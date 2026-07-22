@@ -9,6 +9,7 @@ const SETTING_KEYS: Record<string, string> = {
     "allowed_from_domains": "ALLOWED_FROM_DOMAINS",
     "resend_api_key": "RESEND_API_KEY",
     "client_url": "CLIENT_URL",
+    "api_key": "API_KEY",
 };
 
 let cache: Record<string, string> = {};

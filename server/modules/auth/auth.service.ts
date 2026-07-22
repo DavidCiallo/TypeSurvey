@@ -86,6 +86,16 @@ export function getIdentifyByVerify(token: string): string | null {
     if (Date.now() > Number(expried)) return null;
     return identity;
 }
+export const API_KEY_IDENTITY = "apikey@system.org";
+
+export function resolveApiKeyAuth(presented: string | null | undefined, routeAllowsApiKey: boolean): string {
+    if (!presented) return "";
+    const globalKey = getSetting("api_key");
+    if (routeAllowsApiKey && globalKey && presented === globalKey) {
+        return genTokenForIdentify(API_KEY_IDENTITY);
+    }
+    return presented;
+}
 
 export async function requireAdmin(auth?: string): Promise<void> {
     if (!auth) throw "Authorization failed";
