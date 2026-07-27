@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/client/components/ui/card";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
-import { Textarea } from "@/client/components/ui/textarea";
 import { Pagination } from "@/client/components/ui/pagination";
 import {
     Select,
@@ -34,7 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/client/components/ui/
 import { FieldRouter, RecordRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
-import { FieldType } from "../../../shared/impl/field";
+import { renderControl } from "../fill/Control";
 import { Locale } from "../../methods/locale";
 import { copytext } from "../../methods/text";
 
@@ -58,11 +57,8 @@ const Component = () => {
 
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-    const [editTarget, setEditTarget] = useState<{ field_id: string; field_name: string; field_type: FieldType; value: string } | null>(null);
-    const [editValue, setEditValue] = useState("");
-
-    const EDITABLE_TYPES: FieldType[] = ["text", "email", "password", "number", "month", "date", "time", "color", "textarea"];
-    const isEditable = (t: FieldType) => EDITABLE_TYPES.includes(t);
+    const [editTarget, setEditTarget] = useState<FormFieldImpl | null>(null);
+    const [editValue, setEditValue] = useState<number | string | boolean>("");
 
     const [wrapText, setWrapText] = useState(() => localStorage.getItem("record-wrap-text") === "true");
 
@@ -251,7 +247,7 @@ const Component = () => {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    fieldList.map(({ id: field_id, field_name, field_type, radios }) => {
+                                    fieldList.map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
@@ -315,18 +311,18 @@ const Component = () => {
                                                         >
                                                             复制
                                                         </Button>
-                                                        {isEditable(field_type) && (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setEditTarget({ field_id, field_name, field_type, value: String(record?.field_value ?? "") });
-                                                                    setEditValue(String(record?.field_value ?? ""));
-                                                                }}
-                                                            >
-                                                                {locale.EditButton}
-                                                            </Button>
-                                                        )}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                const f = fieldList.find((x) => x.id === field_id);
+                                                                if (!f) return;
+                                                                setEditTarget(f);
+                                                                setEditValue(record?.field_value ?? "");
+                                                            }}
+                                                        >
+                                                            {locale.EditButton}
+                                                        </Button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -390,19 +386,14 @@ const Component = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label>{locale.EditValueLabel}</Label>
-                        {editTarget?.field_type === "textarea" ? (
-                            <Textarea
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                rows={5}
-                            />
-                        ) : (
-                            <Input
-                                type={editTarget?.field_type === "password" ? "text" : (editTarget?.field_type as any)}
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                            />
+                        {editTarget && (
+                            <div key={editTarget.id + String(editValue)}>
+                                {renderControl(
+                                    [{ field_id: editTarget.id, field_value: String(editValue ?? ""), item_id: itemChoose || "", id: "", create_time: 0, update_time: null }],
+                                    editTarget,
+                                    (_fid, val) => setEditValue(val)
+                                )}
+                            </div>
                         )}
                     </div>
                     <DialogFooter>
@@ -414,8 +405,8 @@ const Component = () => {
                                 if (!editTarget || !itemChoose) return;
                                 const { success } = await RecordRouter.submit({
                                     item_id: itemChoose,
-                                    field_id: editTarget.field_id,
-                                    field_value: editValue,
+                                    field_id: editTarget.id,
+                                    field_value: String(editValue),
                                 });
                                 if (success) {
                                     toast({ title: locale.ToastEditSuccess, color: "success" });
