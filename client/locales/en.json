@@ -154,6 +154,7 @@
     },
     "RecordPage": {
         "Title": "Data Feedback",
+        "FormSelectPlaceholder": "Select form",
         "ReloadButton": "Refresh",
         "ListFieldValueColumn": "Field Value",
         "ListUpdateTimeColumn": "Update Time",

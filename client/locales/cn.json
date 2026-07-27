@@ -168,6 +168,7 @@
     },
     "RecordPage": {
         "Title": "数据反馈",
+        "FormSelectPlaceholder": "选择表单",
         "ReloadButton": "刷新",
         "ListFieldValueColumn": "字段值",
         "ListUpdateTimeColumn": "更新时间",

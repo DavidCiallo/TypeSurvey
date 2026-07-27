@@ -30,7 +30,7 @@ import {
 } from "@/client/components/ui/dialog";
 import { Inbox, Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/client/components/ui/tooltip";
-import { FieldRouter, RecordRouter } from "../../api/instance";
+import { FieldRouter, FormRouter, RecordRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { renderControl } from "../fill/Control";
@@ -41,6 +41,9 @@ const Component = () => {
     const locale = Locale("RecordPage");
 
     const baseurl = location.protocol + "//" + location.host + "/fill?t=";
+
+    const [formList, setFormList] = useState<Array<{ form_name: string; records_num: number; last_submit: number }>>([]);
+    const [formChoose, setFormChoose] = useState<string>("");
 
     const [fieldList, setFieldList] = useState<Array<FormFieldImpl>>([]);
     const [fieldChoose, setFieldChoose] = useState<FormFieldImpl | null>(null);
@@ -62,9 +65,9 @@ const Component = () => {
 
     const [wrapText, setWrapText] = useState(() => localStorage.getItem("record-wrap-text") === "true");
 
-    async function loadUserPage(page: number = 1) {
-        const form_name = localStorage.getItem("formname") || "";
-        const { data } = await RecordRouter.all({ form_name, page, search });
+    async function loadUserPage(page: number = 1, form_name?: string, keyword?: string) {
+        const name = form_name ?? (localStorage.getItem("formname") || "");
+        const { data } = await RecordRouter.all({ form_name: name, page, search: keyword ?? search });
         if (!data) {
             return;
         }
@@ -74,43 +77,95 @@ const Component = () => {
         // 保留选中：若当前 itemChoose 已不在新列表，才清空
         setItemChoose((prev) => (prev && data.records.some((r) => r.item_id === prev) ? prev : null));
     }
-    async function loadFieldPage(page: number = 1) {
-        const form_name = localStorage.getItem("formname") || "";
+    async function loadFieldPage(page: number = 1, form_name?: string, acc: FormFieldImpl[] = []) {
+        const name = form_name ?? (localStorage.getItem("formname") || "");
 
-        const { success, data, message } = await FieldRouter.list({ form_name, page });
+        const { success, data, message } = await FieldRouter.list({ form_name: name, page });
         if (!success || !data) {
             toast({ title: message, color: "danger" });
             return;
         }
         const { list, total } = data;
+        const merged = [...acc];
         list.forEach((field) => {
-            if (fieldList.find((f) => f.id === field.id)) return;
-            fieldList.push(field);
+            if (merged.find((f) => f.id === field.id)) return;
+            merged.push(field);
         });
-        setFieldList([...fieldList]);
+        setFieldList(merged);
         setFieldTotal(Math.ceil(total / 10));
-        if (!fieldChoose || !fieldList.some((f) => f.id === fieldChoose.id)) {
+        if (!fieldChoose || !merged.some((f) => f.id === fieldChoose.id)) {
             const priorityKeys = ["姓名", "名字", "Name", "FullName", "FirstName"];
-            const enabledFields = fieldList.filter((i) => !i.disabled);
+            const enabledFields = merged.filter((i) => !i.disabled);
             const priorityField = enabledFields.find((f) =>
                 priorityKeys.some((k) => f.field_name.toLowerCase().includes(k.toLowerCase()))
             );
             setFieldChoose(priorityField || enabledFields[0] || null);
         }
-        if (list.length > 0 && fieldList.length < total) {
-            loadFieldPage(page + 1);
-        } else {
+        if (list.length > 0 && merged.length < total) {
+            loadFieldPage(page + 1, name, merged);
+        }
+    }
+    async function loadFormPage(page: number = 1, acc: Array<{ form_name: string; records_num: number; last_submit: number }> = []) {
+        const { success, data } = await FormRouter.list({ page });
+        if (!success || !data) {
+            return;
+        }
+        const merged = [...acc, ...data.list];
+        setFormList(merged);
+        // 初次进入：若 localStorage 里的 formname 不在列表中，回退到第一个
+        const saved = localStorage.getItem("formname") || "";
+        if (!formChoose && (!saved || !merged.some((f) => f.form_name === saved))) {
+            const first = merged[0]?.form_name || "";
+            setFormChoose(first);
+            localStorage.setItem("formname", first);
+        } else if (!formChoose) {
+            setFormChoose(saved);
+        }
+        if (data.list.length > 0 && merged.length < data.total) {
+            loadFormPage(page + 1, merged);
         }
     }
     useEffect(() => {
+        loadFormPage();
         loadUserPage();
         loadFieldPage();
     }, []);
+
+    // 切换表单：清空所有从属状态，写入新 formname，重新拉数据
+    function switchForm(form_name: string) {
+        if (!form_name || form_name === formChoose) return;
+        setFormChoose(form_name);
+        localStorage.setItem("formname", form_name);
+        setFieldList([]);
+        setFieldChoose(null);
+        setRecordList([]);
+        setItemChoose(null);
+        setSearch("");
+        setPage(1);
+        setTotal(1);
+        loadUserPage(1, form_name, "");
+        loadFieldPage(1, form_name, []);
+    }
 
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
                 <div className="flex flex-1 items-center gap-2">
+                    <Select
+                        value={formChoose}
+                        onValueChange={(value) => switchForm(value)}
+                    >
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder={locale.FormSelectPlaceholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {formList.map((f) => (
+                                <SelectItem key={f.form_name} value={f.form_name}>
+                                    {f.form_name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Select
                         value={fieldChoose?.id || ""}
                         onValueChange={(value) => setFieldChoose(fieldList.find((f) => f.id === value)!)}
