@@ -167,7 +167,14 @@
         "DeleteRecordTitle": "Delete Record",
         "DeleteRecordDesc": "Are you sure you want to delete this submission record? This action cannot be undone.",
         "ToastDeleteSuccess": "Deleted successfully",
-        "ToastDeleteFailed": "Failed to delete"
+        "ToastDeleteFailed": "Failed to delete",
+        "EditButton": "Edit",
+        "EditTitle": "Edit Field Value",
+        "EditDesc": "Edit value of {field_name}",
+        "EditValueLabel": "Field Value",
+        "EditUnsupported": "This field type does not support editing",
+        "ToastEditSuccess": "Updated successfully",
+        "ToastEditFailed": "Failed to update"
     },
     "FillPage": {
         "ToastErrorSubmit": "Submission failed, possibly incorrect format",

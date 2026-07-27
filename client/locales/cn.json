@@ -184,7 +184,14 @@
         "DeleteRecordTitle": "删除记录",
         "DeleteRecordDesc": "确定要删除这条提交记录吗？此操作不可撤销。",
         "ToastDeleteSuccess": "删除成功",
-        "ToastDeleteFailed": "删除失败"
+        "ToastDeleteFailed": "删除失败",
+        "EditButton": "修改",
+        "EditTitle": "修改字段值",
+        "EditDesc": "修改 {field_name} 的值",
+        "EditValueLabel": "字段值",
+        "EditUnsupported": "此字段类型不支持修改",
+        "ToastEditSuccess": "修改成功",
+        "ToastEditFailed": "修改失败"
     },
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
