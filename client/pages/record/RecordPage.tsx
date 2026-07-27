@@ -251,9 +251,23 @@ const Component = () => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
-                                        const value =
-                                            radios?.find((r) => r.id === record?.field_value)?.radio_name ||
-                                            record?.field_value;
+                                        const radioList = radios || [];
+                                        const matchRadio = (val: string) =>
+                                            radioList.find((r) => r.id === val) ||
+                                            radioList.find((r) => r.radio_name === val);
+                                        const raw = record?.field_value;
+                                        const value = (() => {
+                                            if (raw === undefined || raw === null || raw === "") return raw;
+                                            const str = String(raw);
+                                            if (str.includes(",")) {
+                                                return str
+                                                    .split(",")
+                                                    .filter(Boolean)
+                                                    .map((id) => matchRadio(id)?.radio_name || id)
+                                                    .join(", ");
+                                            }
+                                            return matchRadio(str)?.radio_name || raw;
+                                        })();
                                         return (
                                             <TableRow key={field_id}>
                                                 <TableCell className="text-center">

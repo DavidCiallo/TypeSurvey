@@ -20,9 +20,7 @@ export class FormFieldImpl implements Omit<FormFieldEntity, "create_time" | "upd
         this.form_name = field.form_name;
         this.field_name = field.field_name;
         this.field_type = field.field_type;
-        if (field.field_type === "select" || field.field_type === "mulselect" || field.field_type === "checkbox") {
-            this.radios = radios;
-        }
+        this.radios = radios;
         this.comment = field.comment;
         this.placeholder = field.placeholder;
         this.position = field.position;

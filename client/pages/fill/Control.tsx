@@ -21,19 +21,25 @@ export function renderControl(
     submitRecord: (field_id: string, field_value: number | string) => void
 ) {
     const field_value = records.find((r) => r.field_id === field.id)?.field_value || "";
+    const radios = field.radios || [];
+    // 按 id 优先、name 兜底，在 radios 里找选项；找不到返回原值
+    const matchRadio = (val: string) =>
+        radios.find((r) => r.id === val) || radios.find((r) => r.radio_name === val);
     let render_value: string;
     let choose_value: string;
     let choose_keys: string[] = [];
     if (field.field_type === "mulselect" || field.field_type === "checkboxgroup") {
         const ids = String(field_value).split(",").filter(Boolean);
-        choose_keys = ids.filter((id) => field.radios?.some((r) => r.id === id));
+        choose_keys = ids
+            .map((id) => matchRadio(id)?.id || "")
+            .filter(Boolean);
         choose_value = choose_keys[0] || String(field_value);
-        render_value = choose_keys
-            .map((id) => field.radios?.find((r) => r.id === id)?.radio_name || id)
+        render_value = ids
+            .map((id) => matchRadio(id)?.radio_name || id)
             .join(", ");
-    } else if (field.radios?.find((i) => i.id == field_value)) {
-        choose_value = String(field_value);
-        render_value = String(field.radios?.find((i) => i.id == field_value)?.radio_name);
+    } else if (matchRadio(String(field_value))) {
+        choose_value = String(matchRadio(String(field_value))!.id);
+        render_value = String(matchRadio(String(field_value))!.radio_name);
     } else {
         choose_value = String(field_value);
         render_value = String(field_value);

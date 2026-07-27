@@ -72,14 +72,8 @@ export async function getFieldList(
     });
     fieldsData.sort((a, b) => (a.position || 0) - (b.position || 0));
 
-    const radioTypes = new Set(["select", "mulselect", "checkbox", "checkboxgroup"]);
-    const fieldsNeedingRadios = fieldsData.filter((f) => radioTypes.has(f.field_type));
-    if (fieldsNeedingRadios.length === 0) {
-        return fieldsData.map((f) => ({ ...f }));
-    }
-
     const radiosByField = new Map<string, FormFieldRadioEntity[]>();
-    for (const f of fieldsNeedingRadios) {
+    for (const f of fieldsData) {
         radiosByField.set(f.id, []);
     }
     await RadioRepository.findEach({}, (radio) => {
@@ -88,11 +82,8 @@ export async function getFieldList(
     });
 
     return fieldsData.map((fieldData) => {
-        if (radioTypes.has(fieldData.field_type)) {
-            const radios = radiosByField.get(fieldData.id) || [];
-            return { ...fieldData, radios };
-        }
-        return { ...fieldData };
+        const radios = radiosByField.get(fieldData.id) || [];
+        return { ...fieldData, radios };
     });
 }
 
