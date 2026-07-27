@@ -6,7 +6,7 @@ const locale = Locale("FieldType");
 export const FieldTypeList: Array<{
     name: string;
     type: FieldType;
-}> = ["text", "email", "password", "checkbox", "checkboxgroup", "select", "mulselect", "textarea", "number", "file"].map((type) => ({
+}> = ["text", "email", "password", "number", "date", "time", "month", "color", "checkbox", "checkboxgroup", "select", "mulselect", "textarea", "file"].map((type) => ({
     name: locale[type] || "",
     type: type as FieldType,
 }));

@@ -95,6 +95,45 @@ export function renderControl(
                 </div>
             );
         }
+        case "date":
+        case "time":
+        case "month": {
+            return (
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
+                    <Input
+                        type={field.field_type}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                        defaultValue={render_value}
+                        onChange={(e) => submitRecord(field.id, e.target.value)}
+                    />
+                </div>
+            );
+        }
+        case "color": {
+            return (
+                <div className="flex w-full flex-col">
+                    {fieldLabel}
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="color"
+                            required={field.required}
+                            defaultValue={render_value || "#000000"}
+                            onChange={(e) => submitRecord(field.id, e.target.value)}
+                            className="h-9 w-14 cursor-pointer p-1"
+                        />
+                        <Input
+                            type="text"
+                            defaultValue={render_value}
+                            placeholder="#000000"
+                            onChange={(e) => submitRecord(field.id, e.target.value)}
+                            className="max-w-32"
+                        />
+                    </div>
+                </div>
+            );
+        }
         case "textarea": {
             return (
                 <div className="flex w-full flex-col">
