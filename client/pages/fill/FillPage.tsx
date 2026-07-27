@@ -48,8 +48,16 @@ const Component = () => {
     }
 
     async function loadRecord(code: string) {
-        let id = localStorage.getItem("entry_id");
+        const id = localStorage.getItem("entry_id");
         if (!id) return;
+        // URL 的 t 决定当前要填的是哪份记录；item_id/code 是这份记录的鉴权缓存。
+        // 当 t 变了（切换到别的表单/记录），旧缓存必须作废，否则后端会拿旧 item_id 返回旧表单数据。
+        const cachedEntry = localStorage.getItem("entry_id_cached") || "";
+        if (cachedEntry !== id) {
+            localStorage.removeItem("item_id");
+            localStorage.removeItem("code");
+            localStorage.setItem("entry_id_cached", id);
+        }
         const item_id = localStorage.getItem("item_id") || undefined;
         const { success, data, message } = await RecordRouter.history({ id, code, item_id });
         if (!success || !data) {
@@ -105,8 +113,12 @@ const Component = () => {
                 color: "danger",
             });
         }
+        // 分享链接格式: /fill?t=<id>#code:<code>
+        const hash = window.location.hash || "";
+        const hashMatch = hash.match(/[#&]code:([^&]+)/);
+        const initialCode = hashMatch?.[1] || localStorage.getItem("code") || "";
         localStorage.setItem("entry_id", id);
-        loadRecord(localStorage.getItem("code") || "");
+        loadRecord(initialCode);
     }, []);
 
     useEffect(() => {
