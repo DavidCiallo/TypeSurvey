@@ -155,7 +155,7 @@ const Component = () => {
                         value={formChoose}
                         onValueChange={(value) => switchForm(value)}
                     >
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-52">
                             <SelectValue placeholder={locale.FormSelectPlaceholder} />
                         </SelectTrigger>
                         <SelectContent>

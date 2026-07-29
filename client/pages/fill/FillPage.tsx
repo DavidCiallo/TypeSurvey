@@ -57,6 +57,7 @@ const Component = () => {
             localStorage.removeItem("item_id");
             localStorage.removeItem("code");
             localStorage.setItem("entry_id_cached", id);
+            setCode(""); // 清除前端state中的code，避免使用旧表单的code
         }
         const item_id = localStorage.getItem("item_id") || undefined;
         const { success, data, message } = await RecordRouter.history({ id, code, item_id });
