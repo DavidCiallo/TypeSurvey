@@ -142,7 +142,8 @@
         "DeleteFormTitle": "删除表单",
         "DeleteFormDesc": "确定要删除当前表单吗？所有字段和提交记录都会被永久删除，此操作不可撤销。",
         "ToastDeleteSuccess": "删除成功",
-        "ToastDeleteFailed": "删除失败"
+        "ToastDeleteFailed": "删除失败",
+        "MultilineEditDesc": "编辑多行文本，支持换行"
     },
     "FormFieldRadioEditor": {
         "Title": "新增可选项",

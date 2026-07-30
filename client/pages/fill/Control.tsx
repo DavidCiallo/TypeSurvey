@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
@@ -14,6 +15,56 @@ import { Upload, FileImage, X } from "lucide-react";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
 import { FileRouter } from "../../api/instance";
+import { MultilinePlaceholder } from "@/client/components/ui/multiline-placeholder";
+
+// TextareaField 组件：处理多行文本字段的渲染
+function TextareaField({
+    field,
+    render_value,
+    fieldLabel,
+    submitRecord
+}: {
+    field: FormFieldImpl;
+    render_value: string;
+    fieldLabel: React.ReactNode;
+    submitRecord: (field_id: string, field_value: number | string) => void;
+}) {
+    const [isFocused, setIsFocused] = useState(false);
+    const [hasValue, setHasValue] = useState(!!render_value);
+    const hasMultilinePlaceholder = field.placeholder?.includes('\n');
+    
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setHasValue(!!e.target.value);
+        submitRecord(field.id, e.target.value);
+    }, [field.id, submitRecord]);
+    
+    const handleFocus = useCallback(() => setIsFocused(true), []);
+    const handleBlur = useCallback(() => setIsFocused(false), []);
+    
+    return (
+        <div className="flex w-full flex-col">
+            {fieldLabel}
+            <div className="relative">
+                <Textarea
+                    placeholder={hasMultilinePlaceholder ? " " : field.placeholder}
+                    required={field.required}
+                    defaultValue={render_value}
+                    onChange={handleChange}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    className="min-h-[80px]"
+                />
+                {hasMultilinePlaceholder && (
+                    <MultilinePlaceholder
+                        placeholder={field.placeholder}
+                        hasValue={hasValue}
+                        isFocused={isFocused}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
 
 export function renderControl(
     records: RecordImpl[],
@@ -59,44 +110,50 @@ export function renderControl(
 
     switch (field.field_type) {
         case "text": {
+            const placeholderText = field.placeholder?.split('\n')[0] || " ";
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
                     <Input
                         type="text"
                         required={field.required}
-                        placeholder={field.placeholder || " "}
+                        placeholder={placeholderText}
                         defaultValue={render_value}
                         onChange={(e) => submitRecord(field.id, e.target.value)}
                         autoComplete="off"
+                        title={field.placeholder}
                     />
                 </div>
             );
         }
         case "email": {
+            const placeholderText = field.placeholder?.split('\n')[0] || "mail@example.com";
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
                     <Input
                         type="email"
                         required={field.required}
-                        placeholder={field.placeholder || "mail@example.com"}
+                        placeholder={placeholderText}
                         defaultValue={render_value}
                         onChange={(e) => submitRecord(field.id, e.target.value)}
+                        title={field.placeholder}
                     />
                 </div>
             );
         }
         case "password": {
+            const placeholderText = field.placeholder?.split('\n')[0];
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
                     <Input
                         type="password"
                         required={field.required}
-                        placeholder={field.placeholder}
+                        placeholder={placeholderText}
                         defaultValue={render_value}
                         onChange={(e) => submitRecord(field.id, e.target.value)}
+                        title={field.placeholder}
                     />
                 </div>
             );
@@ -104,15 +161,17 @@ export function renderControl(
         case "date":
         case "time":
         case "month": {
+            const placeholderText = field.placeholder?.split('\n')[0];
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
                     <Input
                         type={field.field_type}
                         required={field.required}
-                        placeholder={field.placeholder}
+                        placeholder={placeholderText}
                         defaultValue={render_value}
                         onChange={(e) => submitRecord(field.id, e.target.value)}
+                        title={field.placeholder}
                     />
                 </div>
             );
@@ -142,26 +201,24 @@ export function renderControl(
         }
         case "textarea": {
             return (
-                <div className="flex w-full flex-col">
-                    {fieldLabel}
-                    <Textarea
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        defaultValue={render_value}
-                        onChange={(e) => submitRecord(field.id, e.target.value)}
-                        className="min-h-[80px]"
-                    />
-                </div>
+                <TextareaField
+                    field={field}
+                    render_value={render_value}
+                    fieldLabel={fieldLabel}
+                    submitRecord={submitRecord}
+                />
             );
         }
         case "number": {
+            const placeholderText = field.placeholder?.split('\n')[0];
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
                     <Input
                         type="number"
                         required={field.required}
-                        placeholder={field.placeholder}
+                        placeholder={placeholderText}
+                        title={field.placeholder}
                         defaultValue={
                             !field_value && field_value !== 0
                                 ? ""
@@ -175,6 +232,7 @@ export function renderControl(
             );
         }
         case "select": {
+            const placeholderText = field.placeholder?.split('\n')[0] || Locale("Common").DefaultSelectPlaceholder;
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
@@ -182,8 +240,8 @@ export function renderControl(
                         value={choose_value}
                         onValueChange={(value) => submitRecord(field.id, value)}
                     >
-                        <SelectTrigger>
-                            <SelectValue placeholder={field.placeholder || Locale("Common").DefaultSelectPlaceholder} />
+                        <SelectTrigger title={field.placeholder}>
+                            <SelectValue placeholder={placeholderText} />
                         </SelectTrigger>
                         <SelectContent>
                             {(field.radios || []).map((radio) => (
@@ -198,11 +256,12 @@ export function renderControl(
         }
         case "mulselect": {
             const current = choose_keys.map((id) => field.radios?.find((r) => r.id === id)?.radio_name).filter(Boolean);
+            const placeholderText = field.placeholder?.split('\n')[0] || Locale("Common").DefaultSelectPlaceholder;
             return (
                 <div className="flex w-full flex-col">
                     {fieldLabel}
-                    <div className="text-muted-foreground border-input mb-2 flex min-h-9 items-center rounded-md border px-3 text-sm">
-                        {current.length ? current.join(", ") : (field.placeholder || Locale("Common").DefaultSelectPlaceholder)}
+                    <div className="text-muted-foreground border-input mb-2 flex min-h-9 items-center rounded-md border px-3 text-sm" title={field.placeholder}>
+                        {current.length ? current.join(", ") : placeholderText}
                     </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
                         {(field.radios || []).map((radio) => (
@@ -321,9 +380,9 @@ export function renderControl(
                             </Button>
                         </div>
                     ) : (
-                        <label className="border-input hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm transition-colors">
+                        <label className="border-input hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm transition-colors" title={field.placeholder}>
                             <Upload className="text-muted-foreground size-4" />
-                            <span className="text-muted-foreground">{field.placeholder || "点击上传文件"}</span>
+                            <span className="text-muted-foreground">{field.placeholder?.split('\n')[0] || "点击上传文件"}</span>
                             {fileInput}
                         </label>
                     )}

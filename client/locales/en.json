@@ -128,7 +128,8 @@
         "DeleteFormTitle": "Delete Form",
         "DeleteFormDesc": "Are you sure you want to delete this form? All fields and submission records will be permanently deleted. This action cannot be undone.",
         "ToastDeleteSuccess": "Deleted successfully",
-        "ToastDeleteFailed": "Failed to delete"
+        "ToastDeleteFailed": "Failed to delete",
+        "MultilineEditDesc": "Edit multiline text, supports line breaks"
     },
     "FormFieldRadioEditor": {
         "Title": "Add Selectable Option",

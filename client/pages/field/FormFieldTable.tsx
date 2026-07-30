@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/client/components/ui/button";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Input } from "@/client/components/ui/input";
+import { Textarea } from "@/client/components/ui/textarea";
 import {
     Table,
     TableBody,
@@ -11,7 +12,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/client/components/ui/table";
-import { ArrowUp, ArrowDown, Eye, EyeOff, Check } from "lucide-react";
+import { ArrowUp, ArrowDown, Eye, EyeOff, Check, Expand } from "lucide-react";
 import { Locale } from "../../methods/locale";
 import { FormFieldImpl } from "../../../shared/impl";
 import { FieldTypeList } from "../form/types";
@@ -58,7 +59,7 @@ const Component = ({
     function DropdownPopover({ children, trigger, disabled }: { children: React.ReactNode; trigger: React.ReactNode; disabled?: boolean }) {
         const [isOpen, setIsOpen] = useState(false);
         const [isClosing, setIsClosing] = useState(false);
-        const [pos, setPos] = useState({ left: 0, top: 0, width: 0 });
+        const [pos, setPos] = useState({ left: 0, top: 0, width: 0, maxHeight: 300, openUpward: false });
         const triggerRef = useRef<HTMLDivElement>(null);
         const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +78,22 @@ const Component = ({
             } else {
                 if (triggerRef.current) {
                     const rect = triggerRef.current.getBoundingClientRect();
-                    setPos({ left: rect.left, top: rect.bottom + 4, width: rect.width });
+                    const viewportHeight = window.innerHeight;
+                    const spaceBelow = viewportHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+                    
+                    // 如果下方空间不足 200px，则向上弹出
+                    const openUpward = spaceBelow < 200 && spaceAbove > spaceBelow;
+                    const top = openUpward ? rect.top - 4 : rect.bottom + 4;
+                    const maxHeight = openUpward ? spaceAbove - 10 : spaceBelow - 10;
+                    
+                    setPos({
+                        left: rect.left,
+                        top: openUpward ? top : top,
+                        width: rect.width,
+                        maxHeight: Math.max(200, maxHeight),
+                        openUpward
+                    });
                 }
                 setIsOpen(true);
             }
@@ -111,10 +127,13 @@ const Component = ({
                         className="bg-popover fixed z-[9999] rounded-md border p-1 shadow-md"
                         style={{
                             left: pos.left,
-                            top: pos.top,
+                            top: pos.openUpward ? pos.top - pos.maxHeight : pos.top,
                             width: pos.width,
+                            maxHeight: pos.maxHeight,
+                            overflowY: "auto",
                             opacity: isClosing ? 0 : 1,
                             transition: "opacity 100ms ease-in-out",
+                            transform: pos.openUpward ? "translateY(-100%)" : "none",
                         }}
                     >
                         {children}
@@ -248,20 +267,78 @@ const Component = ({
                                         />
                                     </TableCell>
                                     <TableCell className="min-w-36">
-                                        <Input
+                                        <DropdownPopover
                                             disabled={field.disabled}
-                                            placeholder={locale.TableBodyNoRemark}
-                                            defaultValue={field.comment}
-                                            onChange={(e) => updateField(field.id, "comment", e.target.value)}
-                                        />
+                                            trigger={
+                                                <div className="flex items-center gap-1">
+                                                    <Input
+                                                        disabled={field.disabled}
+                                                        placeholder={locale.TableBodyNoRemark}
+                                                        defaultValue={field.comment}
+                                                        className="flex-1"
+                                                        readOnly
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-7 shrink-0"
+                                                        disabled={field.disabled}
+                                                    >
+                                                        <Expand className="size-3" />
+                                                    </Button>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="p-1">
+                                                <div className="text-muted-foreground mb-1 text-xs">{locale.TableHeaderRemarkColumn}</div>
+                                                <Textarea
+                                                    defaultValue={field.comment}
+                                                    className="min-h-[120px]"
+                                                    placeholder={locale.TableBodyNoRemark}
+                                                    autoFocus
+                                                    onBlur={(e) => {
+                                                        updateField(field.id, "comment", e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+                                        </DropdownPopover>
                                     </TableCell>
                                     <TableCell className="min-w-36">
-                                        <Input
+                                        <DropdownPopover
                                             disabled={field.disabled}
-                                            placeholder={locale.TableBodyNoHint}
-                                            defaultValue={field.placeholder}
-                                            onChange={(e) => updateField(field.id, "placeholder", e.target.value)}
-                                        />
+                                            trigger={
+                                                <div className="flex items-center gap-1">
+                                                    <Input
+                                                        disabled={field.disabled}
+                                                        placeholder={locale.TableBodyNoHint}
+                                                        defaultValue={field.placeholder}
+                                                        className="flex-1"
+                                                        readOnly
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-7 shrink-0"
+                                                        disabled={field.disabled}
+                                                    >
+                                                        <Expand className="size-3" />
+                                                    </Button>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="p-1">
+                                                <div className="text-muted-foreground mb-1 text-xs">{locale.TableHeaderHintColumn}</div>
+                                                <Textarea
+                                                    defaultValue={field.placeholder}
+                                                    className="min-h-[120px]"
+                                                    placeholder={locale.TableBodyNoHint}
+                                                    autoFocus
+                                                    onBlur={(e) => {
+                                                        updateField(field.id, "placeholder", e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+                                        </DropdownPopover>
                                     </TableCell>
                                     <TableCell className="min-w-32 max-w-32">
                                         <div className="flex items-center justify-center gap-1">
