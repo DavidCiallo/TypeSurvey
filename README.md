@@ -12,13 +12,13 @@
 - **多语言** — 内置中文 / 英文切换
 - **暗色主题** — 基于 shadcn/ui 的暗色 / 亮色主题
 
-本项目为全栈应用，前端基于 [React 19](https://react.dev/) + [shadcn/ui](https://ui.shadcn.com/)（[Radix UI](https://www.radix-ui.com/) + [Tailwind CSS v4](https://tailwindcss.com/)），后端基于 [Bun](https://bun.sh/)，使用 [TypeScript](https://www.typescriptlang.org/) 开发。
+本项目为全栈应用，前端基于 [React 19](https://react.dev/) + [shadcn/ui](https://ui.shadcn.com/)（[Radix UI](https://www.radix-ui.com/) + [Tailwind CSS v4](https://tailwindcss.com/)），后端基于 [Go](https://go.dev/)（`net/http` + SQLite），常驻内存约 20 MB。
 
 ## 技术栈
 
 - 前端：React 19 + react-router-dom 7 + shadcn/ui + lucide-react
-- 后端：Bun 原生 `Bun.serve` + JSONL 文件存储
-- 构建：rsbuild（前端）+ `bun build`（服务端 bundle）
+- 后端：Go `net/http` + SQLite（首次启动自动迁移历史 JSONL 数据）
+- 构建：rsbuild（前端）+ `go build`（服务端），详见 [server/README.md](server/README.md)
 
 ## 快速开始
 
@@ -55,17 +55,20 @@ npm run dev
 
 ```bash
 npm run dev       # 前端（rsbuild dev）
-npm run serve     # 后端（bun run server/app）
+npm run serve     # 后端（cd server && go run .）
 ```
+
+> 后端需要 Go 1.23+。历史版本的 Bun/TypeScript 服务端仍保留在 `server/app`、
+> `server/modules` 等目录中作为参考，运行时不再需要。
 
 ## 目录结构
 
 ```
 .
 ├── client/      # 前端（React + shadcn/ui + TypeScript）
-├── server/      # 后端（Bun + TypeScript）
+├── server/      # 后端（Go，见 server/README.md）
 ├── shared/      # 前后端共享：路由表、DTO、Impl 类型
-├── data/        # JSONL 数据存储 + uploads/ 上传目录（gitignored）
+├── data/        # SQLite 数据 + uploads/ 上传目录（gitignored）
 ├── README.md
 ```
 
@@ -76,13 +79,15 @@ npm run serve     # 后端（bun run server/app）
 ## 构建与部署
 
 ```bash
-npm run build
+npm run build     # 构建前端到 dist/
+cd server && go build -o typesurvey . && ./typesurvey
 ```
 
-构建产物提供两种部署模式：
+构建产物部署模式：
 
-- **静态托管**：`dist/` 目录内容可部署至任何静态托管平台
-- **服务器部署**：`dist/typesurvey.mjs` 用于部署在 Node.js / Bun 服务器上
+- **服务器部署（推荐）**：Go 二进制直接托管 `dist/` 静态资源 + API，单文件部署，
+  常驻内存约 20 MB；`DockerFile` / `docker-compose.yml` 即此模式
+- **静态托管**：`dist/` 目录内容可部署至任何静态托管平台（需另行提供 API 服务）
 
 本应用支持无头（Headless）部署，仅通过暴露服务端端口即可实现项目的全部功能。
 

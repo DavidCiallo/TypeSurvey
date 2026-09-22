@@ -4,9 +4,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "rsbuild build && bun build --target=node --outfile=./dist/typesurvey.mjs ./server/app",
+        "build": "rsbuild build",
         "dev": "rsbuild dev --open",
-        "serve": "bun run server/app"
+        "serve": "cd server && go run ."
     },
     "dependencies": {
         "@gitlawb/openclaude": "^0.15.0",
