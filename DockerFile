@@ -1,26 +1,29 @@
-FROM oven/bun:1.3.11 AS builder
-
-ENV NODE_ENV=development
-
+# ---- frontend (rsbuild + bun) ----
+FROM oven/bun:1-alpine AS web
 WORKDIR /app
-
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
-
-COPY . .
-
+COPY rsbuild.config.ts tsconfig.json postcss.config.mjs components.json ./
+COPY client/ ./client/
+COPY shared/ ./shared/
 RUN bun run build
 
-FROM oven/bun:1.3.11-slim AS runner
+# ---- server (pure-Go, no CGo) ----
+FROM golang:1.23-alpine AS api
+WORKDIR /src/server
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+COPY server/ ./
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/typesurvey .
 
+# ---- runtime ----
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
-
-COPY --from=builder /app/package.json ./package.json
-
-COPY --from=builder /app/dist ./dist
-
-ENV SERVER_PORT=3000
-
+COPY --from=api /out/typesurvey ./typesurvey
+COPY --from=web /app/dist ./dist
+RUN mkdir -p data
+ENV DATA_DIR=/data
+VOLUME /data
 EXPOSE 3000
-
-CMD ["bun", "run", "./dist/typesurvey.mjs"]
+CMD ["./typesurvey"]
