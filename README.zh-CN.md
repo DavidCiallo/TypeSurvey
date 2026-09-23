@@ -69,92 +69,89 @@ npm run dev            # 前端：rsbuild dev --open
 
 ## 构建与部署
 
+构建前端与服务端后直接运行二进制——单进程同时提供 `dist/` 静态资源与 API
+（常驻内存约 20 MB）：
+
 ```bash
-npm run build                                   # 前端 → dist/
+npm run build                                  # 前端 → dist/
 cd server && go build -o typesurvey . && ./typesurvey
 ```
 
-- **服务器部署（推荐）**：Go 二进制单进程托管 `dist/` + API，常驻内存约 20 MB；
-  `DockerFile` / `docker-compose.yml` 即此模式
-- **静态托管**：`dist/` 可部署至任何静态托管平台（API 需另行部署）
+本应用支持无头（Headless）部署，仅暴露服务端端口即可使用全部功能；
+`dist/` 也可单独交给静态托管（API 需另行部署）。
 
-本应用支持无头（Headless）部署，仅暴露服务端端口即可使用全部功能。
+### Docker
+
+`DockerFile` 为三段式构建（rsbuild 构建前端 → 纯 Go 编译二进制 → Alpine 运行），
+最终镜像只包含静态二进制与 `dist/`：
+
+```bash
+docker build -t typesurvey .
+docker run -d --name typesurvey --restart unless-stopped \
+  -p 3000:3000 -e SERVER_PORT=3000 \
+  --env-file .env -v typesurvey-data:/data \
+  typesurvey
+```
+
+`docker compose up -d --build` 等价（compose 已替你设好 `SERVER_PORT`）。几个要点：
+
+- 所有可变状态都在 `/data` 卷里：SQLite 数据库**以及** `uploads/`（上传目录默认位于
+  数据目录之下）。
+- `SERVER_PORT` 必须与映射端口一致。镜像沿用应用默认值（`3300`），因此映射
+  `3000:3000` 时要加 `-e SERVER_PORT=3000`（compose 已配置）。
+- `SECRET` 等配置放进 `.env` 并用 `--env-file` 传入（`.env` 不会被打进镜像）。
+- 备份整个卷：
+  `docker run --rm -v typesurvey-data:/data -v "$PWD":/backup alpine tar czf /backup/typesurvey-data.tar.gz -C /data .`
+- 想用宿主目录存数据，把卷换成 `-v "$PWD/data:/data"` 即可。
+- `.dockerignore` 已把 `node_modules/`、`dist/`、`data/`、`.env` 排除在构建上下文外。
+
+### 反向代理（HTTPS）
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name survey.example.com;
+    ssl_certificate     /etc/letsencrypt/live/survey.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/survey.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket（/ws）
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+TLS 在这一层（或 CDN 层）终结，并把 80 端口跳转到 443。
 
 ### CDN 加速（可选）
 
-服务器带宽较小时，把静态资源放到 CDN 边缘可以显著提速。核心思路：**源站把
-HTTP 缓存语义做对（本项目已内置），任意 CDN 即插即用**，不绑定任何厂商。
+源站已经发出标准的 HTTP 缓存语义，因此**任何「遵循源站 Cache-Control」的 CDN
+都能直接生效**——仓库里没有任何厂商 SDK 或专有代码：
 
-| 路径 | 源站响应头 | 说明 |
+| 路径 | 源站响应 | CDN 规则 |
 |---|---|---|
-| `/static/*`（hash 文件名） | `Cache-Control: public, max-age=31536000, immutable` | 名字即版本，可长缓存 |
-| `/index.html`（及 SPA 路由） | `Cache-Control: no-cache` + ETag | 每次协商 304，发版即时生效 |
-| `/api/*` | `Cache-Control: no-store` | 动态数据，任何环节都不缓存 |
-| `/uploads/*` | `Cache-Control: private, max-age=31536000, immutable` | 仅浏览器私有缓存；**CDN 请设直通不缓存**（用户隐私附件） |
+| `/static/*`（hash 文件名） | `public, max-age=31536000, immutable` | 长缓存 |
+| `/index.html` 及 SPA 路由 | `no-cache` + ETag | 不缓存 |
+| `/api/*` | `no-store` | 不缓存 |
+| `/uploads/*` | `private, max-age=31536000, immutable` | 直通不缓存（用户附件） |
 
-文本类资源（JS/CSS/HTML/JSON 等）自带 gzip（实测约省 2/3 体积）。
+在 CDN 侧添加加速域名（源站选「自有源站」，填服务器地址，**回源协议选 HTTPS**），
+缓存规则选「遵循源站」，再把 DNS 改成指向 CDN 的 CNAME 即可。文本类资源自带 gzip
+（约省 2/3 体积）。
 
-通用接入步骤（以七牛云融合 CDN 为例，Cloudflare / 阿里云 / 腾讯云同理）：
-
-1. **反向代理层**（nginx 示例；WebSocket 需要 HTTP/1.1 + Upgrade 头）：
-
-   ```nginx
-   server {
-       listen 80;
-       server_name survey.example.com;
-       return 301 https://$host$request_uri;
-   }
-   server {
-       listen 443 ssl;
-       server_name survey.example.com;
-       ssl_certificate     /etc/letsencrypt/live/survey.example.com/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/survey.example.com/privkey.pem;
-
-       location / {
-           proxy_pass http://127.0.0.1:3000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-
-           # WebSocket（/ws）
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_read_timeout 300s;
-       }
-   }
-   ```
-
-2. **CDN 配置**：添加加速域名（如 `survey.example.com`）→ 源站类型选
-   **自有源站**（填服务器 IP）→ 回源 Host 填站点域名 → **回源协议选 HTTPS**。
-3. **缓存规则**：选"遵循源站 Cache-Control"（或手动配：`/static/*` 缓存 30 天，
-   `/index.html`、`/api/*`、`/uploads/*` 不缓存）。
-4. **DNS**：把域名从 `A 记录 → 服务器 IP` 改成 `CNAME → CDN 分配的地址`
-   （先把 TTL 调低，配置有误时可秒级回滚）。
-5. **验证**：
-
-   ```bash
-   curl -I https://survey.example.com/static/js/lib-react.75017f39.js
-   #   期望 Cache-Control: public, max-age=31536000, immutable，且带 CDN 命中头
-   curl -I https://survey.example.com/
-   #   期望 Cache-Control: no-cache（发版立即生效）
-   ```
-
-注意事项：
-
-- **回源协议务必选 HTTPS**：上面 nginx 的 80 块只做 HTTPS 跳转，若 CDN 用
-  HTTP 回源 80 会得到 301/302 且指向自身，形成无限重定向循环。
-- `/ws` 需要 CDN 支持 WebSocket 透传（主流 CDN 均支持）；不支持时可让页面
-  直连源站。
-- `/uploads/*` 存放用户提交的附件（可能含个人隐私资料），建议 CDN 直通不缓存，
-  避免数据在边缘节点留副本。
-- 发版顺序：先更新静态资源，再更新 HTML；回滚反之（避免旧页面引用已删除资源）。
-
-进阶（可选）：静态资源也可以完全外置到对象存储 + CDN——构建时设置
-`ASSET_PREFIX=https://static.example.com npm run build`，`dist/` 上传到存储桶
-（各家 CLI 一行即可，如 `qshell` / `ossutil` / `s3cmd`），源站只出 HTML 与 API。
-注意 HTML 不要放进存储桶（桶级缓存通常无法按对象覆盖，会导致发版不生效）。
+两个容易踩的点：用 HTTP 回源会撞上 HTTPS 跳转形成死循环；`/ws` 需要 CDN 支持
+WebSocket 透传。静态资源也可完全外置到对象存储——构建时设
+`ASSET_PREFIX=https://static.example.com`，把 `dist/` 上传到桶，`index.html` 留在
+源站（桶级缓存通常无法按对象覆盖，会导致发版不生效）。
 
 ## API
 
