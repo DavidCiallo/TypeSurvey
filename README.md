@@ -73,100 +73,96 @@ Environment variables (`.env` at the repository root):
 
 ## Build & Deployment
 
+Build the frontend and the server, then run the binary — it serves `dist/` and
+the API from one process (resident memory ≈ 20 MB):
+
 ```bash
-npm run build                                   # frontend → dist/
+npm run build                                  # frontend → dist/
 cd server && go build -o typesurvey . && ./typesurvey
 ```
 
-- **Server deployment (recommended)**: the Go binary serves `dist/` + the API in
-  one process, resident memory ≈ 20 MB; `DockerFile` / `docker-compose.yml`
-  implement this mode.
-- **Static hosting**: `dist/` can be deployed to any static host (the API must be
-  served separately).
-
 The app works headless: exposing the server port alone unlocks every feature.
+`dist/` can also be hosted statically if you serve the API separately.
+
+### Docker
+
+`DockerFile` is a three-stage build (rsbuild frontend → pure-Go binary → Alpine
+runtime) and the resulting image contains only the static binary and `dist/`:
+
+```bash
+docker build -t typesurvey .
+docker run -d --name typesurvey --restart unless-stopped \
+  -p 3000:3000 -e SERVER_PORT=3000 \
+  --env-file .env -v typesurvey-data:/data \
+  typesurvey
+```
+
+`docker compose up -d --build` does the same thing (it sets `SERVER_PORT` for
+you). Points worth knowing:
+
+- All mutable state lives in the `/data` volume: the SQLite database **and**
+  `uploads/`, which defaults to a subdirectory of the data directory.
+- `SERVER_PORT` must match the published port. The image keeps the application
+  default (`3300`), so publishing `3000:3000` requires `-e SERVER_PORT=3000`;
+  the compose file already does this.
+- Keep `SECRET` and friends in `.env` and pass the file with `--env-file`
+  (the `.env` is never baked into the image).
+- Back up the volume with
+  `docker run --rm -v typesurvey-data:/data -v "$PWD":/backup alpine tar czf /backup/typesurvey-data.tar.gz -C /data .`
+- To keep data in a host directory instead, swap the volume for
+  `-v "$PWD/data:/data"`.
+- `.dockerignore` keeps `node_modules/`, `dist/`, `data/` and `.env` out of the
+  build context.
+
+### Reverse proxy (HTTPS)
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name survey.example.com;
+    ssl_certificate     /etc/letsencrypt/live/survey.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/survey.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket (/ws)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+Terminate TLS at this layer (or at the CDN) and redirect port 80 to 443.
 
 ### CDN acceleration (optional)
 
-On small-bandwidth servers, serving static assets from a CDN edge helps a lot.
-The principle: **the origin emits standard HTTP caching semantics (built in),
-so any CDN works out of the box** — no vendor lock-in.
+The origin already emits standard HTTP caching semantics, so **any CDN that
+honours the origin `Cache-Control` works as-is** — there is no vendor SDK or
+provider-specific code in this repository:
 
-| Path | Origin header | Notes |
+| Path | Origin response | CDN rule |
 |---|---|---|
-| `/static/*` (hash-named) | `Cache-Control: public, max-age=31536000, immutable` | name = version |
-| `/index.html` (and SPA routes) | `Cache-Control: no-cache` + ETag | 304 revalidation, releases show instantly |
-| `/api/*` | `Cache-Control: no-store` | dynamic, never cached |
-| `/uploads/*` | `Cache-Control: private, max-age=31536000, immutable` | browser-private only — **set the CDN to pass through, do not cache** (user attachments) |
+| `/static/*` (hash-named) | `public, max-age=31536000, immutable` | cache long |
+| `/index.html` + SPA routes | `no-cache` + ETag | do not cache |
+| `/api/*` | `no-store` | do not cache |
+| `/uploads/*` | `private, max-age=31536000, immutable` | pass through (user attachments) |
 
-Text assets (JS/CSS/HTML/JSON…) are gzip-encoded automatically (~2/3 smaller on
-the wire).
+Add the domain as a custom-origin CDN (origin = your server, **origin protocol
+HTTPS**), choose "honour origin Cache-Control", then point DNS at the CDN with a
+CNAME. Text assets are gzip-encoded on the fly (~2/3 smaller on the wire).
 
-Generic setup (shown with Qiniu Cloud; Cloudflare / Aliyun / Tencent Cloud work
-the same way):
-
-1. **Reverse proxy** on the origin (nginx example — WebSocket needs HTTP/1.1 +
-   upgrade headers):
-
-   ```nginx
-   server {
-       listen 80;
-       server_name survey.example.com;
-       return 301 https://$host$request_uri;
-   }
-   server {
-       listen 443 ssl;
-       server_name survey.example.com;
-       ssl_certificate     /etc/letsencrypt/live/survey.example.com/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/survey.example.com/privkey.pem;
-
-       location / {
-           proxy_pass http://127.0.0.1:3000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-
-           # WebSocket (/ws)
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_read_timeout 300s;
-       }
-   }
-   ```
-
-2. **CDN**: add the acceleration domain (e.g. `survey.example.com`) → origin type
-   **custom origin** (server IP) → origin Host = your domain → **origin protocol:
-   HTTPS**.
-3. **Cache rules**: pick "honor origin Cache-Control" (or manually: cache
-   `/static/*` for 30 days; never cache `/index.html`, `/api/*`, `/uploads/*`).
-4. **DNS**: change the record from `A → server IP` to `CNAME → CDN target`
-   (lower the TTL first so you can roll back in seconds).
-5. **Verify**:
-
-   ```bash
-   curl -I https://survey.example.com/static/js/lib-react.75017f39.js
-   #   expect Cache-Control: public, max-age=31536000, immutable (+ CDN hit headers)
-   curl -I https://survey.example.com/
-   #   expect Cache-Control: no-cache (releases take effect immediately)
-   ```
-
-Caveats:
-
-- **Always pull origin over HTTPS.** The port-80 block above only redirects; a
-  CDN pulling over HTTP receives a 301/302 pointing at itself → infinite loop.
-- `/ws` needs WebSocket passthrough (all major CDNs support it); otherwise point
-  the page at the origin directly.
-- `/uploads/*` holds user-submitted attachments (may be personal data): keep it
-  CDN pass-through to avoid copies on edge nodes.
-- Release order: update static assets first, then HTML (rollback in reverse).
-
-Advanced (optional): assets can live entirely on object storage + CDN — build
-with `ASSET_PREFIX=https://static.example.com npm run build`, upload `dist/` to
-the bucket (`qshell` / `ossutil` / `s3cmd`, one command each), and let the origin
-serve only HTML + API. Do **not** put `index.html` in the bucket: bucket-level
-caching usually cannot be overridden per object, which would break releases.
+Two things that bite: pulling the origin over HTTP lands on the HTTPS redirect
+and loops, and `/ws` needs WebSocket passthrough. Assets can also live on object
+storage — build with `ASSET_PREFIX=https://static.example.com`, upload `dist/`,
+and keep `index.html` on the origin (bucket-level caching usually ignores
+per-object headers, which would break releases).
 
 ## API
 

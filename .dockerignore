@@ -1,0 +1,11 @@
+.git
+.gitignore
+.github
+node_modules
+dist
+data
+.env
+server/typesurvey
+server/*.exe
+*.log
+.openclaude
