@@ -1,67 +1,109 @@
-# TypeSurvey（简表）Go 服务端
+# TypeSurvey (简表) Go Server
 
-Bun/TypeScript 服务端的 Go 移植版，目标是把常驻内存从 200–350 MB（Bun）
-降到 ~20 MB，适配小内存 VPS。参考 `C:\items\email-typer\server` 的移植方案。
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-## 与 TS 版的兼容性
+Go port of the Bun/TypeScript server, targeting low-memory VPS deployment:
+resident memory drops from 200–350 MB (Bun) to ~20 MB. The porting approach
+follows the same pattern used in the `email-typer` project.
 
-- **API 完全兼容**：全部路由为 `POST /api/<module>/<action>`，响应封装一致
-  （成功 `200 {"success":true,"data":…}`，失败 `400 {"success":false,"message":…,"data":null}`），
-  前端无需任何改动（`dist/` 静态资源由本服务直接托管，SPA 回退、`.mjs`/`..` 403、
-  `/uploads/*` 路径穿越防护与 WS `/ws` 行为一致）。
-  - query/body 合并顺序（body 覆盖 query）、`__headers` 注入、`token / x-api-key / Bearer`
-    鉴权解析、`apikey: true` 路由（`/api/form/list`、`/api/field/list`、`/api/record/submit`、
-    `/api/record/all` 可用全局 `api_key` 换取系统身份 token）均与 TS mount 一致。
-  - 各 handler 的 JS 弱类型语义（truthy 判断、`typeof x === "boolean"`、
-    `String(x).length` 的 UTF-16 计数、slice 的 NaN 行为等）逐条对齐。
-- **token 加密复刻**：AES-256-CBC，key=SHA256(SECRET)、iv=SHA256("cfrs-iv-"+SECRET)[:16]、
-  nonce 后缀 + 字符串反转；旧登录 token、注册验证链接、密码哈希在 Go 版下继续有效
-  （已用现有 `data/account.jsonl` 的账号实测登录通过）。
-- **存储**：`data/*.jsonl`（account/field/radio/record/settings）首次启动时整体导入
-  SQLite（`data/typesurvey.db`，WAL 模式），JSONL 文件保留作备份，导入幂等（meta 标记），
-  行序（JSONL 追加序）由 `seq` 列保留，与 TS Repository 的列表排序语义一致。
-  行体以原始 JSON 存储，`field_value` 的 string/number/boolean 类型往返保真。
-- **XLSX 导入**：SheetJS 语义由 excelize 复刻（空格补 null、格式化文本、日期单元格
-  统一 `yyyy-mm-dd`、表头行探测、单元格类型推断 text/email/number/date/time/
-  textarea/checkbox/select 一致）；分块上传组装、10MB 单文件上传、扩展名白名单一致。
-- **拼音搜索**：`pinyin-pro` 全拼/首字母匹配由 `mozillazg/go-pinyin` 复刻
-  （如 "beijing"/"bj" 匹配 "北京"），已实测。
-- **记录 code**：`codeGenerate`（字符码求和取模）逐位一致，旧记录链接的 code 校验通过。
+## Compatibility with the TS version
 
-## 有意修复的 TS 版问题（行为差异，均为缺陷修复）
+- **Fully API-compatible**: every route is `POST /api/<module>/<action>` with an
+  identical response envelope (`200 {"success":true,"data":…}` /
+  `400 {"success":false,"message":…,"data":null}`). The frontend needs zero
+  changes (`dist/` is served directly; SPA fallback, `.mjs`/`..` → 403,
+  `/uploads/*` path-traversal protection and the `/ws` endpoint all behave the
+  same).
+  - query/body merge order (body overrides query), `__headers` injection,
+    `token / x-api-key / Bearer` auth resolution and `apikey: true` routes
+    (`/api/form/list`, `/api/field/list`, `/api/record/submit`, `/api/record/all`
+    can trade the global `api_key` for a system identity token) match the TS
+    mount exactly.
+  - JS weak-typing semantics in every handler (truthy checks,
+    `typeof x === "boolean"`, UTF-16 `String(x).length`, NaN slice behaviour…)
+    are replicated case by case.
+- **Token & password compatibility**: AES-256-CBC with key=SHA256(SECRET),
+  iv=SHA256("cfrs-iv-"+SECRET)[:16], nonce-suffix + string reversal. Tokens in
+  the legacy TS format are still accepted (`verifyLegacyToken`; tokens without
+  an expiry are rejected), while new logins issue signed v2 tokens. Password
+  hashes remain compatible and are transparently upgraded to bcrypt on the next
+  login. Old verification links keep working (verified against the live
+  `data/account.jsonl`).
+- **Storage**: `data/*.jsonl` (account/field/radio/record/settings) is imported
+  once into SQLite (`data/typesurvey.db`, WAL mode) on first boot. The JSONL
+  files are kept as backup; the import is idempotent (meta marker). Row order
+  (JSONL append order) is preserved by a `seq` column, matching the TS
+  Repository listing semantics. Row bodies are stored as raw JSON so `field_value`
+  string/number/boolean types round-trip losslessly.
+- **XLSX import**: SheetJS semantics reproduced with excelize (blank → null,
+  formatted text, date cells normalized to `yyyy-mm-dd`, header-row detection,
+  cell-type inference text/email/number/date/time/textarea/checkbox/select);
+  chunked upload assembly, 10 MB per-file limit and the extension allowlist all
+  match.
+- **Pinyin search**: pinyin-pro full-name / initial matching reproduced with
+  `mozillazg/go-pinyin` ("beijing"/"bj" match "北京") — verified.
+- **Record codes**: `codeGenerate` (character-code sum modulo) is bit-identical,
+  so old record links validate.
 
-1. **表单删除不清理记录/选项**：TS `deleteForm` 给 `hardDelete` 传 `{$in: […]}`，
-   但其严格匹配器不支持操作符，导致记录/选项永远删不掉（孤儿数据）。
-   Go 版实现 `field_id IN (…)` 级联删除。
-2. **数据导出/导入丢失字段**：TS `getAllData`/`importAllData` 用的集合名是
-   `form_field`（不存在），字段永远导出为空、导入丢失。Go 版使用 `fields` 表。
-3. **CORS 预检**：TS 中 OPTIONS 打到已注册路由会直接跑 handler 返回 400，
-   跨域预检失败；Go 版对 OPTIONS 统一返回 200 + CORS 头（同域前端不受影响）。
+## Deliberate fixes to TS-version bugs (behavior differences — all bug fixes)
 
-## 微小差异（可忽略）
+1. **Form deletion leaked data**: TS `deleteForm` passed `{$in: […]}` to
+   `hardDelete`, whose strict matcher does not support operators — records and
+   radios were never deleted. The Go version cascades via `field_id IN (…)`.
+2. **Export/import lost fields**: TS `getAllData`/`importAllData` used the
+   nonexistent `form_field` repo, so fields always exported empty and were lost
+   on import. The Go version uses the `fields` table.
+3. **CORS preflight**: in TS, OPTIONS requests to registered routes ran the
+   handler and failed with 400. The Go version answers OPTIONS with 200 + CORS
+   headers (same-origin frontends are unaffected).
 
-- JSON 响应的键顺序为字母序（TS 为插入序）；JSON 对象键序无语义，前端不受影响。
-- XLSX 日期解析的时区边界（JS `new Date("yyyy-mm-dd")` 按 UTC、`"yyyy/mm/dd"` 按本地）
-  已按相同规则实现；极端格式（如 `"172"` 年份）不再复刻。
-- `Number("0x10")` 等 JS 特有数字字面量在单元格数字推断中按标准浮点解析。
+## Security hardening (PR #41, contributed by @KrobAber)
 
-## 构建与运行
+- Explicit per-route auth policies (`public` / `user` / `admin`) enforced before
+  handlers run — a handler can no longer forget its check
+- Passwords hashed with bcrypt (legacy hashes auto-upgrade on login); new
+  session tokens are signed (v2) and tokens without an expiry are rejected
+- `/api/auth/code` removed (unused by the frontend)
+- Startup refuses to run without `SECRET`; request bodies are size-capped;
+  CORS is allowlist-based (`CORS_ORIGINS`); standard security response headers
+
+## Minor differences (safe to ignore)
+
+- JSON response keys are alphabetically ordered (TS used insertion order); key
+  order is semantically irrelevant.
+- XLSX date parsing edge time zones follow the same rules as JS
+  (`new Date("yyyy-mm-dd")` UTC vs `"yyyy/mm/dd"` local); exotic inputs such as
+  year `"172"` are no longer replicated.
+- JS-only numeric literals like `Number("0x10")` parse as standard floats in
+  cell number inference.
+
+## Build & Run
 
 ```
 cd server
 go build -o typesurvey .
-./typesurvey          # 读取仓库根目录 .env，默认端口 SERVER_PORT=3300
+./typesurvey          # reads the repo-root .env; default port SERVER_PORT=3300
 ```
 
-或在仓库根目录 `npm run serve`（= `cd server && go run .`）。
+Or from the repository root: `npm run serve` (= `cd server && go run .`).
 
-环境变量与 TS 版共用（SECRET、NONCE_LENGTH、SERVER_PORT、ADMIN_*、ALLOW_REGISTER、
-ALLOWED_REGISTER_DOMAINS、ALLOWED_FROM_DOMAINS、RESEND_API_KEY、CLIENT_URL、API_KEY），
-`DATA_DIR`、`DIST_DIR`、`UPLOADS_DIR` 可覆盖数据、静态资源与上传目录。
+Environment variables are shared with the TS version (SECRET, NONCE_LENGTH,
+SERVER_PORT, ADMIN_*, ALLOW_REGISTER, ALLOWED_REGISTER_DOMAINS,
+ALLOWED_FROM_DOMAINS, RESEND_API_KEY, CLIENT_URL, API_KEY, CORS_ORIGINS);
+`DATA_DIR`, `DIST_DIR` and `UPLOADS_DIR` override the data / static / uploads
+directories. Frontend builds accept `ASSET_PREFIX=https://cdn.example.com` to
+point asset URLs at a CDN domain (default `/`, same-origin).
 
-## 部署注意
+## Deployment Notes
 
-- 首次启动自动执行 JSONL → SQLite 迁移（1.2 万条记录约一秒内），之后启动直接读库。
-- 备份仍需 `data/`（含 `typesurvey.db` 及 -wal/-shm、`uploads/`）一起拷贝；
-  JSONL 仅作历史备份，Go 版运行后不再追加。
-- 与 TS 版**不要同时**对同一数据目录运行，避免两边同时写入。
+- First boot runs the JSONL → SQLite migration (~1 s for 12k records); later
+  boots read the database directly.
+- Backups must include `data/` (the `typesurvey.db` plus `-wal`/`-shm` files and
+  `uploads/`). The JSONL files are a historical backup only — the Go server no
+  longer appends to them.
+- Do not run the TS server and the Go server against the same data directory at
+  the same time.
+- Static responses already carry standard HTTP caching semantics (`/static/*`
+  immutable for a year, HTML `no-cache` + ETag, `/api` `no-store`, `/uploads`
+  `private`) with gzip for text — any CDN that honors origin `Cache-Control`
+  works out of the box. See the “CDN acceleration” section in the root README.
