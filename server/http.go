@@ -26,19 +26,34 @@ type Ctx struct {
 	Body    map[string]any // merged: query params, then body, then auth
 }
 
-// routeEntry carries the handler plus per-route flags from the TS router
-// tables (e.g. apikey: true on /api/form/list).
+// policy is how much identity a route requires. It is enforced centrally in
+// serveAPI so that a handler cannot forget to check.
+type policy uint8
+
+const (
+	// policyPublic requires no identity: login/registration, and the anonymous
+	// fill flow (which is guarded by the per-item access code instead).
+	policyPublic policy = iota
+	// policyUser requires a valid token.
+	policyUser
+	// policyAdmin requires a valid token belonging to an admin account.
+	policyAdmin
+)
+
+// routeEntry carries the handler plus the per-route access rules from the TS
+// router tables (e.g. apikey: true on /api/form/list).
 type routeEntry struct {
 	handler     Handler
 	allowAPIKey bool
+	policy      policy
 }
 
 type Handler func(c *Ctx) (any, error)
 
 var apiHandlers = map[string]routeEntry{}
 
-func route(path string, allowAPIKey bool, h Handler) {
-	apiHandlers[path] = routeEntry{handler: h, allowAPIKey: allowAPIKey}
+func route(path string, pol policy, allowAPIKey bool, h Handler) {
+	apiHandlers[path] = routeEntry{handler: h, allowAPIKey: allowAPIKey, policy: pol}
 }
 
 type handlerError struct{ msg string }
@@ -161,28 +176,73 @@ func jsString(v any) string {
 // jsUtf16Len counts UTF-16 code units like JS String#length.
 func jsUtf16Len(s string) int { return len(utf16.Encode([]rune(s))) }
 
-var corsHeaders = map[string]string{
-	"Access-Control-Allow-Origin":  "*",
-	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-	"Access-Control-Allow-Headers": "Content-Type, token, Authorization, x-api-key",
-}
+// corsAllowlist holds the origins permitted to call the API cross-origin. It
+// is empty by default, which means "same-origin only" — this server serves the
+// SPA itself, so no CORS header is needed. Set CORS_ORIGINS (comma separated)
+// for split deployments.
+var corsAllowlist = []string{}
 
-func writeCORS(w http.ResponseWriter) {
-	for k, v := range corsHeaders {
-		w.Header().Set(k, v)
+func initCORS() {
+	for _, o := range strings.Split(os.Getenv("CORS_ORIGINS"), ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			corsAllowlist = append(corsAllowlist, strings.ToLower(o))
+		}
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, payload string) {
+// writeSecurityHeaders sets headers that are safe on every response.
+func writeSecurityHeaders(w http.ResponseWriter) {
+	h := w.Header()
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("X-Frame-Options", "DENY")
+	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	h.Set("Cross-Origin-Opener-Policy", "same-origin")
+	// These directives cannot break asset loading but do block clickjacking,
+	// <base> hijacking, form-action hijacking and plugin embedding. A stricter
+	// script-src policy can be supplied via CSP_POLICY.
+	h.Set("Content-Security-Policy", envStr("CSP_POLICY",
+		"frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"))
+}
+
+func writeCORS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Vary", "Origin")
+	origin := r.Header.Get("Origin")
+	if origin == "" || len(corsAllowlist) == 0 {
+		return
+	}
+	for _, allowed := range corsAllowlist {
+		if allowed == "*" || allowed == strings.ToLower(origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, token, Authorization, x-api-key")
+			return
+		}
+	}
+}
+
+func writeJSON(w http.ResponseWriter, r *http.Request, status int, payload string) {
+	writeSecurityHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
-	writeCORS(w)
+	writeCORS(w, r)
 	w.WriteHeader(status)
 	io.WriteString(w, payload)
 }
 
+// writeFail emits the standard error envelope.
+func writeFail(w http.ResponseWriter, r *http.Request, status int, message string) {
+	payload, _ := json.Marshal(map[string]any{"success": false, "message": message, "data": nil})
+	writeJSON(w, r, status, string(payload))
+}
+
+// maxRequestBodyBytes caps request bodies. File uploads carry base64 inside
+// JSON, so a 10 MB file costs ~13.7 MB on the wire; this leaves headroom for
+// the JSON wrapper.
+const maxRequestBodyBytes = 16 << 20
+
 func serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method == http.MethodOptions {
-		writeCORS(w)
+		writeSecurityHeaders(w)
+		writeCORS(w, r)
 		w.WriteHeader(http.StatusOK)
 		return true
 	}
@@ -204,7 +264,27 @@ func serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	}
 	auth = resolveApiKeyAuth(auth, entry.allowAPIKey)
 
-	rawBody, _ := io.ReadAll(r.Body)
+	// Central access control. Enforced here, before the handler runs, so that
+	// no route can ship without an identity check by omission.
+	switch entry.policy {
+	case policyUser:
+		if auth == "" || getIdentifyByVerify(auth) == "" {
+			writeFail(w, r, http.StatusUnauthorized, "Unauthorized")
+			return true
+		}
+	case policyAdmin:
+		if err := requireAdmin(auth); err != nil {
+			writeFail(w, r, http.StatusForbidden, err.Error())
+			return true
+		}
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+	rawBody, readErr := io.ReadAll(r.Body)
+	if readErr != nil {
+		writeFail(w, r, http.StatusRequestEntityTooLarge, "请求体过大")
+		return true
+	}
 	body := map[string]any{}
 	ct := r.Header.Get("Content-Type")
 	if len(rawBody) > 0 {
@@ -249,13 +329,12 @@ func serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		if he, ok := err.(*handlerError); ok {
 			msg = he.msg
 		}
-		payload, _ := json.Marshal(map[string]any{"success": false, "message": msg, "data": nil})
-		writeJSON(w, http.StatusBadRequest, string(payload))
+		writeFail(w, r, http.StatusBadRequest, msg)
 		return true
 	}
 
 	payload, _ := json.Marshal(map[string]any{"success": true, "data": result})
-	writeJSON(w, http.StatusOK, string(payload))
+	writeJSON(w, r, http.StatusOK, string(payload))
 	return true
 }
 
@@ -336,6 +415,7 @@ func serveStatic(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func serveFile(w http.ResponseWriter, r *http.Request, filePath string) {
+	writeSecurityHeaders(w)
 	f, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "Not Found", http.StatusNotFound)

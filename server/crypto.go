@@ -5,10 +5,14 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
+	"log"
 	"os"
 	"strconv"
-	"time"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Exact replication of server/methods/crypto.ts so tokens, passwords and
@@ -22,22 +26,60 @@ var (
 	cryptoKey []byte
 	cryptoIV  []byte
 	nonceLen  = 4
+
+	// tokenMACKey is derived from SECRET but is independent of cryptoKey, so
+	// the token MAC never shares key material with the (unauthenticated)
+	// AES-CBC legacy token format.
+	tokenMACKey []byte
 )
+
+// minSecretLen is the shortest SECRET accepted at boot.
+const minSecretLen = 16
 
 func initCrypto() {
 	secret := os.Getenv("SECRET")
-	if secret == "" {
-		secret = strconv.FormatInt(time.Now().UnixNano(), 36)
+	insecureOK := envBool("ALLOW_INSECURE_SECRET", false)
+
+	if len(secret) < minSecretLen {
+		if !insecureOK {
+			if secret == "" {
+				log.Fatalf("[FATAL] SECRET is not set. Every token, password hash and share link is " +
+					"derived from it, and a per-boot fallback would silently invalidate all sessions on " +
+					"restart. Set SECRET in the environment (see .env.example). " +
+					"Set ALLOW_INSECURE_SECRET=1 to start anyway with an ephemeral secret (development only).")
+			}
+			log.Fatalf("[FATAL] SECRET is too short (%d characters, minimum %d). "+
+				"Use a long random value (e.g. `openssl rand -hex 32`). "+
+				"Set ALLOW_INSECURE_SECRET=1 to start anyway (development only).",
+				len(secret), minSecretLen)
+		}
+		if secret == "" {
+			secret = randomHex(minSecretLen)
+			log.Printf("[WARN] SECRET is not set — using an ephemeral random secret. " +
+				"All issued tokens become invalid on the next restart.")
+		} else {
+			log.Printf("[WARN] SECRET is shorter than %d characters — this weakens every "+
+				"credential derived from it.", minSecretLen)
+		}
 	}
+
 	nonceLen = envInt("NONCE_LENGTH", 4)
 	k := sha256.Sum256([]byte(secret))
 	cryptoKey = k[:]
 	iv := sha256.Sum256([]byte("cfrs-iv-" + secret))
 	cryptoIV = iv[:16]
 
-	if len(secret) < 16 || nonceLen < 6 {
-		os.Stderr.WriteString("Missing SECRET or NONCE_LENGTH in environment variables or too weak\n")
+	mac := sha256.Sum256([]byte("typesurvey-token-v2|" + secret))
+	tokenMACKey = mac[:]
+}
+
+// randomHex returns n cryptographically random bytes, hex-encoded.
+func randomHex(n int) string {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		log.Fatalf("[FATAL] crypto/rand is unavailable: %v", err)
 	}
+	return hex.EncodeToString(buf)
 }
 
 func pkcs7Pad(data []byte, blockSize int) []byte {
@@ -120,4 +162,48 @@ func codeGenerate(originalData string) string {
 		sum += int(r)
 	}
 	return strconv.Itoa(1000 + (sum*nonceLen)%9000)
+}
+
+// ---------- password hashing ----------
+
+// bcryptCost is the work factor used for new password hashes.
+const bcryptCost = 12
+
+// bcryptInput folds inputs longer than bcrypt's 72-byte limit into a fixed
+// size digest, so the whole password contributes instead of being silently
+// truncated at 72 bytes.
+func bcryptInput(password string) []byte {
+	if len(password) > 72 {
+		sum := sha256.Sum256([]byte(password))
+		return []byte(hex.EncodeToString(sum[:]))
+	}
+	return []byte(password)
+}
+
+// hashPassword returns a bcrypt hash for a new or changed password.
+// It returns "" on failure; callers must treat that as an error.
+func hashPassword(password string) string {
+	b, err := bcrypt.GenerateFromPassword(bcryptInput(password), bcryptCost)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+// verifyPassword accepts bcrypt hashes, and the legacy unsalted SHA-256 hex
+// form so accounts created before bcrypt keep working until they log in.
+func verifyPassword(stored, password string) bool {
+	if stored == "" {
+		return false
+	}
+	if strings.HasPrefix(stored, "$2") {
+		return bcrypt.CompareHashAndPassword([]byte(stored), bcryptInput(password)) == nil
+	}
+	return subtle.ConstantTimeCompare([]byte(stored), []byte(hashGenerate(password))) == 1
+}
+
+// isLegacyPasswordHash reports whether stored uses the old unsalted SHA-256
+// format and should be re-hashed on the next successful login.
+func isLegacyPasswordHash(stored string) bool {
+	return stored != "" && !strings.HasPrefix(stored, "$2")
 }

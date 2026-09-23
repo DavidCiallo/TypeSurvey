@@ -1,6 +1,10 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"net/url"
 	"strconv"
 	"strings"
@@ -13,29 +17,86 @@ const apiKeyIdentity = "apikey@system.org"
 
 var allMenus = []string{"form", "field", "record"}
 
+// tokenVersionPrefix marks tokens issued with an integrity-protected format.
+const tokenVersionPrefix = "v2."
+
+// genTokenForIdentify issues a v2 token: base64url(payload) + "." + HMAC-SHA256.
+// The plaintext payload keeps the legacy "<identity>|-|<expiry>" shape so the
+// identity and lifetime semantics are unchanged; only integrity protection is
+// added (the legacy AES-CBC token carried no MAC at all).
 func genTokenForIdentify(identity string) string {
 	expiry := nowMillis() + 1000*60*60*24*3
-	return aesEncrypt(identity + "|-|" + strconv.FormatInt(expiry, 10))
+	payload := identity + "|-|" + strconv.FormatInt(expiry, 10)
+	mac := hmac.New(sha256.New, tokenMACKey)
+	mac.Write([]byte(payload))
+	return tokenVersionPrefix + base64.RawURLEncoding.EncodeToString([]byte(payload)) +
+		"." + hex.EncodeToString(mac.Sum(nil))
 }
 
-// getIdentifyByVerify returns the token identity, or "" when invalid/expired.
-func getIdentifyByVerify(token string) string {
+// verifyV2Token validates a v2 token in constant time and returns its identity.
+func verifyV2Token(token string) string {
+	rest := strings.TrimPrefix(token, tokenVersionPrefix)
+	dot := strings.LastIndex(rest, ".")
+	if dot <= 0 {
+		return ""
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(rest[:dot])
+	if err != nil {
+		return ""
+	}
+	presented, err := hex.DecodeString(rest[dot+1:])
+	if err != nil {
+		return ""
+	}
+	mac := hmac.New(sha256.New, tokenMACKey)
+	mac.Write(payload)
+	if !hmac.Equal(mac.Sum(nil), presented) {
+		return ""
+	}
+	parts := strings.Split(string(payload), "|-|")
+	if len(parts) != 2 || parts[0] == "" {
+		return ""
+	}
+	expiry, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil || nowMillis() > expiry {
+		return ""
+	}
+	return parts[0]
+}
+
+// verifyLegacyToken reads tokens issued before v2 (AES-CBC, no MAC), so
+// already-issued sessions keep working until they expire.
+func verifyLegacyToken(token string) string {
 	decrypted, ok := aesDecrypt(token)
 	if !ok {
 		return ""
 	}
 	parts := strings.Split(decrypted, "|-|")
 	identity := parts[0]
-	expired := ""
-	if len(parts) > 1 {
-		expired = parts[1]
+	if identity == "" {
+		return ""
 	}
-	// JS quirk preserved: a missing expiry parses as NaN, and `Date.now() >
-	// NaN` is false, so such tokens stay valid.
-	if ms, err := strconv.ParseInt(expired, 10, 64); err == nil && nowMillis() > ms {
+	if len(parts) < 2 {
+		// A token with no expiry is rejected. Accepting it would make the
+		// session valid forever.
+		return ""
+	}
+	expiry, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil || nowMillis() > expiry {
 		return ""
 	}
 	return identity
+}
+
+// getIdentifyByVerify returns the token identity, or "" when invalid/expired.
+func getIdentifyByVerify(token string) string {
+	if token == "" {
+		return ""
+	}
+	if strings.HasPrefix(token, tokenVersionPrefix) {
+		return verifyV2Token(token)
+	}
+	return verifyLegacyToken(token)
 }
 
 // resolveApiKeyAuth mirrors auth.service resolveApiKeyAuth: routes flagged
@@ -82,10 +143,24 @@ func menuRoles(isAdmin int64) []any {
 
 // loginUser returns an empty row on bad credentials (controller decides the message).
 func loginUser(email, password string) Row {
-	password = hashGenerate(password)
-	account := selectOne("accounts", Row{"email": email, "password": password})
+	// Guard the lookup: an empty where-value is treated as a wildcard by the
+	// store, so an empty email would match an arbitrary account.
+	if email == "" || password == "" {
+		return Row{}
+	}
+	account := selectOne("accounts", Row{"email": email})
 	if account == nil {
 		return Row{}
+	}
+	stored := asStr(account["password"])
+	if !verifyPassword(stored, password) {
+		return Row{}
+	}
+	// Transparently upgrade passwords still stored as unsalted SHA-256.
+	if isLegacyPasswordHash(stored) {
+		if upgraded := hashPassword(password); upgraded != "" {
+			updateRows("accounts", Row{"id": account["id"]}, Row{"password": upgraded})
+		}
 	}
 	isAdmin := asInt64(account["is_admin"])
 	return Row{"token": genTokenForIdentify(email), "is_admin": account["is_admin"], "roles": menuRoles(isAdmin)}
@@ -160,7 +235,7 @@ func completeRegistration(token string) Row {
 		return nil
 	}
 	account := insertRow("accounts", Row{
-		"name": name, "email": email, "password": hashGenerate(plainPassword),
+		"name": name, "email": email, "password": hashPassword(plainPassword),
 		"is_admin": 0, "api_key": "", "balance": 0, "last_daily_time": nil,
 	})
 	if account == nil {
@@ -248,16 +323,4 @@ func authVerify(c *Ctx) (any, error) {
 	}
 	account, _ := result["account"].(Row)
 	return Row{"token": result["token"], "is_admin": account["is_admin"]}, nil
-}
-
-func authCode(c *Ctx) (any, error) {
-	code := c.Str("code")
-	if !jsTruthy(c.Value("code")) {
-		return nil, throwErr("Missing code")
-	}
-	result := loginUser(code, "")
-	if asStr(result["token"]) == "" {
-		return nil, throwErr("Invalid login code")
-	}
-	return result, nil
 }
