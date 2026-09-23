@@ -5,3 +5,4 @@ node_modules
 data/
 server/typesurvey
 server/*.exe
+.openclaude/
