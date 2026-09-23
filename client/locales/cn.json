@@ -1,6 +1,7 @@
 {
     "Common": {
         "AppName": "简表",
+        "Empty": "暂无数据",
         "ButtonAdd": "新增",
         "ButtonSave": "保存",
         "ButtonConfirm": "确认",
@@ -107,7 +108,9 @@
         "ValuePlaceholder": "预设值",
         "NullSelectedType": "请选择表单类型",
         "CommonType": "普通表单",
-        "CollectType": "记名表单"
+        "CommonTypeDesc": "匿名填写，复制链接即可收集",
+        "CollectType": "记名表单",
+        "CollectTypeDesc": "按字段预设值生成专属链接，实名收集"
     },
     "FormFieldPage": {
         "Title": "表单管理",
@@ -199,7 +202,10 @@
         "MainText3": "的小工具",
         "Slogan1": "小巧，精致，且快速。",
         "Slogan2": "无需复杂的代码与编辑，只求最快速开启数据业务。",
-        "ViewSource": "查看源代码"
+        "ViewSource": "查看源代码",
+        "Login": "登录",
+        "StartFree": "免费开始",
+        "PoweredBy": "React 前端 · Go 后端驱动"
     },
 
     "SettingsPage": {

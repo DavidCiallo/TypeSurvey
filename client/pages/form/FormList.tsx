@@ -43,7 +43,7 @@ const FormList = ({ formList, openFormEditor, openRecordEditor }: props) => {
         <Card>
             <CardContent className="p-0">
                 {formList.length === 0 ? (
-                    <EmptyComp height="min-h-[30vh]" opacity="opacity-50" />
+                    <EmptyComp className="min-h-[30vh]" />
                 ) : (
                     <>
                         {/* Desktop table */}

@@ -1,6 +1,7 @@
 {
     "Common": {
         "AppName": "TypeSurvey",
+        "Empty": "No data",
         "ButtonAdd": "Add",
         "ButtonSave": "Save",
         "ButtonConfirm": "Confirm",
@@ -93,7 +94,9 @@
         "ValuePlaceholder": "Preset Value",
         "NullSelectedType": "Please select form type",
         "CommonType": "Normal Form",
-        "CollectType": "Named Form"
+        "CommonTypeDesc": "Anonymous — anyone with the link can respond",
+        "CollectType": "Named Form",
+        "CollectTypeDesc": "Per-person links with a field value preset"
     },
     "FormFieldPage": {
         "Title": "Form Management",
@@ -181,7 +184,10 @@
         "MainText3": "tool about building forms ",
         "Slogan1": "Compact, elegant, and fast.",
         "Slogan2": "No complex code or editing, just faster way to start data business.",
-        "ViewSource": "View Source Code"
+        "ViewSource": "View Source Code",
+        "Login": "Log in",
+        "StartFree": "Start Free",
+        "PoweredBy": "Powered by React + Go"
     },
 
     "SettingsPage": {
