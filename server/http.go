@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"math"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf16"
 )
 
@@ -223,6 +225,8 @@ func writeCORS(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, r *http.Request, status int, payload string) {
 	writeSecurityHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
+	// API responses are per-user and must never be cached by any CDN or proxy.
+	w.Header().Set("Cache-Control", "no-store")
 	writeCORS(w, r)
 	w.WriteHeader(status)
 	io.WriteString(w, payload)
@@ -414,6 +418,67 @@ func serveStatic(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
+// cacheControlFor returns the Cache-Control value for a request path.
+//   - /static/* holds hash-named build assets: the name changes whenever the
+//     content does, so they are safe to cache forever (immutable).
+//   - /uploads/* holds user attachments (often PII): private browser caching
+//     only, shared CDN caches must never store them.
+//   - everything else (index.html, favicons) must revalidate on every visit so
+//     a new release shows up immediately.
+func cacheControlFor(urlPath string) string {
+	switch {
+	case strings.HasPrefix(urlPath, "/uploads/"):
+		return "private, max-age=31536000, immutable"
+	case strings.HasPrefix(urlPath, "/static/"):
+		return "public, max-age=31536000, immutable"
+	default:
+		return "no-cache"
+	}
+}
+
+// gzipTypes lists compressible extensions (text-ish). Wasm is included because
+// gzip still cuts it roughly in half on the wire.
+var gzipTypes = map[string]bool{
+	".html": true, ".css": true, ".js": true, ".mjs": true,
+	".json": true, ".svg": true, ".txt": true, ".map": true, ".wasm": true,
+}
+
+// wantsGzip reports whether the response should be served gzip-encoded. Range
+// requests skip compression: byte ranges of an encoded stream are meaningless.
+func wantsGzip(r *http.Request, ext string, size int64) bool {
+	return gzipTypes[ext] && size > 512 &&
+		r.Header.Get("Range") == "" &&
+		strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+}
+
+func fileETag(info os.FileInfo) string {
+	return `"` + strconv.FormatInt(info.ModTime().UnixNano(), 16) +
+		"-" + strconv.FormatInt(info.Size(), 16) + `"`
+}
+
+// notModified writes a 304 when the client's precondition matches, mirroring
+// what http.ServeContent does on the raw path. Used on the gzip path only.
+func notModified(w http.ResponseWriter, r *http.Request, etag string, mod time.Time) bool {
+	if inm := r.Header.Get("If-None-Match"); inm != "" {
+		for _, candidate := range strings.Split(inm, ",") {
+			candidate = strings.TrimSpace(candidate)
+			if candidate == "*" || candidate == etag {
+				w.WriteHeader(http.StatusNotModified)
+				return true
+			}
+		}
+		return false
+	}
+	if ims := r.Header.Get("If-Modified-Since"); ims != "" {
+		if t, err := http.ParseTime(ims); err == nil &&
+			!mod.Truncate(time.Second).After(t.Truncate(time.Second)) {
+			w.WriteHeader(http.StatusNotModified)
+			return true
+		}
+	}
+	return false
+}
+
 func serveFile(w http.ResponseWriter, r *http.Request, filePath string) {
 	writeSecurityHeaders(w)
 	f, err := os.Open(filePath)
@@ -426,6 +491,25 @@ func serveFile(w http.ResponseWriter, r *http.Request, filePath string) {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	if ct, ok := contentTypes[ext]; ok {
 		w.Header().Set("Content-Type", ct)
+	}
+	etag := fileETag(info)
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", cacheControlFor(r.URL.Path))
+	w.Header().Add("Vary", "Accept-Encoding")
+	if wantsGzip(r, ext, info.Size()) {
+		if notModified(w, r, etag, info.ModTime()) {
+			return
+		}
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		gz.Write(data)
+		gz.Close()
+		return
 	}
 	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 }
