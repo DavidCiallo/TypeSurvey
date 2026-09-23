@@ -48,6 +48,15 @@ func envInt(key string, fallback int) int {
 	return fallback
 }
 
+func envBool(key string, fallback bool) bool {
+	if v := os.Getenv(key); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
+		}
+	}
+	return fallback
+}
+
 var (
 	repoRoot  string
 	dataDir   string

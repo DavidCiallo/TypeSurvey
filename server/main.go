@@ -13,47 +13,48 @@ import (
 // storage instead of JSONL (JSONL imported once on first boot).
 
 func registerRoutes() {
-	// auth (auth.router.ts)
-	route("/api/auth/login", false, authLogin)
-	route("/api/auth/alive", false, authAlive)
-	route("/api/auth/register", false, authRegister)
-	route("/api/auth/config", false, authConfig)
-	route("/api/auth/code", false, authCode)
-	route("/api/auth/verify", false, authVerify)
+	// auth (auth.router.ts) — unauthenticated by definition.
+	route("/api/auth/login", policyPublic, false, authLogin)
+	route("/api/auth/alive", policyPublic, false, authAlive)
+	route("/api/auth/register", policyPublic, false, authRegister)
+	route("/api/auth/config", policyPublic, false, authConfig)
+	route("/api/auth/verify", policyPublic, false, authVerify)
 
 	// form (form.router.ts — list allows the global api key)
-	route("/api/form/list", true, formList)
-	route("/api/form/create", false, formCreate)
-	route("/api/form/update", false, formUpdate)
-	route("/api/form/del", false, formDel)
+	route("/api/form/list", policyUser, true, formList)
+	route("/api/form/create", policyUser, false, formCreate)
+	route("/api/form/update", policyUser, false, formUpdate)
+	route("/api/form/del", policyUser, false, formDel)
 
 	// field (field.router.ts)
-	route("/api/field/list", true, fieldList)
-	route("/api/field/create", false, fieldCreate)
-	route("/api/field/update", false, fieldUpdate)
-	route("/api/field/del", false, fieldDel)
+	route("/api/field/list", policyUser, true, fieldList)
+	route("/api/field/create", policyUser, false, fieldCreate)
+	route("/api/field/update", policyUser, false, fieldUpdate)
+	route("/api/field/del", policyUser, false, fieldDel)
 
 	// radio (radio.router.ts)
-	route("/api/radio/create", false, radioCreate)
-	route("/api/radio/update", false, radioUpdate)
-	route("/api/radio/del", false, radioDel)
+	route("/api/radio/create", policyUser, false, radioCreate)
+	route("/api/radio/update", policyUser, false, radioUpdate)
+	route("/api/radio/del", policyUser, false, radioDel)
 
-	// record (record.router.ts — submit/all allow the global api key)
-	route("/api/record/history", false, recordHistory)
-	route("/api/record/submit", true, recordSubmit)
-	route("/api/record/all", true, recordAll)
-	route("/api/record/del", false, recordDel)
+	// record (record.router.ts) — history and submit stay public because the
+	// fill page is anonymous; they are gated by the per-item access code.
+	route("/api/record/history", policyPublic, false, recordHistory)
+	route("/api/record/submit", policyPublic, true, recordSubmit)
+	route("/api/record/all", policyUser, true, recordAll)
+	route("/api/record/del", policyUser, false, recordDel)
 
-	// file (file.router.ts)
-	route("/api/file/readxlsx", false, fileReadXlsx)
-	route("/api/file/confirm", false, fileConfirm)
-	route("/api/file/upload", false, fileUpload)
+	// file (file.router.ts) — authenticated: these parse uploads and write
+	// records into the database.
+	route("/api/file/readxlsx", policyUser, false, fileReadXlsx)
+	route("/api/file/confirm", policyUser, false, fileConfirm)
+	route("/api/file/upload", policyUser, false, fileUpload)
 
-	// settings + app (settings.router.ts)
-	route("/api/settings/list", false, settingsList)
-	route("/api/settings/save", false, settingsSave)
-	route("/api/app/export", false, appExport)
-	route("/api/app/import", false, appImport)
+	// settings + app (settings.router.ts) — admin only.
+	route("/api/settings/list", policyAdmin, false, settingsList)
+	route("/api/settings/save", policyAdmin, false, settingsSave)
+	route("/api/app/export", policyAdmin, false, appExport)
+	route("/api/app/import", policyAdmin, false, appImport)
 }
 
 func main() {
@@ -62,6 +63,7 @@ func main() {
 	loadDotEnv("../../.env")
 	initPaths()
 	initCrypto()
+	initCORS()
 
 	if err := openDB(); err != nil {
 		log.Fatalf("Failed to open database: %v", err)
@@ -75,7 +77,7 @@ func main() {
 	if name, email, password := os.Getenv("ADMIN_NAME"), os.Getenv("ADMIN_EMAIL"), os.Getenv("ADMIN_PASSWORD"); name != "" && email != "" && password != "" {
 		if selectOne("accounts", Row{"email": email}) == nil {
 			insertRow("accounts", Row{
-				"name": name, "email": email, "password": hashGenerate(password),
+				"name": name, "email": email, "password": hashPassword(password),
 				"is_admin": 1, "api_key": "", "balance": 0, "last_daily_time": nil,
 			})
 			fmt.Printf("[Init] Admin account created: %s\n", email)
@@ -100,7 +102,7 @@ func main() {
 				return
 			}
 			if strings.HasPrefix(r.URL.Path, "/api") {
-				writeJSON(w, http.StatusNotFound, `{"error":"API not found"}`)
+				writeJSON(w, r, http.StatusNotFound, `{"error":"API not found"}`)
 				return
 			}
 			http.NotFound(w, r)
