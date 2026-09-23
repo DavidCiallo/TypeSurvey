@@ -11,8 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/client/components/ui/select";
-import CommonImg from "../../images/png/Common.png";
-import CollectImg from "../../images/png/Collect.png";
+import { Link2, UserRound } from "lucide-react";
 import { useRef } from "react";
 import { FormFieldImpl } from "../../../shared/impl";
 import { Locale } from "../../methods/locale";
@@ -99,27 +98,52 @@ const CreateRecordEditor = ({ isOpen, fields, selectedType, setSelectedType, onO
                         {selectedType === "common" ? locale.CommonType : ""}
                         {selectedType === "collect" ? locale.CollectType : ""}
                     </div>
-                    <div className="mb-6 flex flex-row gap-5">
-                        <img
-                            src={CommonImg}
-                            alt="common"
-                            className={`h-32 w-32 cursor-pointer rounded-lg border-4 object-cover transition-all ${
-                                selectedType === "common"
-                                    ? "border-primary scale-105"
-                                    : "border-transparent hover:border-gray-300"
-                            }`}
-                            onClick={() => setSelectedType("common")}
-                        />
-                        <img
-                            src={CollectImg}
-                            alt="collect"
-                            className={`h-32 w-32 cursor-pointer rounded-lg border-4 object-cover transition-all ${
-                                selectedType === "collect"
-                                    ? "border-primary scale-105"
-                                    : "border-transparent hover:border-gray-300"
-                            }`}
-                            onClick={() => setSelectedType("collect")}
-                        />
+                    <div className="mb-6 flex flex-row gap-4">
+                        {(
+                            [
+                                {
+                                    key: "common",
+                                    icon: Link2,
+                                    title: locale.CommonType,
+                                    desc: locale.CommonTypeDesc,
+                                },
+                                {
+                                    key: "collect",
+                                    icon: UserRound,
+                                    title: locale.CollectType,
+                                    desc: locale.CollectTypeDesc,
+                                },
+                            ] as const
+                        ).map(({ key, icon: Icon, title, desc }) => {
+                            const active = selectedType === key;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() => setSelectedType(key)}
+                                    className={`flex h-40 w-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
+                                        active
+                                            ? "border-primary bg-primary/5 shadow-sm"
+                                            : "border-border bg-background hover:border-primary/40 hover:bg-accent"
+                                    }`}
+                                >
+                                    <span
+                                        className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+                                            active
+                                                ? "bg-primary/10 text-primary"
+                                                : "bg-muted text-muted-foreground"
+                                        }`}
+                                    >
+                                        <Icon className="h-6 w-6" strokeWidth={1.75} />
+                                    </span>
+                                    <span className="text-sm font-semibold">{title}</span>
+                                    <span className="text-xs leading-snug text-muted-foreground">
+                                        {desc}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <div className="flex h-24 w-full max-w-xs flex-row">
