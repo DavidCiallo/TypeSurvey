@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/client/components/ui/button";
 import { BrandIcon } from "@/client/components/logo";
 import { LanguageToggle } from "@/client/components/language-toggle";
@@ -21,20 +22,20 @@ const Component = () => {
             <header className="absolute inset-x-0 top-0 z-50">
                 <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
                     <div className="flex lg:flex-1">
-                        <a href="#" className="-m-1.5 p-1.5">
+                        <Link to="/" className="-m-1.5 p-1.5">
                             <span className="sr-only">{appName}</span>
                             <Logo />
-                        </a>
+                        </Link>
                     </div>
                     <div className="flex flex-row items-center gap-2">
                         {auth !== AuthStatus.AUTH && (
                             <div className="lg:flex lg:flex-1 lg:justify-end">
-                                <a
-                                    href="/auth"
+                                <Link
+                                    to="/auth"
                                     className="text-muted-foreground hover:text-foreground mr-2 text-sm font-semibold leading-6 transition-colors"
                                 >
-                                    Log in
-                                </a>
+                                    {locale.Login}
+                                </Link>
                             </div>
                         )}
                         <LanguageToggle variant="ghost" />
@@ -53,15 +54,16 @@ const Component = () => {
                         </h1>
                         <p className="text-muted-foreground mt-6 text-lg leading-8">{locale.Slogan1}</p>
                         <p className="text-muted-foreground text-lg leading-8">{locale.Slogan2}</p>
-                        <p className="text-muted-foreground/70 mt-6 text-md leading-8">Powered by React.</p>
+                        <p className="text-muted-foreground/70 mt-6 text-base leading-8">{locale.PoweredBy}</p>
 
                         <div className="mt-10 flex items-center gap-x-6">
-                            <a href="/form">
-                                <Button>Start Free</Button>
-                            </a>
+                            <Link to="/form">
+                                <Button>{locale.StartFree}</Button>
+                            </Link>
                             <a
-                                href="https://github.com/DavidCiallo/TypeForm"
+                                href="https://github.com/DavidCiallo/TypeSurvey"
                                 target="_blank"
+                                rel="noreferrer"
                                 className="text-muted-foreground hover:text-foreground text-sm font-semibold leading-6 transition-colors"
                             >
                                 {locale.ViewSource} <span>→</span>

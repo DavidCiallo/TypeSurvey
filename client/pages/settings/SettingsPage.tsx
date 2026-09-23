@@ -3,6 +3,7 @@ import { Button } from "@/client/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/client/components/ui/card";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
+import { Skeleton } from "@/client/components/ui/skeleton";
 import { Locale } from "../../methods/locale";
 import { SettingsRouter, AppRouter } from "../../api/instance";
 import { toast } from "../../methods/notify";
@@ -110,7 +111,19 @@ export default function SettingsPage() {
                 </Button>
             </div>
             {loading ? (
-                <div className="text-muted-foreground py-8 text-center">Loading...</div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-5 w-32" />
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="flex flex-col gap-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-9 w-full" />
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
             ) : (
                 <>
                     <Card>
