@@ -115,16 +115,19 @@ export default function Component() {
                                     placeholder={locale.PasswordPlaceholder}
                                 />
                             </div>
-                            <div
-                                className="text-muted-foreground flex w-full cursor-pointer justify-end text-sm"
-                                onClick={() =>
-                                    toast({
-                                        title: locale.ForgetPasswordErrorText,
-                                        color: "danger",
-                                    })
-                                }
-                            >
-                                {locale.ForgetPasswordLinkText}
+                            <div className="flex w-full justify-end">
+                                <button
+                                    type="button"
+                                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                                    onClick={() =>
+                                        toast({
+                                            title: locale.ForgetPasswordErrorText,
+                                            color: "danger",
+                                        })
+                                    }
+                                >
+                                    {locale.ForgetPasswordLinkText}
+                                </button>
                             </div>
                             <Button type="submit" className="w-full">
                                 {locale.SubmitButtonText}
@@ -133,12 +136,13 @@ export default function Component() {
                         {allowRegister && (
                             <p className="text-muted-foreground text-center text-sm">
                                 {locale.NoAccount}{" "}
-                                <span
-                                    className="text-primary cursor-pointer text-sm"
+                                <button
+                                    type="button"
+                                    className="text-primary hover:underline focus-visible:ring-ring rounded-sm text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
                                     onClick={() => setIsRegister(true)}
                                 >
                                     {locale.RegisterNow}
-                                </span>
+                                </button>
                             </p>
                         )}
                     </>
@@ -180,12 +184,13 @@ export default function Component() {
                         </form>
                         <p className="text-muted-foreground text-center text-sm">
                             {locale.HasAccount}{" "}
-                            <span
-                                className="text-primary cursor-pointer text-sm"
+                            <button
+                                type="button"
+                                className="text-primary hover:underline focus-visible:ring-ring rounded-sm text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
                                 onClick={() => setIsRegister(false)}
                             >
                                 {locale.BackToLogin}
-                            </span>
+                            </button>
                         </p>
                     </>
                 )}

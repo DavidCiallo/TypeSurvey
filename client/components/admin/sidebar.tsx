@@ -19,8 +19,6 @@ type NavItem = {
     menuKey: string
 }
 
-const ALL_MENUS = ["form", "field", "record", "settings"] as const
-
 export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
     const locale = Locale("Menu")
     const common = Locale("Common")
@@ -67,7 +65,7 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 
             <div className="border-t p-3">
                 <div className="bg-sidebar-accent text-sidebar-accent-foreground rounded-lg p-3 text-xs">
-                    <p className="font-medium">TypeForm Admin</p>
+                    <p className="font-medium">{common.AppName}</p>
                 </div>
             </div>
         </>
