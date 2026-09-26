@@ -15,7 +15,7 @@ import (
 
 const apiKeyIdentity = "apikey@system.org"
 
-var allMenus = []string{"form", "field", "record"}
+var allMenus = []string{"form", "field", "record", "team"}
 
 // tokenVersionPrefix marks tokens issued with an integrity-protected format.
 const tokenVersionPrefix = "v2."
@@ -265,9 +265,17 @@ func authAlive(c *Ctx) (any, error) {
 	email := getIdentifyByVerify(auth)
 	account := getAccountByEmail(email)
 	if account == nil {
-		return Row{"is_admin": 0, "roles": []any{}}, nil
+		return Row{"is_admin": 0, "roles": []any{}, "teams": []Row{}}, nil
 	}
-	return Row{"is_admin": account["is_admin"], "roles": menuRoles(asInt64(account["is_admin"]))}, nil
+	isAdmin := asInt64(account["is_admin"])
+	// teams is re-sent on every page load so a membership change on the server
+	// (someone was removed, a team was deleted) heals the client's cached
+	// selection instead of waiting for the next login.
+	return Row{
+		"is_admin": account["is_admin"],
+		"roles":    menuRoles(isAdmin),
+		"teams":    visibleTeams(scopeForAccount(account), asStr(account["id"])),
+	}, nil
 }
 
 func authLogin(c *Ctx) (any, error) {

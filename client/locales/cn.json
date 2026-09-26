@@ -22,6 +22,7 @@
         "FieldManage": "表单管理",
         "Feedback": "数据反馈",
         "Logout": "退出登录",
+        "Team": "团队",
         "Settings": "系统设置"
     },
 
@@ -224,5 +225,46 @@
         "FieldLabel": {
             "allow_register": "允许注册（1=开启，0=关闭）"
         }
+    },
+
+    "Team": {
+        "Title": "团队",
+        "Description": "团队成员与邀请码管理",
+        "SwitchTeam": "切换团队",
+        "Deleted": "已删除",
+        "NoTeam": "尚未选择团队",
+        "OnboardingTitle": "先创建一个团队",
+        "OnboardingDescription": "表单归属于团队，有了团队才能开始使用。",
+        "CreateTitle": "创建团队",
+        "CreateDescription": "每个账号只能创建一个团队。",
+        "CreateButton": "创建团队",
+        "CreateSuccess": "团队创建成功",
+        "CreateFailed": "创建团队失败",
+        "NameLabel": "团队名称",
+        "NamePlaceholder": "例如：市场部",
+        "RenameDescription": "只有团队管理员可以修改。",
+        "JoinTitle": "加入已有团队",
+        "JoinDescription": "使用团队管理员提供的邀请码。",
+        "InviteCodeLabel": "邀请码",
+        "InviteCodePlaceholder": "粘贴邀请码或邀请链接",
+        "JoinButton": "加入团队",
+        "JoinWorking": "正在加入团队…",
+        "JoinSuccess": "加入成功，正在进入…",
+        "JoinFailed": "加入团队失败",
+        "JoinInvalid": "邀请链接无效",
+        "MembersTitle": "成员",
+        "MembersDescription": "移除成员后，该账号将立即无法访问本团队的数据。",
+        "RoleOwner": "管理员",
+        "RoleSelf": "我",
+        "InvitesTitle": "邀请码",
+        "InvitesDescription": "邀请码 7 天内有效，且只能使用一次。",
+        "CreateInvite": "生成邀请码",
+        "ExpiresAt": "有效期至",
+        "ToastCopySuccess": "已复制",
+        "DangerTitle": "危险操作",
+        "DangerDescription": "删除团队后数据会保留，但成员将无法再访问。",
+        "LeaveButton": "退出团队",
+        "DeleteButton": "删除团队",
+        "DeleteSuccess": "团队已删除"
     }
 }

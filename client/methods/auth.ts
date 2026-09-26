@@ -1,3 +1,5 @@
+import { clearTeam } from "./team";
+
 export enum AuthStatus {
     AUTH,
     NO_AUTH,
@@ -71,4 +73,7 @@ export function clearAuthData() {
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_is_admin");
     localStorage.removeItem("user_roles");
+    // The selected team goes too: leaving it behind would make the next account
+    // on this browser send a team_id it has no access to.
+    clearTeam();
 }

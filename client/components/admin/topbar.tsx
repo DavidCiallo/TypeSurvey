@@ -6,12 +6,14 @@ import { Separator } from "@/client/components/ui/separator"
 import { LanguageToggle } from "@/client/components/language-toggle"
 import { ThemeToggle } from "@/client/components/theme-toggle"
 import { UserMenu } from "@/client/components/admin/user-menu"
+import { TeamSwitcher } from "@/client/components/admin/team-switcher"
 import { Locale } from "@/client/methods/locale"
 
 const titleMap: Record<string, string> = {
     "/form": "FormList",
     "/field": "FieldManage",
     "/record": "Feedback",
+    "/team": "Team",
     "/settings": "Settings",
 }
 
@@ -39,6 +41,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
 
             <div className="ml-auto flex items-center gap-1 sm:gap-2">
+                <TeamSwitcher />
                 <LanguageToggle variant="ghost" />
                 <ThemeToggle />
                 <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
