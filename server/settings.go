@@ -96,38 +96,55 @@ func saveSettings(entries []Row) {
 // getAllData returns every row (including soft-deleted) for backup export.
 // NOTE: the TS version read these from the wrong repository ("form_field"),
 // silently exporting zero fields — see server/README.md.
+//
+// This is an admin-only whole-database backup, so it reads across teams on
+// purpose. The team tables are included: without them a restore would bring back
+// every field and record but no team to own them, leaving the whole installation
+// invisible to every account.
 func getAllData() Row {
 	return Row{
-		"accounts": selectAll("accounts"),
-		"fields":   selectAll("fields"),
-		"radios":   selectAll("radios"),
-		"records":  selectAll("records"),
-		"settings": selectAll("settings"),
+		"accounts":     selectAll("accounts"),
+		"teams":        selectAll("teams"),
+		"team_members": selectAll("team_members"),
+		"team_invites": selectAll("team_invites"),
+		"fields":       selectAllAny("fields"),
+		"radios":       selectAllAny("radios"),
+		"records":      selectAllAny("records"),
+		"settings":     selectAll("settings"),
 	}
 }
 
 // importAllData replaces each collection wholesale (truncate + batch insert).
 // An empty/absent array leaves the collection untouched (same as TS).
+//
+// Ordering matters: teams and team_members are restored before fields/records so
+// that the restored rows point at teams that already exist.
 func importAllData(data Row) Row {
-	tables := map[string]string{
-		"accounts": "accounts", "fields": "fields", "radios": "radios",
-		"records": "records", "settings": "settings",
+	tables := []struct{ name, table string }{
+		{"accounts", "accounts"},
+		{"teams", "teams"},
+		{"team_members", "team_members"},
+		{"team_invites", "team_invites"},
+		{"fields", "fields"},
+		{"radios", "radios"},
+		{"records", "records"},
+		{"settings", "settings"},
 	}
 	imported := Row{}
-	for name, table := range tables {
-		rowsAny, _ := data[name].([]any)
+	for _, t := range tables {
+		rowsAny, _ := data[t.name].([]any)
 		if len(rowsAny) == 0 {
-			imported[name] = 0
+			imported[t.name] = 0
 			continue
 		}
-		truncateTable(table)
+		truncateTable(t.table)
 		rows := make([]Row, 0, len(rowsAny))
 		for _, r := range rowsAny {
 			if m, ok := r.(map[string]any); ok {
 				rows = append(rows, m)
 			}
 		}
-		imported[name] = batchInsertRows(table, rows)
+		imported[t.name] = batchInsertRows(t.table, rows)
 	}
 	loadSettings()
 	return imported

@@ -1,3 +1,6 @@
+import { clearAuthData } from "../methods/auth";
+import { getCurrentTeamId } from "../methods/team";
+
 type RouteDef<Req, Res> = { path: string; request: Req; response: Res };
 
 type ApiClient<T> = {
@@ -7,11 +10,7 @@ type ApiClient<T> = {
 };
 
 function handle401() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("expires_at");
-    localStorage.removeItem("user_email");
-    localStorage.removeItem("user_is_admin");
-    localStorage.removeItem("user_roles");
+    clearAuthData();
     window.location.href = "/auth";
 }
 
@@ -25,7 +24,15 @@ export function createClient<T extends { base: string; prefix: string }>(def: T)
             const token = localStorage.getItem("access_token") || "";
             const response = await fetch(url, {
                 method: "POST",
-                body: JSON.stringify({ ...body, auth: body.auth || token }),
+                // team_id is attached here rather than at each call site. Every
+                // form/field/record query is scoped to the team the user picked,
+                // and a single call that forgot it would either fail or reach for
+                // the wrong team's data. Routes that have no use for it ignore it.
+                body: JSON.stringify({
+                    ...body,
+                    auth: body.auth || token,
+                    team_id: body.team_id || getCurrentTeamId(),
+                }),
                 headers: {
                     "Content-Type": "application/json",
                     Token: token,

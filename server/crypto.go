@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/binary"
 	"encoding/hex"
 	"log"
 	"os"
@@ -31,6 +33,11 @@ var (
 	// the token MAC never shares key material with the (unauthenticated)
 	// AES-CBC legacy token format.
 	tokenMACKey []byte
+
+	// codeMACKey keys the 4-digit response access codes. Separate from
+	// tokenMACKey so that a code, which travels in a URL and is meant to be
+	// shared, can never be turned into a login token.
+	codeMACKey []byte
 )
 
 // minSecretLen is the shortest SECRET accepted at boot.
@@ -71,6 +78,9 @@ func initCrypto() {
 
 	mac := sha256.Sum256([]byte("typesurvey-token-v2|" + secret))
 	tokenMACKey = mac[:]
+
+	code := sha256.Sum256([]byte("typesurvey-record-code|" + secret))
+	codeMACKey = code[:]
 }
 
 // randomHex returns n cryptographically random bytes, hex-encoded.
@@ -154,14 +164,24 @@ func hashGenerate(data string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// codeGenerate mirrors crypto.ts: 1000 + (sum of UTF-16 code units, seeded
-// with 1) * noncelen % 9000 — used for record access codes.
+// codeGenerate returns the 4-digit access code that guards one response.
+//
+// It is a keyed MAC over the item_id rather than the checksum the Bun server
+// used. The old form was a pure function of the item_id, so the "code" added no
+// entropy at all: anyone who saw an item_id could compute the code that was
+// supposed to protect it, and the recorded answers were readable by anyone who
+// could guess or observe an id.
+//
+// It stays four digits because the code is never checked on its own — it is
+// always presented together with the item_id, which carries the real entropy —
+// so shortening the code costs nothing and keeps existing links and clients
+// working unchanged. Repeated wrong guesses are limited in ratelimit.go, which
+// is what makes four digits enough.
 func codeGenerate(originalData string) string {
-	sum := 1
-	for _, r := range originalData {
-		sum += int(r)
-	}
-	return strconv.Itoa(1000 + (sum*nonceLen)%9000)
+	mac := hmac.New(sha256.New, codeMACKey)
+	mac.Write([]byte(originalData))
+	n := binary.BigEndian.Uint32(mac.Sum(nil)[:4])
+	return strconv.Itoa(1000 + int(n%9000))
 }
 
 // ---------- password hashing ----------

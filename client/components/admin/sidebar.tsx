@@ -4,6 +4,7 @@ import {
     ListChecks,
     Database,
     Settings,
+    Users,
     type LucideIcon,
 } from "lucide-react"
 
@@ -31,6 +32,7 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
     ]
 
     const secondaryItems: NavItem[] = [
+        { title: locale.Team, href: "/team", icon: Users, menuKey: "team" },
         { title: locale.Settings, href: "/settings", icon: Settings, menuKey: "settings" },
     ]
 

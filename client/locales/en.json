@@ -22,6 +22,7 @@
         "FieldManage": "Form Management",
         "Feedback": "Data Feedback",
         "Logout": "Logout",
+        "Team": "Team",
         "Settings": "Settings"
     },
 
@@ -206,5 +207,46 @@
         "FieldLabel": {
             "allow_register": "Allow Register (1=on, 0=off)"
         }
+    },
+
+    "Team": {
+        "Title": "Team",
+        "Description": "Members and invite codes",
+        "SwitchTeam": "Switch team",
+        "Deleted": "deleted",
+        "NoTeam": "No team selected",
+        "OnboardingTitle": "Create a team first",
+        "OnboardingDescription": "Forms belong to a team, so you need one before you can start.",
+        "CreateTitle": "Create a team",
+        "CreateDescription": "An account may create one team.",
+        "CreateButton": "Create team",
+        "CreateSuccess": "Team created",
+        "CreateFailed": "Could not create the team",
+        "NameLabel": "Team name",
+        "NamePlaceholder": "e.g. Marketing",
+        "RenameDescription": "Only a team owner can change this.",
+        "JoinTitle": "Join an existing team",
+        "JoinDescription": "Use the invite code from a team owner.",
+        "InviteCodeLabel": "Invite code",
+        "InviteCodePlaceholder": "Paste the invite code or link",
+        "JoinButton": "Join team",
+        "JoinWorking": "Joining the team…",
+        "JoinSuccess": "Joined, taking you in…",
+        "JoinFailed": "Could not join the team",
+        "JoinInvalid": "This invite link is not valid",
+        "MembersTitle": "Members",
+        "MembersDescription": "Removing a member cuts off their access to this team's data immediately.",
+        "RoleOwner": "Owner",
+        "RoleSelf": "You",
+        "InvitesTitle": "Invite codes",
+        "InvitesDescription": "An invite is valid for 7 days and can be used once.",
+        "CreateInvite": "Create invite code",
+        "ExpiresAt": "Expires",
+        "ToastCopySuccess": "Copied",
+        "DangerTitle": "Danger zone",
+        "DangerDescription": "Deleting a team keeps its data, but members lose access to it.",
+        "LeaveButton": "Leave team",
+        "DeleteButton": "Delete team",
+        "DeleteSuccess": "Team deleted"
     }
 }

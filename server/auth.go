@@ -15,7 +15,7 @@ import (
 
 const apiKeyIdentity = "apikey@system.org"
 
-var allMenus = []string{"form", "field", "record"}
+var allMenus = []string{"form", "field", "record", "team"}
 
 // tokenVersionPrefix marks tokens issued with an integrity-protected format.
 const tokenVersionPrefix = "v2."
@@ -131,12 +131,16 @@ func getAccountByEmail(email string) Row {
 	return selectOne("accounts", Row{"email": email})
 }
 
+// menuRoles returns the menus an account may see.
+//
+// Both admins and team members get the full set: outside multi-tenancy only
+// admins received menus, which left every other registered account unable to
+// reach any screen. A non-admin is now a full user of their own team's data, and
+// the team scope is what limits them — not the menu list.
 func menuRoles(isAdmin int64) []any {
 	roles := []any{}
-	if isAdmin != 0 {
-		for _, name := range allMenus {
-			roles = append(roles, Row{"name": name, "type": "menu"})
-		}
+	for _, name := range allMenus {
+		roles = append(roles, Row{"name": name, "type": "menu"})
 	}
 	return roles
 }
@@ -163,7 +167,14 @@ func loginUser(email, password string) Row {
 		}
 	}
 	isAdmin := asInt64(account["is_admin"])
-	return Row{"token": genTokenForIdentify(email), "is_admin": account["is_admin"], "roles": menuRoles(isAdmin)}
+	// teams lets the client decide between the app and onboarding; an empty list
+	// means the account must create or join one first.
+	return Row{
+		"token":    genTokenForIdentify(email),
+		"is_admin": account["is_admin"],
+		"roles":    menuRoles(isAdmin),
+		"teams":    visibleTeams(scopeForAccount(account), asStr(account["id"])),
+	}
 }
 
 func checkAllowedDomain(email string) string {
@@ -254,9 +265,17 @@ func authAlive(c *Ctx) (any, error) {
 	email := getIdentifyByVerify(auth)
 	account := getAccountByEmail(email)
 	if account == nil {
-		return Row{"is_admin": 0, "roles": []any{}}, nil
+		return Row{"is_admin": 0, "roles": []any{}, "teams": []Row{}}, nil
 	}
-	return Row{"is_admin": account["is_admin"], "roles": menuRoles(asInt64(account["is_admin"]))}, nil
+	isAdmin := asInt64(account["is_admin"])
+	// teams is re-sent on every page load so a membership change on the server
+	// (someone was removed, a team was deleted) heals the client's cached
+	// selection instead of waiting for the next login.
+	return Row{
+		"is_admin": account["is_admin"],
+		"roles":    menuRoles(isAdmin),
+		"teams":    visibleTeams(scopeForAccount(account), asStr(account["id"])),
+	}, nil
 }
 
 func authLogin(c *Ctx) (any, error) {

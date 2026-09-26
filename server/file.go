@@ -133,6 +133,17 @@ func fileConfirm(c *Ctx) (any, error) {
 	usedata := jsTruthy(c.Value("usedata"))
 	timeFieldIndex, hasTimeField := c.Int("time_field_index")
 
+	// The import creates a form, so it lands in exactly one team like any other
+	// write. Resolved before the chunk buffer is touched.
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+
 	fileMu.Lock()
 	existIndex := -1
 	for i := range dataList {
@@ -163,7 +174,7 @@ func fileConfirm(c *Ctx) (any, error) {
 			break
 		}
 		fc := fieldCache[i]
-		fieldID, ok := createField(Row{
+		fieldID, ok := createField(teamID, Row{
 			"form_name":  formName,
 			"field_name": fc["field"],
 			"field_type": fc["type"],
@@ -179,13 +190,13 @@ func fileConfirm(c *Ctx) (any, error) {
 		}
 		subs, _ := header[i]["sub"].([]any)
 		for _, s := range subs {
-			createRadio(fieldID, asStr(s))
+			createRadio(teamID, fieldID, asStr(s))
 		}
 	}
 
 	fieldMap := map[string]string{}
 	radioMap := map[string]string{}
-	for _, field := range getFieldList(formName) {
+	for _, field := range getFieldList(teamID, formName) {
 		fieldMap[asStr(field["field_name"])] = asStr(field["id"])
 		radios, _ := field["radios"].([]Row)
 		for _, radio := range radios {
@@ -237,14 +248,14 @@ func fileConfirm(c *Ctx) (any, error) {
 				}
 				batch = append(batch, record)
 				if len(batch) >= batchSize {
-					insertRecords(batch)
+					insertRecords(teamID, batch)
 					batch = []Row{}
 				}
 			}
 		}
 	}
 	if len(batch) > 0 {
-		insertRecords(batch)
+		insertRecords(teamID, batch)
 	}
 	return Row{"success": true}, nil
 }

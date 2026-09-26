@@ -1,0 +1,31 @@
+import {
+    TeamListRequest, TeamListResponse,
+    TeamCreateRequest, TeamCreateResponse,
+    TeamUpdateRequest, TeamUpdateResponse,
+    TeamDeleteRequest, TeamDeleteResponse,
+    TeamRestoreRequest, TeamRestoreResponse,
+    TeamMemberListRequest, TeamMemberListResponse,
+    TeamMemberRemoveRequest, TeamMemberRemoveResponse,
+    TeamLeaveRequest, TeamLeaveResponse,
+    TeamInviteCreateRequest, TeamInviteCreateResponse,
+    TeamInviteListRequest, TeamInviteListResponse,
+    TeamInviteRevokeRequest, TeamInviteRevokeResponse,
+    TeamJoinRequest, TeamJoinResponse,
+} from "./team.interface";
+
+export const teamRoutes = {
+    base: "/api",
+    prefix: "/team",
+    list:         { path: "/list",          request: {} as TeamListRequest,         response: {} as TeamListResponse },
+    create:       { path: "/create",        request: {} as TeamCreateRequest,       response: {} as TeamCreateResponse },
+    update:       { path: "/update",        request: {} as TeamUpdateRequest,       response: {} as TeamUpdateResponse },
+    del:          { path: "/del",           request: {} as TeamDeleteRequest,       response: {} as TeamDeleteResponse },
+    restore:      { path: "/restore",       request: {} as TeamRestoreRequest,      response: {} as TeamRestoreResponse },
+    memberList:   { path: "/member/list",   request: {} as TeamMemberListRequest,   response: {} as TeamMemberListResponse },
+    memberRemove: { path: "/member/remove", request: {} as TeamMemberRemoveRequest, response: {} as TeamMemberRemoveResponse },
+    leave:        { path: "/leave",         request: {} as TeamLeaveRequest,        response: {} as TeamLeaveResponse },
+    inviteCreate: { path: "/invite/create", request: {} as TeamInviteCreateRequest, response: {} as TeamInviteCreateResponse },
+    inviteList:   { path: "/invite/list",   request: {} as TeamInviteListRequest,   response: {} as TeamInviteListResponse },
+    inviteRevoke: { path: "/invite/revoke", request: {} as TeamInviteRevokeRequest, response: {} as TeamInviteRevokeResponse },
+    join:         { path: "/join",          request: {} as TeamJoinRequest,         response: {} as TeamJoinResponse },
+} as const;

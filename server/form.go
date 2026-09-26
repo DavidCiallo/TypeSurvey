@@ -2,13 +2,17 @@ package main
 
 import "sort"
 
-// Form module — forms are implicit groups of fields (form_name).
-// Mirrors server/modules/form/*.
+// Form module — forms are implicit groups of fields keyed by (team_id,
+// form_name). Mirrors server/modules/form/*.
+//
+// Every function is pinned to one team. The handler resolves the caller's team
+// (resolveTeamID) and threads it down, so a form name is only meaningful inside
+// its team — two teams may each have a form called "客户问卷".
 
-func getFormList() []string {
+func getFormList(teamID string) []string {
 	seen := map[string]bool{}
 	out := []string{}
-	selectEach("fields", Row{}, func(field Row) {
+	selectEach("fields", Row{"team_id": teamID}, func(field Row) {
 		name := asStr(field["form_name"])
 		if !seen[name] {
 			seen[name] = true
@@ -18,10 +22,10 @@ func getFormList() []string {
 	return out
 }
 
-func getFormBriefList() []Row {
-	formList := getFormList()
+func getFormBriefList(teamID string) []Row {
+	formList := getFormList(teamID)
 	fieldToForm := map[string]string{}
-	selectEach("fields", Row{}, func(field Row) {
+	selectEach("fields", Row{"team_id": teamID}, func(field Row) {
 		fieldToForm[asStr(field["id"])] = asStr(field["form_name"])
 	})
 
@@ -32,7 +36,7 @@ func getFormBriefList() []Row {
 		lastSubmitByForm[name] = 0
 	}
 
-	selectEach("records", Row{}, func(record Row) {
+	selectEach("records", Row{"team_id": teamID}, func(record Row) {
 		formName, ok := fieldToForm[asStr(record["field_id"])]
 		if !ok || formName == "" {
 			return
@@ -54,25 +58,29 @@ func getFormBriefList() []Row {
 	out := []Row{}
 	for _, name := range formList {
 		out = append(out, Row{
-			"form_name":    name,
-			"records_num":  len(itemIDsByForm[name]),
-			"last_submit":  lastSubmitByForm[name],
+			"form_name":   name,
+			"records_num": len(itemIDsByForm[name]),
+			"last_submit": lastSubmitByForm[name],
 		})
 	}
 	return out
 }
 
-func getFormNameByField(fieldID string) string {
-	field := selectOne("fields", Row{"id": fieldID})
-	if field != nil {
-		return asStr(field["form_name"])
+// resolveFormByField maps a public field_id (the ?t= value in a share link) to
+// its team and form name. This lookup is intentionally unscoped: the field_id IS
+// the capability, and the anonymous fill flow has no team to scope by.
+func resolveFormByField(fieldID string) (teamID, formName string) {
+	field := selectOneAny("fields", Row{"id": fieldID})
+	if field == nil {
+		return "", ""
 	}
-	return ""
+	return asStr(field["team_id"]), asStr(field["form_name"])
 }
 
-// getFieldList returns fields (position-sorted) with their radios attached.
-func getFieldList(formName string) []Row {
-	fieldsData := selectRows("fields", Row{"form_name": formName}, selectOpts{skipDeleted: true})
+// getFieldList returns a team's fields for one form (position-sorted) with their
+// radios attached.
+func getFieldList(teamID, formName string) []Row {
+	fieldsData := selectRows("fields", Row{"team_id": teamID, "form_name": formName}, selectOpts{skipDeleted: true})
 	sort.SliceStable(fieldsData, func(i, j int) bool {
 		return asInt64(fieldsData[i]["position"]) < asInt64(fieldsData[j]["position"])
 	})
@@ -81,7 +89,7 @@ func getFieldList(formName string) []Row {
 	for _, f := range fieldsData {
 		radiosByField[asStr(f["id"])] = []Row{}
 	}
-	selectEach("radios", Row{}, func(radio Row) {
+	selectEach("radios", Row{"team_id": teamID}, func(radio Row) {
 		if arr, ok := radiosByField[asStr(radio["field_id"])]; ok {
 			radiosByField[asStr(radio["field_id"])] = append(arr, radio)
 		}
@@ -99,18 +107,20 @@ func getFieldList(formName string) []Row {
 	return out
 }
 
-// createField returns ("", false) when the (form_name, field_name) pair exists.
-func createField(field Row) (string, bool) {
-	where := Row{"form_name": field["form_name"], "field_name": field["field_name"]}
+// createField returns ("", false) when the (team, form_name, field_name) triple
+// already exists.
+func createField(teamID string, field Row) (string, bool) {
+	where := Row{"team_id": teamID, "form_name": field["form_name"], "field_name": field["field_name"]}
 	if selectOne("fields", where) != nil {
 		return "", false
 	}
-	lastField := selectOneReverse("fields", Row{})
+	lastField := selectOneReverse("fields", Row{"team_id": teamID})
 	position := asInt64(lastField["position"]) + 1
 	entity := Row{}
 	for k, v := range field {
 		entity[k] = v
 	}
+	entity["team_id"] = teamID
 	entity["position"] = position
 	entity["comment"] = ""
 	entity["placeholder"] = ""
@@ -118,32 +128,36 @@ func createField(field Row) (string, bool) {
 	return asStr(row["id"]), true
 }
 
-func updateSingleField(id, key string, value any) bool {
-	if selectOne("fields", Row{"id": id}) == nil {
+// updateSingleField returns false when the field is not in the caller's team,
+// which is what stops a field_id belonging to another team from being edited.
+func updateSingleField(teamID, id, key string, value any) bool {
+	if selectOne("fields", Row{"team_id": teamID, "id": id}) == nil {
 		return false
 	}
-	return updateRows("fields", Row{"id": id}, Row{key: value})
+	return updateRowsIn("fields", teamID, Row{"id": id}, Row{key: value})
 }
 
-func updateFormName(formName, newName string) bool {
-	if selectOne("fields", Row{"form_name": formName}) == nil {
+func updateFormName(teamID, formName, newName string) bool {
+	if selectOne("fields", Row{"team_id": teamID, "form_name": formName}) == nil {
 		return false
 	}
-	return updateRows("fields", Row{"form_name": formName}, Row{"form_name": newName})
+	// The team_id in this where clause is what stops the rename from touching
+	// every other team's form that happens to share the name.
+	return updateRowsIn("fields", teamID, Row{"form_name": formName}, Row{"form_name": newName})
 }
 
-// deleteForm removes the form's fields and (unlike the TS version, which
-// silently no-ops on its unsupported $in matcher) its records and radios.
-func deleteForm(formName string) {
+// deleteForm removes the form's fields plus its records and radios. The team
+// scope here is load-bearing: without it this would delete other teams' data.
+func deleteForm(teamID, formName string) {
 	fieldIDs := []string{}
-	selectEach("fields", Row{"form_name": formName}, func(field Row) {
+	selectEach("fields", Row{"team_id": teamID, "form_name": formName}, func(field Row) {
 		fieldIDs = append(fieldIDs, asStr(field["id"]))
 	})
 	if len(fieldIDs) > 0 {
-		hardDeleteRows("records", Row{}, map[string][]string{"field_id": fieldIDs})
-		hardDeleteRows("radios", Row{}, map[string][]string{"field_id": fieldIDs})
+		hardDeleteRowsIn("records", teamID, Row{}, map[string][]string{"field_id": fieldIDs})
+		hardDeleteRowsIn("radios", teamID, Row{}, map[string][]string{"field_id": fieldIDs})
 	}
-	hardDeleteRows("fields", Row{"form_name": formName}, nil)
+	hardDeleteRowsIn("fields", teamID, Row{"form_name": formName}, nil)
 }
 
 // ---------- handlers ----------
@@ -152,10 +166,15 @@ func formList(c *Ctx) (any, error) {
 	if !jsTruthy(c.Value("page")) || !jsTruthy(c.Value("auth")) {
 		return nil, throwErr("参数错误")
 	}
-	if getIdentifyByVerify(c.Auth) == "" {
-		return nil, throwErr("Unauthorized")
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
 	}
-	list := getFormBriefList()
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+	list := getFormBriefList(teamID)
 	return Row{"list": list, "total": len(list)}, nil
 }
 
@@ -164,15 +183,20 @@ func formCreate(c *Ctx) (any, error) {
 	if !jsTruthy(c.Value("form_name")) || !jsTruthy(c.Value("auth")) {
 		return nil, throwErr("参数错误")
 	}
-	if getIdentifyByVerify(c.Auth) == "" {
-		return nil, throwErr("Unauthorized")
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
 	}
-	for _, name := range getFormList() {
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range getFormList(teamID) {
 		if name == formName {
 			return nil, throwErr("表单已存在")
 		}
 	}
-	id, ok := createField(Row{
+	id, ok := createField(teamID, Row{
 		"form_name": formName, "field_name": "new", "field_type": "text",
 		"required": false, "disabled": false,
 	})
@@ -188,7 +212,15 @@ func formUpdate(c *Ctx) (any, error) {
 	if !jsTruthy(c.Value("form_name")) || !jsTruthy(c.Value("new_name")) {
 		return nil, throwErr("参数错误")
 	}
-	if !updateFormName(formName, newName) {
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+	if !updateFormName(teamID, formName, newName) {
 		return nil, throwErr("修改表单失败")
 	}
 	return Row{}, nil
@@ -199,9 +231,14 @@ func formDel(c *Ctx) (any, error) {
 	if !jsTruthy(c.Value("form_name")) || !jsTruthy(c.Value("auth")) {
 		return nil, throwErr("参数错误")
 	}
-	if getIdentifyByVerify(c.Auth) == "" {
-		return nil, throwErr("Unauthorized")
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
 	}
-	deleteForm(formName)
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+	deleteForm(teamID, formName)
 	return Row{}, nil
 }

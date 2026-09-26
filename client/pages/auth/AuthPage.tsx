@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "../../methods/notify";
 import { setAuthStatus, setUserInfo } from "../../methods/auth";
+import { PENDING_INVITE_KEY, setTeams } from "../../methods/team";
 import { useAuth } from "../../methods/auth-context";
 import { Locale } from "../../methods/locale";
 import { decodeBase64 } from "../../methods/base64";
@@ -77,6 +78,15 @@ export default function Component() {
         setAuthStatus({ access_token: token, expires_in: 3600 });
         setUserInfo({ email: auth.email, is_admin: data.is_admin, roles: data.roles });
         setAuthInfo({ is_admin: data.is_admin, roles: data.roles });
+        if (data.teams) setTeams(data.teams);
+        // An invite link opened while logged out parked its code here; without
+        // this the link would appear to do nothing.
+        const pending = localStorage.getItem(PENDING_INVITE_KEY);
+        if (pending) {
+            navigate(`/join?c=${encodeURIComponent(pending)}`);
+            return;
+        }
+        // No team means onboarding, which TeamGate enforces on /form anyway.
         navigate("/form");
     }
 

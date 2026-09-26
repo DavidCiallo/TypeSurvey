@@ -1,5 +1,6 @@
 import { BaseRequest, BaseResponse } from "../../lib/default/decorator";
 import { AccountEntity } from "./auth.entity";
+import { TeamBrief } from "../team/team.entity";
 
 export class LoginBody {
     public email: string;
@@ -77,13 +78,15 @@ export class LoginRequest implements BaseRequest {
     }
 }
 
-export class LoginResponse implements BaseResponse<{ token: string; is_admin?: number; roles?: { name: string; type: string }[] }> {
+export class LoginResponse implements BaseResponse<{ token: string; is_admin?: number; roles?: { name: string; type: string }[]; teams?: TeamBrief[] }> {
     public success: boolean;
     public message: string;
     public data: {
         token: string;
         is_admin?: number;
         roles?: { name: string; type: string }[];
+        /** Empty means the account must create or join a team first. */
+        teams?: TeamBrief[];
     };
 
     constructor(origin: LoginResponse) {
@@ -124,10 +127,10 @@ export class AuthConfigResponse implements BaseResponse<{ allowed_domains: strin
     }
 }
 
-export class AliveResponse implements BaseResponse<{ is_admin?: number; roles?: { name: string; type: string }[] }> {
+export class AliveResponse implements BaseResponse<{ is_admin?: number; roles?: { name: string; type: string }[]; teams?: TeamBrief[] }> {
     public success: boolean;
     public message: string;
-    public data: { is_admin?: number; roles?: { name: string; type: string }[] };
+    public data: { is_admin?: number; roles?: { name: string; type: string }[]; teams?: TeamBrief[] };
 
     constructor(origin: AliveResponse) {
         this.success = origin.success;

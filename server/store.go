@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -228,10 +229,121 @@ type selectOpts struct {
 	skipDeleted bool
 	reverse     bool
 	limit       int // 0 = no limit
+
+	// inFilter pushes "col IN (…)" into the SQL so team scoping can use the
+	// composite indexes. An EMPTY value list matches nothing — it must never
+	// degrade into "no filter", which is how a scoping bug becomes a leak.
+	inFilter map[string][]string
+
+	// allTenants explicitly opts a tenant table out of scoping (system-admin
+	// views, full exports). Spelling it out keeps every bypass greppable.
+	allTenants bool
+}
+
+// enforceTenantScope arms the tenant-table guard: a query touching fields,
+// radios or records must name a team (or opt out with allTenants) or it panics.
+// That turns "forgot to scope" into an immediate, loud failure instead of a
+// silent cross-team read.
+const enforceTenantScope = true
+
+// tenantTables own data that must never be read or written without a team scope.
+var tenantTables = map[string]bool{"fields": true, "radios": true, "records": true}
+
+// hasTeamScope reports whether a where clause pins a single team. The value must
+// be a non-empty string: matches() treats "" as "ignore this condition", so an
+// empty team_id would otherwise pass the guard while filtering nothing.
+func hasTeamScope(where Row) bool {
+	s, ok := where["team_id"].(string)
+	return ok && s != ""
+}
+
+func assertScoped(table string, where Row, opts selectOpts) {
+	if !enforceTenantScope || !tenantTables[table] {
+		return
+	}
+	if opts.allTenants {
+		return
+	}
+	// Key present => the caller scoped deliberately (selectScoped always sets it,
+	// and an empty list is handled as "matches nothing" below).
+	if _, ok := opts.inFilter["team_id"]; ok {
+		return
+	}
+	if hasTeamScope(where) {
+		return
+	}
+	panic("tenant table " + table + " queried without a team scope (or allTenants)")
+}
+
+// assertScopedWrite is the same guard for update/delete paths, which build their
+// where clause by hand rather than going through selectOpts.
+func assertScopedWrite(table string, where Row) {
+	if !enforceTenantScope || !tenantTables[table] {
+		return
+	}
+	if !hasTeamScope(where) {
+		panic("tenant table " + table + " written without a team scope")
+	}
+}
+
+// scopedWhere copies where and pins it to one team. Returns nil when teamID is
+// empty, so callers fail closed instead of falling through to an unscoped write.
+func scopedWhere(where Row, teamID string) Row {
+	if teamID == "" {
+		return nil
+	}
+	out := Row{}
+	for k, v := range where {
+		out[k] = v
+	}
+	out["team_id"] = teamID
+	return out
+}
+
+// updateRowsIn / hardDeleteRowsIn are the write entry points for tenant tables.
+func updateRowsIn(table, teamID string, where Row, set Row) bool {
+	w := scopedWhere(where, teamID)
+	if w == nil {
+		return false
+	}
+	return updateRows(table, w, set)
+}
+
+func hardDeleteRowsIn(table, teamID string, where Row, inFilter map[string][]string) bool {
+	w := scopedWhere(where, teamID)
+	if w == nil {
+		return false
+	}
+	return hardDeleteRows(table, w, inFilter)
+}
+
+// selectOneAny is a capability lookup: it deliberately ignores team scoping, for
+// the few places where the lookup key is itself a globally unique public
+// capability — a field_id from a share link, or an item_id in the anonymous fill
+// flow. Every other lookup must be scoped.
+func selectOneAny(table string, where Row) Row {
+	rows := selectRows(table, where, selectOpts{skipDeleted: true, allTenants: true, limit: 1})
+	if len(rows) > 0 {
+		return rows[0]
+	}
+	return nil
+}
+
+// selectScoped is the entry point for tenant tables: it attaches the caller's
+// team scope, or bypasses scoping for a system admin.
+func selectScoped(table string, s scope, where Row, opts selectOpts) []Row {
+	if s.all {
+		opts.allTenants = true
+	} else {
+		opts.inFilter = map[string][]string{"team_id": s.teams}
+	}
+	return selectRows(table, where, opts)
 }
 
 // selectRows streams matching rows in seq order (file order parity).
 func selectRows(table string, where Row, opts selectOpts) []Row {
+	assertScoped(table, where, opts)
+
 	q := `SELECT body FROM ` + table
 	var conds []string
 	var args []any
@@ -248,6 +360,22 @@ func selectRows(table string, where Row, opts selectOpts) []Row {
 			}
 			conds = append(conds, col+" = ?")
 			args = append(args, asStr(val))
+		}
+	}
+	// Sorted so the generated SQL (and its query plan) is deterministic.
+	inCols := make([]string, 0, len(opts.inFilter))
+	for col := range opts.inFilter {
+		inCols = append(inCols, col)
+	}
+	sort.Strings(inCols)
+	for _, col := range inCols {
+		vals := opts.inFilter[col]
+		if len(vals) == 0 {
+			return nil // fail closed, never "no filter"
+		}
+		conds = append(conds, col+" IN ("+strings.Repeat("?,", len(vals)-1)+"?)")
+		for _, v := range vals {
+			args = append(args, v)
 		}
 	}
 	if len(conds) > 0 {
@@ -273,12 +401,36 @@ func selectRows(table string, where Row, opts selectOpts) []Row {
 		if !matches(row, where) {
 			continue
 		}
+		if !matchesInFilter(row, opts.inFilter) {
+			continue
+		}
 		out = append(out, row)
 		if opts.limit > 0 && len(out) >= opts.limit {
 			break
 		}
 	}
 	return out
+}
+
+// matchesInFilter re-checks the IN filter against the decoded body. The SQL
+// clause already applied it, but selectRows re-verifies `where` in Go for the
+// same reason: body and column can drift (JSONL import, manual edits), and the
+// safe direction to fail is "exclude".
+func matchesInFilter(row Row, inFilter map[string][]string) bool {
+	for col, vals := range inFilter {
+		got := asStr(row[col])
+		found := false
+		for _, v := range vals {
+			if got == v {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // selectEach streams every matching row forward (like findEach).
@@ -320,6 +472,12 @@ func selectOneIgnoreDelete(table string, where Row) Row {
 // (repository.ts findAllIgnoreDelete).
 func selectAll(table string) []Row {
 	return selectRows(table, Row{}, selectOpts{})
+}
+
+// selectAllAny is the whole-database backup read: it deliberately ignores tenant
+// scoping, because an admin backup must contain every team's rows.
+func selectAllAny(table string) []Row {
+	return selectRows(table, Row{}, selectOpts{allTenants: true})
 }
 
 // persistRow writes body + queryable columns back for one id.
@@ -498,6 +656,8 @@ func hardDeleteRows(table string, where Row, inFilter map[string][]string) bool 
 // strictSelect applies update()/hardDelete() where semantics: strict equality
 // on every key (including empty strings), no matches() skipping.
 func strictSelect(table string, where Row, skipDeleted bool) []Row {
+	assertScopedWrite(table, where)
+
 	q := `SELECT body FROM ` + table
 	var conds []string
 	var args []any
