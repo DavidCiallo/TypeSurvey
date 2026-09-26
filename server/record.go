@@ -34,14 +34,25 @@ func getRecordsAny(itemID string) []Row {
 // a public write inside the right tenant.
 func submitRecord(record Row) bool {
 	fieldID := asStr(record["field_id"])
-	field := selectOneAny("fields", Row{"id": fieldID})
-	if field == nil {
+	teamID, formName := resolveFormByField(fieldID)
+	if formName == "" {
 		return false
 	}
-	teamID := asStr(field["team_id"])
-	record["team_id"] = teamID
+	itemID := asStr(record["item_id"])
 
-	if exist := selectOne("records", Row{"team_id": teamID, "item_id": record["item_id"], "field_id": fieldID}); exist != nil {
+	// Every answer filed under one item must belong to one form. Without this a
+	// caller who knows two field_ids could staple one form's field onto another
+	// item and merge two responses into a single row — which the admin reads as
+	// a corrupted record rather than as something anyone did on purpose.
+	if existing := getRecordsAny(itemID); len(existing) > 0 {
+		eTeam, eForm := resolveFormByField(asStr(existing[0]["field_id"]))
+		if eTeam != teamID || eForm != formName {
+			return false
+		}
+	}
+
+	record["team_id"] = teamID
+	if exist := selectOne("records", Row{"team_id": teamID, "item_id": itemID, "field_id": fieldID}); exist != nil {
 		return updateRowsIn("records", teamID, Row{"id": exist["id"]}, Row{"field_value": record["field_value"]})
 	}
 	insertRow("records", record)
@@ -210,9 +221,17 @@ func recordHistory(c *Ctx) (any, error) {
 		if formName == "" {
 			return nil, throwErr("表单不存在")
 		}
+		// A four-digit code is only enough because guessing is throttled per id:
+		// the code always travels together with the item_id, so the id is the
+		// thing worth locking after repeated mistakes.
+		if !recordCodeLimiter.allow(id) {
+			return nil, throwErr("尝试次数过多，请稍后再试")
+		}
 		if code == "" || code != codeGenerate(id) {
+			recordCodeLimiter.fail(id)
 			return nil, throwErr("鉴权失败")
 		}
+		recordCodeLimiter.reset(id)
 		return Row{"form_name": formName, "item_id": records[0]["item_id"], "code": code,
 			"fields": getFieldList(teamID, formName), "records": records}, nil
 	}
@@ -224,13 +243,23 @@ func recordHistory(c *Ctx) (any, error) {
 	}
 
 	// 2. stored_item_id 可用且属于同一个 form → 恢复该 item 的草稿
-	if jsTruthy(c.Value("item_id")) && code == codeGenerate(storedItemID) {
-		draft := getRecordsAny(storedItemID)
-		sameForm := len(draft) > 0 && asStr(draft[0]["field_id"]) != "" &&
-			fieldBelongsToForm(asStr(draft[0]["field_id"]), teamID, urlFormName)
-		if sameForm {
-			return Row{"form_name": urlFormName, "item_id": storedItemID, "code": code,
-				"fields": getFieldList(teamID, urlFormName), "records": draft}, nil
+	if jsTruthy(c.Value("item_id")) {
+		// Same throttle as above: this branch is the other way to ask "is this
+		// item_id + code pair correct?".
+		if !recordCodeLimiter.allow(storedItemID) {
+			return nil, throwErr("尝试次数过多，请稍后再试")
+		}
+		if code == codeGenerate(storedItemID) {
+			recordCodeLimiter.reset(storedItemID)
+			draft := getRecordsAny(storedItemID)
+			sameForm := len(draft) > 0 && asStr(draft[0]["field_id"]) != "" &&
+				fieldBelongsToForm(asStr(draft[0]["field_id"]), teamID, urlFormName)
+			if sameForm {
+				return Row{"form_name": urlFormName, "item_id": storedItemID, "code": code,
+					"fields": getFieldList(teamID, urlFormName), "records": draft}, nil
+			}
+		} else {
+			recordCodeLimiter.fail(storedItemID)
 		}
 	}
 
@@ -257,9 +286,14 @@ func recordSubmit(c *Ctx) (any, error) {
 	if jsUtf16Len(text) > 0x3e8 {
 		return nil, throwErr("内容过长")
 	}
-	submitRecord(Row{
+	if !submitRecord(Row{
 		"item_id": c.Str("item_id"), "field_id": c.Str("field_id"), "field_value": value,
-	})
+	}) {
+		// Either the field is gone or the item belongs to another form. Both used
+		// to be swallowed, which meant an answer could be dropped while the
+		// respondent was told it was saved.
+		return nil, throwErr("提交失败")
+	}
 	return Row{}, nil
 }
 
