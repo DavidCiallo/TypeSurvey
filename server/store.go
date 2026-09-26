@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -228,10 +229,52 @@ type selectOpts struct {
 	skipDeleted bool
 	reverse     bool
 	limit       int // 0 = no limit
+
+	// inFilter pushes "col IN (…)" into the SQL so team scoping can use the
+	// composite indexes. An EMPTY value list matches nothing — it must never
+	// degrade into "no filter", which is how a scoping bug becomes a leak.
+	inFilter map[string][]string
+
+	// allTenants explicitly opts a tenant table out of scoping (system-admin
+	// views, full exports). Spelling it out keeps every bypass greppable.
+	allTenants bool
+}
+
+// enforceTenantScope arms the tenant-table guard. It stays off while call sites
+// are being converted and is flipped on by the change that finishes the
+// migration, so every step in between still builds and runs.
+const enforceTenantScope = false
+
+// tenantTables own data that must never be read without a team scope.
+var tenantTables = map[string]bool{"fields": true, "radios": true, "records": true}
+
+func assertScoped(table string, opts selectOpts) {
+	if !enforceTenantScope || !tenantTables[table] {
+		return
+	}
+	if opts.allTenants {
+		return
+	}
+	if _, ok := opts.inFilter["team_id"]; !ok {
+		panic("tenant table " + table + " queried without team scope or allTenants")
+	}
+}
+
+// selectScoped is the entry point for tenant tables: it attaches the caller's
+// team scope, or bypasses scoping for a system admin.
+func selectScoped(table string, s scope, where Row, opts selectOpts) []Row {
+	if s.all {
+		opts.allTenants = true
+	} else {
+		opts.inFilter = map[string][]string{"team_id": s.teams}
+	}
+	return selectRows(table, where, opts)
 }
 
 // selectRows streams matching rows in seq order (file order parity).
 func selectRows(table string, where Row, opts selectOpts) []Row {
+	assertScoped(table, opts)
+
 	q := `SELECT body FROM ` + table
 	var conds []string
 	var args []any
@@ -248,6 +291,22 @@ func selectRows(table string, where Row, opts selectOpts) []Row {
 			}
 			conds = append(conds, col+" = ?")
 			args = append(args, asStr(val))
+		}
+	}
+	// Sorted so the generated SQL (and its query plan) is deterministic.
+	inCols := make([]string, 0, len(opts.inFilter))
+	for col := range opts.inFilter {
+		inCols = append(inCols, col)
+	}
+	sort.Strings(inCols)
+	for _, col := range inCols {
+		vals := opts.inFilter[col]
+		if len(vals) == 0 {
+			return nil // fail closed, never "no filter"
+		}
+		conds = append(conds, col+" IN ("+strings.Repeat("?,", len(vals)-1)+"?)")
+		for _, v := range vals {
+			args = append(args, v)
 		}
 	}
 	if len(conds) > 0 {
@@ -273,12 +332,36 @@ func selectRows(table string, where Row, opts selectOpts) []Row {
 		if !matches(row, where) {
 			continue
 		}
+		if !matchesInFilter(row, opts.inFilter) {
+			continue
+		}
 		out = append(out, row)
 		if opts.limit > 0 && len(out) >= opts.limit {
 			break
 		}
 	}
 	return out
+}
+
+// matchesInFilter re-checks the IN filter against the decoded body. The SQL
+// clause already applied it, but selectRows re-verifies `where` in Go for the
+// same reason: body and column can drift (JSONL import, manual edits), and the
+// safe direction to fail is "exclude".
+func matchesInFilter(row Row, inFilter map[string][]string) bool {
+	for col, vals := range inFilter {
+		got := asStr(row[col])
+		found := false
+		for _, v := range vals {
+			if got == v {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // selectEach streams every matching row forward (like findEach).

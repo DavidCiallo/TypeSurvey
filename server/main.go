@@ -84,6 +84,13 @@ func main() {
 		}
 	}
 
+	// Multi-tenancy: hand every pre-existing row to a default team owned by the
+	// first admin. Must run after the admin exists (it owns the migrated data)
+	// and after migrateJSONL (which imports rows with no team yet).
+	if err := migrateToTeamModel(); err != nil {
+		log.Fatalf("Team migration failed: %v", err)
+	}
+
 	registerRoutes()
 
 	server := &http.Server{
