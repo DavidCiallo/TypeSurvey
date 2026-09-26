@@ -131,12 +131,16 @@ func getAccountByEmail(email string) Row {
 	return selectOne("accounts", Row{"email": email})
 }
 
+// menuRoles returns the menus an account may see.
+//
+// Both admins and team members get the full set: outside multi-tenancy only
+// admins received menus, which left every other registered account unable to
+// reach any screen. A non-admin is now a full user of their own team's data, and
+// the team scope is what limits them — not the menu list.
 func menuRoles(isAdmin int64) []any {
 	roles := []any{}
-	if isAdmin != 0 {
-		for _, name := range allMenus {
-			roles = append(roles, Row{"name": name, "type": "menu"})
-		}
+	for _, name := range allMenus {
+		roles = append(roles, Row{"name": name, "type": "menu"})
 	}
 	return roles
 }
@@ -163,7 +167,14 @@ func loginUser(email, password string) Row {
 		}
 	}
 	isAdmin := asInt64(account["is_admin"])
-	return Row{"token": genTokenForIdentify(email), "is_admin": account["is_admin"], "roles": menuRoles(isAdmin)}
+	// teams lets the client decide between the app and onboarding; an empty list
+	// means the account must create or join one first.
+	return Row{
+		"token":    genTokenForIdentify(email),
+		"is_admin": account["is_admin"],
+		"roles":    menuRoles(isAdmin),
+		"teams":    visibleTeams(scopeForAccount(account), asStr(account["id"])),
+	}
 }
 
 func checkAllowedDomain(email string) string {

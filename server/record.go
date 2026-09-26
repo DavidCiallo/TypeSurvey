@@ -9,28 +9,55 @@ import (
 
 // Record module — submitted form data, grouped per item — mirrors
 // server/modules/record/*.
+//
+// Two kinds of lookup live here and they must not be confused:
+//   - authenticated admin paths, scoped by (team_id, form_name);
+//   - the anonymous fill flow, where the item_id / field_id from the share link
+//     IS the capability and there is no team to scope by. Those use the *Any
+//     helpers, which deliberately skip the tenant filter.
 
 // getRecords returns the item's rows newest-append-first (repository find()).
-func getRecords(itemID string) []Row {
-	return selectRows("records", Row{"item_id": itemID}, selectOpts{skipDeleted: true, reverse: true})
+func getRecords(teamID, itemID string) []Row {
+	return selectRows("records", Row{"team_id": teamID, "item_id": itemID},
+		selectOpts{skipDeleted: true, reverse: true})
 }
 
+// getRecordsAny is the anonymous fill-flow lookup: the item_id is the capability
+// (paired with the access code) and the respondent has no team.
+func getRecordsAny(itemID string) []Row {
+	return selectRows("records", Row{"item_id": itemID},
+		selectOpts{skipDeleted: true, reverse: true, allTenants: true})
+}
+
+// submitRecord upserts one answer. The owning team is resolved from the field,
+// because this runs on the anonymous path: stamping team_id here is what keeps
+// a public write inside the right tenant.
 func submitRecord(record Row) bool {
-	itemID, fieldID := record["item_id"], record["field_id"]
-	if exist := selectOne("records", Row{"item_id": itemID, "field_id": fieldID}); exist != nil {
-		return updateRows("records", Row{"id": exist["id"]}, Row{"field_value": record["field_value"]})
+	fieldID := asStr(record["field_id"])
+	field := selectOneAny("fields", Row{"id": fieldID})
+	if field == nil {
+		return false
+	}
+	teamID := asStr(field["team_id"])
+	record["team_id"] = teamID
+
+	if exist := selectOne("records", Row{"team_id": teamID, "item_id": record["item_id"], "field_id": fieldID}); exist != nil {
+		return updateRowsIn("records", teamID, Row{"id": exist["id"]}, Row{"field_value": record["field_value"]})
 	}
 	insertRow("records", record)
 	return true
 }
 
-func insertRecords(records []Row) bool {
+func insertRecords(teamID string, records []Row) bool {
+	for _, r := range records {
+		r["team_id"] = teamID
+	}
 	batchInsertRows("records", records)
 	return true
 }
 
-func deleteRecordByItem(itemID string) {
-	hardDeleteRows("records", Row{"item_id": itemID}, nil)
+func deleteRecordByItem(teamID, itemID string) {
+	hardDeleteRowsIn("records", teamID, Row{"item_id": itemID}, nil)
 }
 
 // ---------- pinyin search helpers (pinyin-pro parity) ----------
@@ -79,12 +106,12 @@ func recordMatchesSearch(value any, query string) bool {
 
 // ---------- grouped listing ----------
 
-// getAllRecord groups records by item_id (newest submit first), with
+// getAllRecord groups a team's records by item_id (newest submit first), with
 // case-insensitive + pinyin search and pagination — semantics copied from
 // record.service getAllRecord.
-func getAllRecord(formName string, page, pageSize int, search string) Row {
+func getAllRecord(teamID, formName string, page, pageSize int, search string) Row {
 	fieldIDs := map[string]bool{}
-	selectEach("fields", Row{"form_name": formName}, func(field Row) {
+	selectEach("fields", Row{"team_id": teamID, "form_name": formName}, func(field Row) {
 		fieldIDs[asStr(field["id"])] = true
 	})
 	if len(fieldIDs) == 0 {
@@ -93,7 +120,7 @@ func getAllRecord(formName string, page, pageSize int, search string) Row {
 
 	groupOrder := []string{}
 	groups := map[string][]Row{}
-	selectEach("records", Row{}, func(record Row) {
+	selectEach("records", Row{"team_id": teamID}, func(record Row) {
 		if !fieldIDs[asStr(record["field_id"])] {
 			return
 		}
@@ -176,41 +203,49 @@ func recordHistory(c *Ctx) (any, error) {
 	storedItemID := c.Str("item_id")
 
 	// 1. id 是 item_id（已存在的记录）→ 直接返回该记录数据
-	records := getRecords(id)
+	records := getRecordsAny(id)
 	if len(records) > 0 {
-		fieldID := records[0]["field_id"]
-		itemID := records[0]["item_id"]
-		formName := getFormNameByField(asStr(fieldID))
+		fieldID := asStr(records[0]["field_id"])
+		teamID, formName := resolveFormByField(fieldID)
 		if formName == "" {
 			return nil, throwErr("表单不存在")
 		}
 		if code == "" || code != codeGenerate(id) {
 			return nil, throwErr("鉴权失败")
 		}
-		return Row{"form_name": formName, "item_id": itemID, "code": code,
-			"fields": getFieldList(formName), "records": records}, nil
+		return Row{"form_name": formName, "item_id": records[0]["item_id"], "code": code,
+			"fields": getFieldList(teamID, formName), "records": records}, nil
 	}
 
-	// 到这里 id 一定是 field_id。算出 URL 对应的 form。
-	urlFormName := getFormNameByField(id)
+	// 到这里 id 一定是 field_id。算出 URL 对应的 form 与所属团队。
+	teamID, urlFormName := resolveFormByField(id)
 	if urlFormName == "" {
 		return nil, throwErr("表单不存在")
 	}
 
 	// 2. stored_item_id 可用且属于同一个 form → 恢复该 item 的草稿
 	if jsTruthy(c.Value("item_id")) && code == codeGenerate(storedItemID) {
-		draft := getRecords(storedItemID)
-		sameForm := len(draft) > 0 && getFormNameByField(asStr(draft[0]["field_id"])) == urlFormName
+		draft := getRecordsAny(storedItemID)
+		sameForm := len(draft) > 0 && asStr(draft[0]["field_id"]) != "" &&
+			fieldBelongsToForm(asStr(draft[0]["field_id"]), teamID, urlFormName)
 		if sameForm {
 			return Row{"form_name": urlFormName, "item_id": storedItemID, "code": code,
-				"fields": getFieldList(urlFormName), "records": draft}, nil
+				"fields": getFieldList(teamID, urlFormName), "records": draft}, nil
 		}
 	}
 
 	// 3. 否则：新记录
 	itemID := nanoID(6)
 	return Row{"form_name": urlFormName, "item_id": itemID, "code": codeGenerate(itemID),
-		"fields": getFieldList(urlFormName), "records": []Row{}}, nil
+		"fields": getFieldList(teamID, urlFormName), "records": []Row{}}, nil
+}
+
+// fieldBelongsToForm reports whether a field is part of the given form. Replaces
+// the old getFormNameByField(...) == name comparison, which could not tell two
+// teams' identically-named forms apart.
+func fieldBelongsToForm(fieldID, teamID, formName string) bool {
+	ft, fn := resolveFormByField(fieldID)
+	return ft == teamID && fn == formName
 }
 
 func recordSubmit(c *Ctx) (any, error) {
@@ -237,14 +272,19 @@ func recordAll(c *Ctx) (any, error) {
 	if !ok || pageNum < 1 {
 		return nil, throwErr("参数错误")
 	}
-	if getIdentifyByVerify(c.Auth) == "" {
-		return nil, throwErr("Unauthorized")
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
 	}
 	search := ""
 	if c.Truthy("search") {
 		search = c.Str("search")
 	}
-	return getAllRecord(formName, int(pageNum), 10, search), nil
+	return getAllRecord(teamID, formName, int(pageNum), 10, search), nil
 }
 
 func recordDel(c *Ctx) (any, error) {
@@ -252,9 +292,14 @@ func recordDel(c *Ctx) (any, error) {
 	if !jsTruthy(c.Value("item_id")) || !jsTruthy(c.Value("auth")) {
 		return nil, throwErr("参数错误")
 	}
-	if getIdentifyByVerify(c.Auth) == "" {
-		return nil, throwErr("Unauthorized")
+	s, err := callerScope(c)
+	if err != nil {
+		return nil, err
 	}
-	deleteRecordByItem(itemID)
+	teamID, err := resolveTeamID(c, s)
+	if err != nil {
+		return nil, err
+	}
+	deleteRecordByItem(teamID, itemID)
 	return Row{}, nil
 }

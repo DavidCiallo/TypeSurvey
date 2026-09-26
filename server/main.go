@@ -55,6 +55,22 @@ func registerRoutes() {
 	route("/api/settings/save", policyAdmin, false, settingsSave)
 	route("/api/app/export", policyAdmin, false, appExport)
 	route("/api/app/import", policyAdmin, false, appImport)
+
+	// team (multi-tenancy). All routes need an identity; membership is then
+	// resolved per team inside the handlers. list/create/join deliberately work
+	// for an account that has no team yet — that is onboarding.
+	route("/api/team/list", policyUser, false, teamList)
+	route("/api/team/create", policyUser, false, teamCreate)
+	route("/api/team/update", policyUser, false, teamUpdate)
+	route("/api/team/del", policyUser, false, teamDel)
+	route("/api/team/restore", policyAdmin, false, teamRestore)
+	route("/api/team/member/list", policyUser, false, teamMemberList)
+	route("/api/team/member/remove", policyUser, false, teamMemberRemove)
+	route("/api/team/leave", policyUser, false, teamLeave)
+	route("/api/team/invite/create", policyUser, false, teamInviteCreate)
+	route("/api/team/invite/list", policyUser, false, teamInviteList)
+	route("/api/team/invite/revoke", policyUser, false, teamInviteRevoke)
+	route("/api/team/join", policyUser, false, teamJoin)
 }
 
 func main() {

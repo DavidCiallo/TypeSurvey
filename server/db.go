@@ -281,6 +281,25 @@ func migrateToTeamModel() error {
 	if metaGet("team_migrated") == "1" {
 		return nil
 	}
+
+	// Only needed when there is pre-team data to hand over. On a fresh install
+	// every row already carries a team_id, and creating a default team there
+	// would be actively harmful: it would spend the first admin's one-team
+	// allowance on a team they never asked for, leaving team/create permanently
+	// refused for them.
+	needsTeam := 0
+	for _, table := range []string{"fields", "radios", "records"} {
+		for _, row := range selectRows(table, Row{}, selectOpts{allTenants: true}) {
+			if asStr(row["team_id"]) == "" {
+				needsTeam++
+			}
+		}
+	}
+	if needsTeam == 0 {
+		metaSet("team_migrated", "1")
+		return nil
+	}
+
 	// Not selectOne(Row{"is_admin": 1}): matches()/strictEq resolve numbers via
 	// jsNumber, which has no Go int case, so a literal int here would silently
 	// never match. asInt64 is what the rest of the codebase uses for this flag.
@@ -292,7 +311,7 @@ func migrateToTeamModel() error {
 		}
 	}
 	if admin == nil {
-		// Fresh install with no admin configured yet. Leave the marker unset so
+		// Pre-team data but no admin configured yet. Leave the marker unset so
 		// this retries next boot rather than stranding the data.
 		return nil
 	}
