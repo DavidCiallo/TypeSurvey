@@ -40,6 +40,10 @@ export class FileXlsxResponse implements BaseResponse<{
     tempid: string;
     header: Array<XlsxHeader>;
     size: number;
+    /** Best-matching existing form for this sheet ("" = none). */
+    match_form?: string;
+    /** How many columns that form covers. */
+    match_num?: number;
 }> {
     public success: boolean;
     public message?: string;
@@ -47,6 +51,8 @@ export class FileXlsxResponse implements BaseResponse<{
         tempid: string;
         header: Array<XlsxHeader>;
         size: number;
+        match_form?: string;
+        match_num?: number;
     };
     constructor(origin: FileXlsxResponse) {
         this.success = origin.success;
@@ -61,6 +67,8 @@ export class FileConfirmRequest implements BaseRequest {
     public usedata: boolean;
     public fields: FieldCache[];
     public time_field_index?: number;
+    /** Import into this existing form instead of the matched/new one. */
+    public target_form?: string;
 
     constructor(origin: Partial<FileConfirmRequest>) {
         if (!origin.tempid) throw new Error("Temp ID is required");
@@ -70,6 +78,7 @@ export class FileConfirmRequest implements BaseRequest {
         this.usedata = origin.usedata || false;
         this.fields = origin.fields;
         this.time_field_index = origin.time_field_index;
+        this.target_form = origin.target_form;
     }
 
     static self(unsafe: FileConfirmRequest) {

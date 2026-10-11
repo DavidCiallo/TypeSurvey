@@ -29,10 +29,38 @@ import { Locale } from "../../methods/locale";
 import { XlsxHeader } from "../../../shared/modules/file/file.interface";
 import { FieldTypeList } from "./types";
 import { FieldType } from "../../../shared/impl/field";
+import { FieldRouter } from "../../api/instance";
+
+// Sentinel for "create a new form"; form names are user text, so it cannot
+// collide with a real one the way an empty value would.
+const newFormValue = "\u0000new-form";
+
+type MatchState = "matched" | "ignored" | "created";
+
+// matchKey folds a column name the way server/xlsx.go matchHeaderKey does, so
+// the dialog agrees with the backend about which columns line up.
+function matchKey(name: string): string {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[\s\u3000]+/g, "")
+        .replace(/（/g, "(")
+        .replace(/）/g, ")")
+        .replace(/[：]/g, ":")
+        .replace(/，/g, ",")
+        .replace(/．/g, ".")
+        .replace(/－/g, "-")
+        .replace(/\([^()]*\)$/, "")
+        .replace(/^((?:列|字段|column|col|field)\d*)$/i, "")
+        .replace(/[\s_-]+\d+$/, "");
+}
 
 type props = {
     isOpen: boolean;
     header: Array<XlsxHeader>;
+    formList: string[];
+    matchForm: string;
+    matchNum: number;
     onOpenChange: (v: boolean) => void;
     onSubmit: (
         data: Array<{
@@ -42,14 +70,17 @@ type props = {
         }>,
         usedata: boolean,
         timeFieldIndex?: number,
+        targetForm?: string,
     ) => void;
 };
 
-const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
+const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChange, onSubmit }: props) => {
     const [checks, setChecks] = useState<boolean[]>([]);
     const [fields, setFields] = useState<string[]>([]);
     const [types, setTypes] = useState<FieldType[]>([]);
     const [timeFieldIndex, setTimeFieldIndex] = useState<string>("none");
+    const [targetForm, setTargetForm] = useState<string>(newFormValue);
+    const [targetFields, setTargetFields] = useState<string[]>([]);
 
     useEffect(() => {
         if (header.length > 0) {
@@ -57,10 +88,40 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
             setFields(header.map((i) => i.field));
             setTypes(header.map((i) => i.type));
             setTimeFieldIndex("none");
+            setTargetForm(matchForm || newFormValue);
         }
-    }, [header]);
+    }, [header, matchForm]);
+
+    // The chosen form's own field names, used to tell the user which columns
+    // carry data and which are dropped. The API pages at 10, so walk them all.
+    useEffect(() => {
+        if (targetForm === newFormValue) {
+            setTargetFields([]);
+            return;
+        }
+        (async () => {
+            const names: string[] = [];
+            let total = Infinity;
+            for (let page = 1; names.length < total; page++) {
+                const { success, data } = await FieldRouter.list({ form_name: targetForm, page });
+                if (!success || !data || data.list.length === 0) break;
+                names.push(...data.list.map((f) => f.field_name));
+                total = data.total;
+            }
+            setTargetFields(names);
+        })();
+    }, [targetForm]);
 
     const locale = Locale("FormImport");
+
+    // Which columns carry data into the chosen form; a new form takes them all.
+    const targetKeys = new Set(targetFields.map(matchKey));
+    const matchStates: MatchState[] = header.map((_, index) => {
+        if (targetForm === newFormValue) return "created";
+        const key = matchKey(fields[index] ?? "");
+        return key && targetKeys.has(key) ? "matched" : "ignored";
+    });
+    const matchedNum = matchStates.filter((s) => s === "matched").length;
 
     const handleSubmit = (usedata: boolean) => {
         const fieldData = checks.map((_, index) => ({
@@ -69,7 +130,7 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
             type: types[index],
         }));
         const tfi = timeFieldIndex === "none" ? undefined : Number(timeFieldIndex);
-        onSubmit(fieldData, usedata, tfi);
+        onSubmit(fieldData, usedata, tfi, targetForm === newFormValue ? undefined : targetForm);
     };
 
     return (
@@ -78,6 +139,36 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
                 <DialogHeader>
                     <DialogTitle>{locale.FieldName}</DialogTitle>
                 </DialogHeader>
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-muted-foreground text-sm whitespace-nowrap">{locale.TargetForm}</span>
+                    <Select value={targetForm} onValueChange={setTargetForm}>
+                        <SelectTrigger className="w-56">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={newFormValue}>{locale.NewForm}</SelectItem>
+                            {formList.map((name) => (
+                                <SelectItem key={name} value={name}>
+                                    {name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {targetForm === newFormValue ? (
+                        <span className="text-muted-foreground text-xs">{locale.MatchNone}</span>
+                    ) : (
+                        <span className="text-muted-foreground text-xs">
+                            {matchedNum > 0
+                                ? locale.MatchFound
+                                      .replace("{matched}", String(matchedNum))
+                                      .replace("{total}", String(header.length))
+                                : locale.MatchNone}
+                        </span>
+                    )}
+                    {matchForm === targetForm && matchNum > 0 && (
+                        <Badge variant="secondary">{locale.MatchSuggested}</Badge>
+                    )}
+                </div>
                 <div className="max-h-[60vh] overflow-auto">
                     <Table>
                         <TableHeader>
@@ -134,11 +225,17 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <div className="flex flex-wrap justify-center gap-1">
-                                            {i.sub.map((s, idx) => (
-                                                <Badge key={idx} variant="secondary">
-                                                    {s}
+                                            {matchStates[index] === "ignored" ? (
+                                                <Badge variant="outline" className="text-muted-foreground">
+                                                    {locale.NotImported}
                                                 </Badge>
-                                            ))}
+                                            ) : (
+                                                i.sub.map((s, idx) => (
+                                                    <Badge key={idx} variant="secondary">
+                                                        {s}
+                                                    </Badge>
+                                                ))
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -164,11 +261,13 @@ const FormImport = ({ isOpen, header, onOpenChange, onSubmit }: props) => {
                     <span className="text-muted-foreground/60 text-xs">选择一列作为记录的创建/更新时间</span>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => handleSubmit(false)}>
-                        {locale.SaveEmpty}
-                    </Button>
-                    <Button onClick={() => handleSubmit(true)}>
-                        {locale.SaveData}
+                    {targetForm === newFormValue && (
+                        <Button variant="outline" onClick={() => handleSubmit(false)}>
+                            {locale.SaveEmpty}
+                        </Button>
+                    )}
+                    <Button onClick={() => handleSubmit(true)} disabled={targetForm !== newFormValue && matchedNum === 0}>
+                        {targetForm === newFormValue ? locale.SaveData : locale.SaveIntoForm}
                     </Button>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
                         {Locale("Common").ButtonCancel}

@@ -81,6 +81,22 @@
         "ToastCreateFormFailed": "Failed to create form, a form with the same name may exist",
         "ToastEditFormFailed": "Failed to modify form, a form with the same name may exist"
     },
+    "FormImport": {
+        "UsefulField": "Use",
+        "FieldName": "Field Name",
+        "FieldComment": "Field Comment",
+        "FieldType": "Field Type",
+        "SubList": "Options",
+        "SaveEmpty": "Create Form Only",
+        "SaveData": "Create Form and Save Data",
+        "TargetForm": "Import into",
+        "NewForm": "New Form",
+        "MatchSuggested": "Auto-matched",
+        "MatchFound": "Matched {matched}/{total} columns",
+        "MatchNone": "No matching field — pick another form",
+        "NotImported": "Skipped",
+        "SaveIntoForm": "Import into This Form"
+    },
     "FormEditor": {
         "FormNameLabel": "Form Name",
         "FormNamePlaceholder": "Please enter form name"

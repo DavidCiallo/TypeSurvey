@@ -89,7 +89,14 @@
         "FieldType": "字段类型",
         "SubList": "辅助字段",
         "SaveEmpty": "仅创建表单",
-        "SaveData": "同时保存数据"
+        "SaveData": "同时保存数据",
+        "TargetForm": "导入到",
+        "NewForm": "新建表单",
+        "MatchSuggested": "自动匹配",
+        "MatchFound": "匹配 {matched}/{total} 列",
+        "MatchNone": "无匹配字段，请选择其他表单",
+        "NotImported": "不导入",
+        "SaveIntoForm": "导入到此表单"
     },
     "FormAddBtn": {
         "CreateNewForm": "新建表单",

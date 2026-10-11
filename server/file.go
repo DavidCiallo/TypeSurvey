@@ -30,6 +30,10 @@ type tempData struct {
 	filename string
 	header   []Row   // [{field, type, sub}] as produced by analyzeXlsx/analyzeCellType
 	data     [][]any // raw sheet rows (string | null)
+	// matchForm is the existing form this sheet's header fits ("" to create a
+	// new form), matchIDs the field id each sheet column maps to on it.
+	matchForm string
+	matchIDs  []string
 }
 
 var (
@@ -82,7 +86,7 @@ func fileReadXlsx(c *Ctx) (any, error) {
 	fileMu.Unlock()
 
 	if totalReceived < size {
-		return Row{"tempid": "", "header": []any{}, "size": 0}, nil
+		return Row{"tempid": "", "header": []any{}, "size": 0, "match_form": "", "match_num": 0}, nil
 	}
 
 	sort.SliceStable(mine, func(i, j int) bool { return mine[i].chunkSite < mine[j].chunkSite })
@@ -99,6 +103,10 @@ func fileReadXlsx(c *Ctx) (any, error) {
 		return nil, throwErr(err.Error())
 	}
 
+	// Which existing form does this sheet belong to? Recomputed here rather
+	// than stored, so the suggestion always reflects the forms as they are now.
+	matchForm, matchNum, matchIDs := matchTargetForm(header)
+
 	result := []Row{}
 	for i, field := range header {
 		cells := make([]any, len(data))
@@ -107,12 +115,15 @@ func fileReadXlsx(c *Ctx) (any, error) {
 				cells[r] = data[r][i]
 			}
 		}
-		typ, sub := analyzeCellType(cells)
+		typ, sub := analyzeCellType(asStr(field), cells)
 		result = append(result, Row{"field": field, "type": typ, "sub": sub})
 	}
 
 	fileMu.Lock()
-	dataList = append(dataList, tempData{tempid: fileid, filename: filename, header: result, data: data})
+	dataList = append(dataList, tempData{
+		tempid: fileid, filename: filename, header: result, data: data,
+		matchForm: matchForm, matchIDs: matchIDs,
+	})
 	kept := chunkList[:0]
 	for _, chunk := range chunkList {
 		if chunk.fileid != fileid {
@@ -122,7 +133,7 @@ func fileReadXlsx(c *Ctx) (any, error) {
 	chunkList = kept
 	fileMu.Unlock()
 
-	return Row{"tempid": fileid, "header": result, "size": len(data)}, nil
+	return Row{"tempid": fileid, "header": result, "size": len(data), "match_form": matchForm, "match_num": matchNum}, nil
 }
 
 var sanitizeFormName = regexp.MustCompile(`[^a-zA-Z0-9\x{4e00}-\x{9fa5}]`)
@@ -147,7 +158,45 @@ func fileConfirm(c *Ctx) (any, error) {
 	}
 	existData := dataList[existIndex]
 	header, data, filename := existData.header, existData.data, existData.filename
+	targetForm, matchIDs := existData.matchForm, existData.matchIDs
 	fileMu.Unlock()
+
+	// A target form was named explicitly ("import into this form"), otherwise
+	// fall back to the form the header matched. Either way the form must still
+	// exist by the time we write: the fields are created up front when it does
+	// not, so a stale suggestion degrades into "create a new form".
+	requested := c.Str("target_form")
+	if !jsTruthy(c.Value("target_form")) {
+		requested = targetForm
+	}
+	if requested != "" && selectOne("fields", Row{"form_name": requested}) == nil {
+		requested = ""
+	}
+
+	if requested != "" {
+		if !usedata {
+			return Row{"success": true}, nil
+		}
+		// Only the columns naming one of the target's fields are imported; the
+		// rest are ignored rather than added as new fields.
+		formName := requested
+		fieldValues := matchIDs
+		if jsTruthy(c.Value("target_form")) {
+			columns := make([]string, len(header))
+			for i, h := range header {
+				columns[i] = matchHeaderKey(asStr(h["field"]))
+			}
+			byKey := fieldKeysByColumn(getFieldList(formName))
+			fieldValues = matchColumns(columns, byKey)
+		}
+
+		fileMu.Lock()
+		dataList = append(dataList[:existIndex], dataList[existIndex+1:]...)
+		fileMu.Unlock()
+
+		insertMatchedRecords(formName, header, data, fieldValues, timeFieldIndex, hasTimeField)
+		return Row{"success": true}, nil
+	}
 
 	formName := sanitizeFormName.ReplaceAllString(filename, "") + randSuffix(4)
 
@@ -201,6 +250,31 @@ func fileConfirm(c *Ctx) (any, error) {
 		return Row{"success": true}, nil
 	}
 
+	// Columns are addressed by their edited name, which createField has just
+	// made unique within the new form.
+	fieldIDs := make([]string, len(header))
+	for i := range header {
+		if i >= len(fieldCache) {
+			break
+		}
+		fieldIDs[i] = fieldMap[asStr(fieldCache[i]["field"])]
+	}
+	insertMatchedRecords(formName, header, data, fieldIDs, timeFieldIndex, hasTimeField)
+	return Row{"success": true}, nil
+}
+
+// insertMatchedRecords writes one item per sheet row, storing each cell against
+// the field its column maps to (fieldValues[i] == "" drops the column).
+func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValues []string, timeFieldIndex int64, hasTimeField bool) {
+	// Radio-backed fields store the option id, not the label from the sheet.
+	radioMap := map[string]string{}
+	for _, field := range getFieldList(formName) {
+		radios, _ := field["radios"].([]Row)
+		for _, radio := range radios {
+			radioMap[asStr(field["id"])+asStr(radio["radio_name"])] = asStr(radio["id"])
+		}
+	}
+
 	const batchSize = 500
 	batch := []Row{}
 	for _, row := range data {
@@ -216,37 +290,34 @@ func fileConfirm(c *Ctx) (any, error) {
 			}
 		}
 
-		for index := 0; index < len(row); index++ {
+		for index := 0; index < len(row) && index < len(fieldValues); index++ {
 			cell := row[index]
 			if !jsTruthy(cell) {
 				continue
 			}
-			if index >= len(fieldCache) {
+			fieldID := fieldValues[index]
+			if fieldID == "" {
 				continue
 			}
-			fieldID := fieldMap[asStr(fieldCache[index]["field"])]
 			var fieldValue any = asStr(cell)
 			if rid, ok := radioMap[fieldID+asStr(cell)]; ok {
 				fieldValue = rid
 			}
-			if fieldID != "" {
-				record := Row{"item_id": itemID, "field_id": fieldID, "field_value": fieldValue}
-				if hasRowTime {
-					record["create_time"] = rowTime
-					record["update_time"] = rowTime
-				}
-				batch = append(batch, record)
-				if len(batch) >= batchSize {
-					insertRecords(batch)
-					batch = []Row{}
-				}
+			record := Row{"item_id": itemID, "field_id": fieldID, "field_value": fieldValue}
+			if hasRowTime {
+				record["create_time"] = rowTime
+				record["update_time"] = rowTime
+			}
+			batch = append(batch, record)
+			if len(batch) >= batchSize {
+				insertRecords(batch)
+				batch = []Row{}
 			}
 		}
 	}
 	if len(batch) > 0 {
 		insertRecords(batch)
 	}
-	return Row{"success": true}, nil
 }
 
 // parseJSDate approximates `new Date(s).getTime()` for the common shapes:
