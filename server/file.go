@@ -401,6 +401,12 @@ type dedupKey struct {
 
 // keyValueOf renders one stored value for comparison against the sheet: radio
 // ids are resolved back to their label so the sheet's plain text matches.
+//
+// Dates are the reason normalization exists at all. A date field stores what
+// the sheet said, but a date entered through the UI can be normalized to a
+// different shape, so both sides reduce a date-like value to a millisecond
+// timestamp. Plain numbers must not go through that: a stored "80" would
+// become epoch-80ms and never match the sheet's "80".
 func keyValueOf(fieldID string, stored any, labelByID map[string]string) string {
 	s := strings.TrimSpace(asStr(stored))
 	if s == "" {
@@ -409,7 +415,28 @@ func keyValueOf(fieldID string, stored any, labelByID map[string]string) string 
 	if name, ok := labelByID[fieldID+s]; ok {
 		return strings.TrimSpace(name)
 	}
-	if ms, ok := parseJSDate(s); ok {
+	if ms, ok := parseJSDate(s); ok && dateLike(s) {
+		return strconv.FormatInt(ms, 10)
+	}
+	return s
+}
+
+// dateLike reports whether s reads as a date rather than a number.
+func dateLike(s string) bool {
+	return strings.ContainsAny(s, "-/:")
+}
+
+// rowKeyValue renders one sheet cell the same way keyValueOf renders a stored
+// value, so both sides of the comparison use one normal form.
+func rowKeyValue(cell string, radioMap map[string]string, fieldID string) string {
+	s := strings.TrimSpace(cell)
+	if s == "" {
+		return ""
+	}
+	if rid, ok := radioMap[fieldID+s]; ok {
+		return rid
+	}
+	if ms, ok := parseJSDate(s); ok && dateLike(s) {
 		return strconv.FormatInt(ms, 10)
 	}
 	return s
@@ -417,19 +444,17 @@ func keyValueOf(fieldID string, stored any, labelByID map[string]string) string 
 
 // rowKeyValues renders the sheet's key columns for the same comparison. A
 // select label is translated to its id through radioMap, mirroring what the
-// write path would store.
+// write path would store. Each cell goes through rowKeyValue so a date in the
+// sheet and a date in the database normalize identically.
 func rowKeyValues(row []any, keyIndexes []int, radioMap map[string]string, keyFieldIDs []string) ([]string, bool) {
 	vals := make([]string, len(keyIndexes))
 	for n, idx := range keyIndexes {
 		if idx >= len(row) {
 			return nil, false
 		}
-		cell := strings.TrimSpace(asStr(row[idx]))
+		cell := rowKeyValue(asStr(row[idx]), radioMap, keyFieldIDs[n])
 		if cell == "" {
 			return nil, false // an empty key can never identify a record
-		}
-		if rid, ok := radioMap[keyFieldIDs[n]+cell]; ok {
-			cell = rid
 		}
 		vals[n] = cell
 	}
@@ -649,11 +674,12 @@ func importPreview(formName string, header []Row, data [][]any, fieldValues []st
 					continue // empty cells never overwrite
 				}
 				stored := storedValues[m.itemID][fid]
-				newVal := cell
-				if rid, ok := radioMap[fid+cell]; ok {
-					newVal = rid
-				}
-				if stored == newVal || stored == cell {
+				// Compare in the same normal form the key uses, so a date the
+				// sheet writes "2024-1-5" is not reported as a change against a
+				// stored "2024-01-05".
+				newVal := rowKeyValue(cell, radioMap, fid)
+				storedNorm := rowKeyValue(stored, radioMap, fid)
+				if storedNorm == newVal {
 					continue
 				}
 				diffs = append(diffs, Row{
