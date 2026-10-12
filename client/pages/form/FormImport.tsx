@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Badge } from "@/client/components/ui/badge";
@@ -10,6 +11,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/client/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from "@/client/components/ui/dropdown-menu";
 import {
     Select,
     SelectContent,
@@ -327,21 +334,32 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
                 </div>
                 {targetForm !== newFormValue && keyCandidates.length > 0 && (
                     <div className="flex flex-col gap-2 border-t pt-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-muted-foreground text-sm whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground w-16 shrink-0 text-sm whitespace-nowrap">
                                 {locale.DedupKey}
                             </span>
-                            <div className="flex flex-wrap gap-2">
-                                {keyCandidates.map((index) => {
-                                    const on = keyFields.includes(index);
-                                    return (
-                                        <Button
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    className="border-input focus-visible:ring-ring/50 data-[state=open]:ring-ring/50 flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none data-[state=open]:ring-[3px]"
+                                >
+                                    <span className="truncate">
+                                        {keyFields.length > 0
+                                            ? keyFields.map((i) => fields[i] || header[i].field).join(" + ")
+                                            : locale.DedupKeyHint}
+                                    </span>
+                                    <ChevronDown className="text-muted-foreground size-4 shrink-0 opacity-50" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="start"
+                                    className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+                                >
+                                    {keyCandidates.map((index) => (
+                                        <DropdownMenuCheckboxItem
                                             key={index}
-                                            size="sm"
-                                            variant={on ? "default" : "outline"}
-                                            className="h-7 text-xs"
-                                            onClick={() => {
-                                                const next = on
+                                            checked={keyFields.includes(index)}
+                                            onSelect={(e) => e.preventDefault()}
+                                            onCheckedChange={() => {
+                                                const next = keyFields.includes(index)
                                                     ? keyFields.filter((i) => i !== index)
                                                     : [...keyFields, index];
                                                 setKeyFields(next);
@@ -351,15 +369,10 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
                                             }}
                                         >
                                             {fields[index] || header[index].field}
-                                        </Button>
-                                    );
-                                })}
-                            </div>
-                            {keyFields.length === 0 && (
-                                <span className="text-muted-foreground/60 text-xs">
-                                    {locale.DedupKeyHint}
-                                </span>
-                            )}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                         {previewing && (
                             <span className="text-muted-foreground text-xs">{locale.Previewing}</span>

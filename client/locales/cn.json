@@ -98,7 +98,7 @@
         "NotImported": "不导入",
         "SaveIntoForm": "导入到此表单",
         "DedupKey": "判重主键",
-        "DedupKeyHint": "选择后，键值相同的行会更新已有记录而不是新增",
+        "DedupKeyHint": "选择主键列（可多选，组合成一个键）",
         "Previewing": "正在计算…",
         "PreviewCreates": "新增 {count} 条",
         "PreviewUpdates": "更新 {count} 条",
