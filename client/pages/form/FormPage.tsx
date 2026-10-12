@@ -10,7 +10,7 @@ import FormList from "./FormList";
 import FormAddBtn from "./FormAddBtn";
 import { copytext } from "../../methods/text";
 import FormImport from "./FormImport";
-import { FieldCache, XlsxHeader } from "../../../shared/modules/file/file.interface";
+import { FieldCache, XlsxHeader, ImportDecision } from "../../../shared/modules/file/file.interface";
 
 const Component = () => {
     const locale = Locale("FormPage");
@@ -30,6 +30,7 @@ const Component = () => {
     const [tempid, setTempid] = useState("");
     const [isImportOpen, setImportOpen] = useState(false);
     const [importHeader, setImportHeader] = useState<Array<XlsxHeader>>([]);
+    const [importMatch, setImportMatch] = useState<{ form_name: string; num: number }>({ form_name: "", num: 0 });
     const [editMode, setEditMode] = useState<"create" | "edit">("create");
     const [focusForm, setFocusForm] = useState<string | null>(null);
 
@@ -120,8 +121,7 @@ const Component = () => {
         setImportLoading(true);
         try {
             const chunks = await getChunks(file);
-            let result: { tempid: string; header: Array<XlsxHeader> } | null = null;
-            for (const chunk of chunks) {
+            let result: { tempid: string; header: Array<XlsxHeader>; match_form?: string; match_num?: number } | null = null;            for (const chunk of chunks) {
                 const { success, data } = await FileRouter.readxlsx({ file: chunk });
                 if (!success) {
                     toast({ title: Locale("Common").ToastNetworkError, color: "danger" });
@@ -134,18 +134,34 @@ const Component = () => {
             if (result) {
                 setTempid(result.tempid);
                 setImportHeader(result.header);
+                setImportMatch({ form_name: result.match_form || "", num: result.match_num || 0 });
                 setImportOpen(true);
             }
         } finally {
             setImportLoading(false);
         }
     }
-    async function comfirmImport(fields: Array<FieldCache>, usedata: boolean, timeFieldIndex?: number) {
-        const { success } = await FileRouter.confirm({ fields, usedata, tempid, time_field_index: timeFieldIndex });
+    async function comfirmImport(
+        fields: Array<FieldCache>,
+        usedata: boolean,
+        timeFieldIndex?: number,
+        targetForm?: string,
+        keyFields?: number[],
+        decisions?: ImportDecision[],
+    ) {
+        const { success } = await FileRouter.confirm({
+            fields,
+            usedata,
+            tempid,
+            time_field_index: timeFieldIndex,
+            target_form: targetForm,
+            key_fields: keyFields,
+            decisions,
+        });
         if (success) {
-            toast({ title: "Success", color: "success" });
+            toast({ title: Locale("Common").ToastSuccess, color: "success" });
         } else {
-            toast({ title: "Fail", color: "danger" });
+            toast({ title: Locale("Common").ToastFailed, color: "danger" });
         }
         setImportOpen(false);
         {
@@ -197,7 +213,11 @@ const Component = () => {
                 isOpen={isImportOpen}
                 onOpenChange={setImportOpen}
                 header={importHeader}
+                formList={formList.map((i) => i.form_name)}
+                matchForm={importMatch.form_name}
+                matchNum={importMatch.num}
                 onSubmit={comfirmImport}
+                tempid={tempid}
             />
             <CreateRecordModal
                 isOpen={isNewRecordOpen}
