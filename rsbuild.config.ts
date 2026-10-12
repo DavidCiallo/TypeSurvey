@@ -26,11 +26,11 @@ export default defineConfig({
     server: {
         proxy: {
             "/api": {
-                target: "http://127.0.0.1:3400",
+                target: "http://127.0.0.1:3401",
                 changeOrigin: true,
             },
             "/uploads": {
-                target: "http://127.0.0.1:3400",
+                target: "http://127.0.0.1:3401",
                 changeOrigin: true,
             },
             "/ws": {
