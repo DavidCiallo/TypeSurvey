@@ -97,7 +97,10 @@
         "NotImported": "Skipped",
         "SaveIntoForm": "Import into This Form",
         "DedupKey": "Dedup key",
-        "DedupKeyHint": "Pick key columns (multi-select = composite)"
+        "DedupKeyHint": "Pick key columns (multi-select = composite)",
+        "ImportDone": "{inserted} added",
+        "ImportSkipped": "{skipped} skipped (key exists, kept stored data)",
+        "ImportTotal": "form now has {total}"
     },
     "FormEditor": {
         "FormNameLabel": "Form Name",

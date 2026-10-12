@@ -179,7 +179,8 @@ func fileConfirm(c *Ctx) (any, error) {
 
 	if requested != "" {
 		if !usedata {
-			return Row{"success": true}, nil
+			before := countRecords(requested)
+			return Row{"inserted": 0, "skipped": 0, "before": before, "total": before}, nil
 		}
 		// Only the columns naming one of the target's fields are imported; the
 		// rest are ignored rather than added as new fields.
@@ -198,8 +199,9 @@ func fileConfirm(c *Ctx) (any, error) {
 		dataList = append(dataList[:existIndex], dataList[existIndex+1:]...)
 		fileMu.Unlock()
 
-		insertMatchedRecords(formName, header, data, fieldValues, timeFieldIndex, hasTimeField, keyIndexes)
-		return Row{"success": true}, nil
+		before := countRecords(formName)
+		inserted, skipped := insertMatchedRecords(formName, header, data, fieldValues, timeFieldIndex, hasTimeField, keyIndexes)
+		return Row{"inserted": inserted, "skipped": skipped, "before": before, "total": before + inserted}, nil
 	}
 
 	formName := sanitizeFormName.ReplaceAllString(filename, "") + randSuffix(4)
@@ -263,17 +265,18 @@ func fileConfirm(c *Ctx) (any, error) {
 		}
 		fieldIDs[i] = fieldMap[asStr(fieldCache[i]["field"])]
 	}
-	insertMatchedRecords(formName, header, data, fieldIDs, timeFieldIndex, hasTimeField, nil)
-	return Row{"success": true}, nil
+	inserted, _ := insertMatchedRecords(formName, header, data, fieldIDs, timeFieldIndex, hasTimeField, nil)
+	return Row{"inserted": inserted, "skipped": 0, "before": 0, "total": inserted}, nil
 }
 
 // insertMatchedRecords writes one item per sheet row, storing each cell against
-// the field its column maps to (fieldValues[i] == "" drops the column).
+// the field its column maps to (fieldValues[i] == "" drops the column). It
+// returns how many rows it inserted and how many it skipped.
 //
 // When keyIndexes is non-empty, a row whose key matches an existing record is
 // skipped: the existing record keeps its data, and only rows with no match are
 // inserted.
-func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValues []string, timeFieldIndex int64, hasTimeField bool, keyIndexes []int) {
+func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValues []string, timeFieldIndex int64, hasTimeField bool, keyIndexes []int) (inserted int, skipped int) {
 	// Radio-backed fields store the option id, not the label from the sheet.
 	radioMap := map[string]string{}
 	for _, field := range getFieldList(formName) {
@@ -302,11 +305,13 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 		if len(keyIndexes) > 0 {
 			if vals, ok := rowKeyValues(row, keyIndexes, radioMap, keyFieldIDs); ok {
 				if len(byKey[strings.Join(vals, "\x00")]) > 0 {
-					continue // already exists, keep the stored data
+					skipped++ // already exists, keep the stored data
+					continue
 				}
 			}
 		}
 		itemID := nanoID(6)
+		inserted++
 
 		var rowTime int64
 		hasRowTime := false
@@ -346,6 +351,7 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 	if len(batch) > 0 {
 		insertImportRecords(batch)
 	}
+	return inserted, skipped
 }
 
 // insertImportRecords writes a batch the way the import needs it: an existing
@@ -429,6 +435,22 @@ func rowKeyValues(row []any, keyIndexes []int, radioMap map[string]string, keyFi
 		vals[n] = cell
 	}
 	return vals, true
+}
+
+// countRecords counts the form's records the way getFormBriefList does: one
+// row per field, so distinct item_ids.
+func countRecords(formName string) int {
+	fieldToForm := map[string]string{}
+	selectEach("fields", Row{"form_name": formName}, func(field Row) {
+		fieldToForm[asStr(field["id"])] = asStr(field["form_name"])
+	})
+	items := map[string]bool{}
+	selectEach("records", Row{}, func(record Row) {
+		if _, ok := fieldToForm[asStr(record["field_id"])]; ok {
+			items[asStr(record["item_id"])] = true
+		}
+	})
+	return len(items)
 }
 
 // existingKeys indexes the target form's records by their key values. The form

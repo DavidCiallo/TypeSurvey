@@ -89,10 +89,22 @@ export class FileConfirmRequest implements BaseRequest {
     }
 }
 
-export class FileConfirmResponse implements BaseResponse<{}> {
+/** What the import actually did, so the caller can report it. */
+export type FileConfirmResult = {
+    /** Rows written as new records. */
+    inserted: number;
+    /** Rows skipped because their key already existed. */
+    skipped: number;
+    /** Records the target form held before the import. */
+    before: number;
+    /** Records it holds now. */
+    total: number;
+};
+
+export class FileConfirmResponse implements BaseResponse<FileConfirmResult> {
     public success: boolean;
     public message?: string;
-    public data?: {};
+    public data?: FileConfirmResult;
     constructor(origin: FileConfirmResponse) {
         this.success = origin.success;
         this.message = origin.message;

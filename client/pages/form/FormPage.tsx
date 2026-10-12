@@ -148,7 +148,7 @@ const Component = () => {
         targetForm?: string,
         keyFields?: number[],
     ) {
-        const { success } = await FileRouter.confirm({
+        const { success, data } = await FileRouter.confirm({
             fields,
             usedata,
             tempid,
@@ -156,11 +156,21 @@ const Component = () => {
             target_form: targetForm,
             key_fields: keyFields,
         });
-        if (success) {
-            toast({ title: Locale("Common").ToastSuccess, color: "success" });
-        } else {
+        if (!success) {
             toast({ title: Locale("Common").ToastFailed, color: "danger" });
+            setImportOpen(false);
+            return;
         }
+        const locale = Locale("FormImport");
+        const r = data ?? { inserted: 0, skipped: 0, before: 0, total: 0 };
+        // The notify wrapper forwards only the title, so the whole summary has
+        // to fit on one line.
+        toast({
+            title: r.skipped > 0
+                ? `${locale.ImportDone.replace("{inserted}", String(r.inserted))}，${locale.ImportSkipped.replace("{skipped}", String(r.skipped))}，${locale.ImportTotal.replace("{total}", String(r.total))}`
+                : `${locale.ImportDone.replace("{inserted}", String(r.inserted))}，${locale.ImportTotal.replace("{total}", String(r.total))}`,
+            color: "success",
+        });
         setImportOpen(false);
         {
             const { success, data, message } = await FormRouter.list({ page: 1 });

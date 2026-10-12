@@ -98,7 +98,10 @@
         "NotImported": "不导入",
         "SaveIntoForm": "导入到此表单",
         "DedupKey": "判重主键",
-        "DedupKeyHint": "选择主键列（可多选，组合成一个键）"
+        "DedupKeyHint": "选择主键列（可多选，组合成一个键）",
+        "ImportDone": "新增 {inserted} 条",
+        "ImportSkipped": "跳过 {skipped} 条（键已存在，保留原数据）",
+        "ImportTotal": "表单现有 {total} 条"
     },
     "FormAddBtn": {
         "CreateNewForm": "新建表单",
