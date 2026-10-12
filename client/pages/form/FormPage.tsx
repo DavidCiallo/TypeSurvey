@@ -10,7 +10,7 @@ import FormList from "./FormList";
 import FormAddBtn from "./FormAddBtn";
 import { copytext } from "../../methods/text";
 import FormImport from "./FormImport";
-import { FieldCache, XlsxHeader, ImportDecision } from "../../../shared/modules/file/file.interface";
+import { FieldCache, XlsxHeader } from "../../../shared/modules/file/file.interface";
 
 const Component = () => {
     const locale = Locale("FormPage");
@@ -147,7 +147,6 @@ const Component = () => {
         timeFieldIndex?: number,
         targetForm?: string,
         keyFields?: number[],
-        decisions?: ImportDecision[],
     ) {
         const { success } = await FileRouter.confirm({
             fields,
@@ -156,7 +155,6 @@ const Component = () => {
             time_field_index: timeFieldIndex,
             target_form: targetForm,
             key_fields: keyFields,
-            decisions,
         });
         if (success) {
             toast({ title: Locale("Common").ToastSuccess, color: "success" });
@@ -217,7 +215,6 @@ const Component = () => {
                 matchForm={importMatch.form_name}
                 matchNum={importMatch.num}
                 onSubmit={comfirmImport}
-                tempid={tempid}
             />
             <CreateRecordModal
                 isOpen={isNewRecordOpen}

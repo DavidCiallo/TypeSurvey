@@ -97,17 +97,7 @@
         "NotImported": "Skipped",
         "SaveIntoForm": "Import into This Form",
         "DedupKey": "Dedup key",
-        "DedupKeyHint": "Pick key columns (multi-select = composite)",
-        "Previewing": "Calculating…",
-        "PreviewCreates": "{count} new",
-        "PreviewUpdates": "{count} updated",
-        "KeepAllOld": "Keep all old values",
-        "KeepOld": "Keep old",
-        "UseNew": "Use new",
-        "ConflictRow": "Row {row} · {count} fields differ",
-        "ConflictAmbiguous": "Matches {count} records",
-        "ChooseRecord": "Pick the record to update",
-        "EmptyValue": "(empty)"
+        "DedupKeyHint": "Pick key columns (multi-select = composite)"
     },
     "FormEditor": {
         "FormNameLabel": "Form Name",

@@ -147,7 +147,6 @@ func fileConfirm(c *Ctx) (any, error) {
 	// choices from the conflict dialog. Both are optional: without a key the
 	// import appends, which is the behaviour this always had.
 	keyIndexes := intSlice(c.Value("key_fields"))
-	decisions := decisionMap(c.Value("decisions"))
 
 	fileMu.Lock()
 	existIndex := -1
@@ -199,7 +198,7 @@ func fileConfirm(c *Ctx) (any, error) {
 		dataList = append(dataList[:existIndex], dataList[existIndex+1:]...)
 		fileMu.Unlock()
 
-		insertMatchedRecords(formName, header, data, fieldValues, timeFieldIndex, hasTimeField, keyIndexes, decisions)
+		insertMatchedRecords(formName, header, data, fieldValues, timeFieldIndex, hasTimeField, keyIndexes)
 		return Row{"success": true}, nil
 	}
 
@@ -264,18 +263,17 @@ func fileConfirm(c *Ctx) (any, error) {
 		}
 		fieldIDs[i] = fieldMap[asStr(fieldCache[i]["field"])]
 	}
-	insertMatchedRecords(formName, header, data, fieldIDs, timeFieldIndex, hasTimeField, nil, nil)
+	insertMatchedRecords(formName, header, data, fieldIDs, timeFieldIndex, hasTimeField, nil)
 	return Row{"success": true}, nil
 }
 
 // insertMatchedRecords writes one item per sheet row, storing each cell against
 // the field its column maps to (fieldValues[i] == "" drops the column).
 //
-// When keyIndexes is non-empty, rows whose key matches an existing record are
-// written into that record's item instead of a new one. decisions carries the
-// per-field choice the user made in the conflict dialog: a field listed as
-// keepNew=false keeps its stored value and is not touched at all.
-func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValues []string, timeFieldIndex int64, hasTimeField bool, keyIndexes []int, decisions map[int]Row) {
+// When keyIndexes is non-empty, a row whose key matches an existing record is
+// skipped: the existing record keeps its data, and only rows with no match are
+// inserted.
+func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValues []string, timeFieldIndex int64, hasTimeField bool, keyIndexes []int) {
 	// Radio-backed fields store the option id, not the label from the sheet.
 	radioMap := map[string]string{}
 	for _, field := range getFieldList(formName) {
@@ -300,19 +298,15 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 
 	const batchSize = 500
 	batch := []Row{}
-	for ri, row := range data {
-		itemID := nanoID(6)
-		updating := false
+	for _, row := range data {
 		if len(keyIndexes) > 0 {
 			if vals, ok := rowKeyValues(row, keyIndexes, radioMap, keyFieldIDs); ok {
-				if matches := byKey[strings.Join(vals, "\x00")]; len(matches) > 0 {
-					if chosen, ok := decisions[ri]; ok {
-						itemID = asStr(chosen["item_id"])
-						updating = true
-					}
+				if len(byKey[strings.Join(vals, "\x00")]) > 0 {
+					continue // already exists, keep the stored data
 				}
 			}
 		}
+		itemID := nanoID(6)
 
 		var rowTime int64
 		hasRowTime := false
@@ -324,7 +318,6 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 			}
 		}
 
-		keep, _ := decisions[ri]["fields"].(map[string]any)
 		for index := 0; index < len(row) && index < len(fieldValues); index++ {
 			cell := row[index]
 			if !jsTruthy(cell) {
@@ -338,15 +331,8 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 			if rid, ok := radioMap[fieldID+asStr(cell)]; ok {
 				fieldValue = rid
 			}
-			// The user chose to keep the stored value for this field.
-			if updating && keep != nil && !jsTruthy(keep[fieldID]) {
-				continue
-			}
 			record := Row{"item_id": itemID, "field_id": fieldID, "field_value": fieldValue}
-			// An update must not rewrite a record's timestamps: the time column
-			// describes when the data was collected, not when it was re-imported,
-			// and create_time is the record's identity in the UI's ordering.
-			if hasRowTime && !updating {
+			if hasRowTime {
 				record["create_time"] = rowTime
 				record["update_time"] = rowTime
 			}
@@ -368,24 +354,8 @@ func insertMatchedRecords(formName string, header []Row, data [][]any, fieldValu
 // updateRows stamps update_time with the wall clock, which would rewrite when a
 // record was collected rather than when it was re-imported.
 func insertImportRecords(records []Row) {
-	if len(records) == 0 {
-		return
-	}
 	for _, record := range records {
-		itemID, fieldID := asStr(record["item_id"]), asStr(record["field_id"])
-		if exist := selectOne("records", Row{"item_id": itemID, "field_id": fieldID}); exist != nil {
-			set := Row{"field_value": record["field_value"]}
-			if v, ok := record["create_time"]; ok {
-				set["create_time"] = v
-			}
-			updateRows("records", Row{"id": asStr(exist["id"])}, set)
-			continue
-		}
-		row := Row{}
-		for k, v := range record {
-			row[k] = v
-		}
-		insertRow("records", row)
+		insertRow("records", record)
 	}
 }
 
@@ -540,161 +510,6 @@ func intSlice(v any) []int {
 		out = append(out, int(n))
 	}
 	return out
-}
-
-// decisionMap reads { row: { item_id, fields: { field_id: bool } } } from the
-// conflict dialog, where the bool means "take the new value".
-func decisionMap(v any) map[int]Row {
-	arr, _ := v.([]any)
-	out := map[int]Row{}
-	for _, item := range arr {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		row, ok := jsNumber(m["row"])
-		if !ok {
-			continue
-		}
-		out[int(row)] = m
-	}
-	return out
-}
-
-func filePreview(c *Ctx) (any, error) {
-	tempid := c.Str("tempid")
-	formName := c.Str("form_name")
-
-	fileMu.Lock()
-	var found *tempData
-	for i := range dataList {
-		if dataList[i].tempid == tempid {
-			found = &dataList[i]
-			break
-		}
-	}
-	if found == nil {
-		fileMu.Unlock()
-		return nil, throwErr("数据不存在")
-	}
-	header, data := found.header, found.data
-	fileMu.Unlock()
-
-	if !jsTruthy(c.Value("form_name")) || selectOne("fields", Row{"form_name": formName}) == nil {
-		return nil, throwErr("表单不存在")
-	}
-
-	// Re-resolve the columns against the named form: the sheet was parsed before
-	// the user chose a target, so matchIDs may describe a different form.
-	columns := make([]string, len(header))
-	for i, h := range header {
-		columns[i] = matchHeaderKey(asStr(h["field"]))
-	}
-	fieldValues := matchColumns(columns, fieldKeysByColumn(getFieldList(formName)))
-
-	keyIndexes := intSlice(c.Value("key_fields"))
-	if len(keyIndexes) == 0 {
-		return Row{"updates": 0, "creates": len(data), "rows": []Row{}}, nil
-	}
-
-	return importPreview(formName, header, data, fieldValues, keyIndexes), nil
-}
-
-// importPreview reports what an import would do without writing anything: which
-// sheet rows match an existing record (and in which fields they differ) and
-// which are new. Conflicts are returned per row so the UI can offer the
-// per-field choice between the new and the old value.
-func importPreview(formName string, header []Row, data [][]any, fieldValues []string, keyIndexes []int) Row {
-	keyFieldIDs := make([]string, len(keyIndexes))
-	for i, idx := range keyIndexes {
-		keyFieldIDs[i] = fieldValues[idx]
-	}
-
-	radioMap := map[string]string{}
-	fieldByID := map[string]Row{}
-	labelByID := map[string]string{}
-	for _, field := range getFieldList(formName) {
-		id := asStr(field["id"])
-		fieldByID[id] = field
-		radios, _ := field["radios"].([]Row)
-		for _, radio := range radios {
-			radioMap[id+asStr(radio["radio_name"])] = asStr(radio["id"])
-			labelByID[id+asStr(radio["id"])] = asStr(radio["radio_name"])
-		}
-	}
-
-	known := existingKeys(formName, keyFieldIDs)
-	byKey := map[string][]dedupKey{}
-	for _, k := range known {
-		byKey[strings.Join(k.values, "\x00")] = append(byKey[strings.Join(k.values, "\x00")], k)
-	}
-
-	// Stored values for every record the sheet may touch, fetched once.
-	storedValues := map[string]map[string]string{}
-	for _, m := range known {
-		if _, ok := storedValues[m.itemID]; ok {
-			continue
-		}
-		vals := map[string]string{}
-		selectEach("records", Row{"item_id": m.itemID}, func(record Row) {
-			fid := asStr(record["field_id"])
-			if _, isKey := fieldByID[fid]; isKey {
-				vals[fid] = keyValueOf(fid, record["field_value"], labelByID)
-			}
-		})
-		storedValues[m.itemID] = vals
-	}
-
-	updates, creates := 0, 0
-	rows := []Row{}
-	for ri, row := range data {
-		vals, ok := rowKeyValues(row, keyIndexes, radioMap, keyFieldIDs)
-		if !ok {
-			creates++
-			continue
-		}
-		matches := byKey[strings.Join(vals, "\x00")]
-		if len(matches) == 0 {
-			creates++
-			continue
-		}
-		updates++
-		// Every matching record is offered; the user picks which one to keep
-		// when a key is not unique.
-		candidates := []Row{}
-		for _, m := range matches {
-			diffs := []Row{}
-			for idx := 0; idx < len(row) && idx < len(fieldValues); idx++ {
-				fid := fieldValues[idx]
-				if fid == "" {
-					continue
-				}
-				cell := strings.TrimSpace(asStr(row[idx]))
-				if cell == "" {
-					continue // empty cells never overwrite
-				}
-				stored := storedValues[m.itemID][fid]
-				// Compare in the same normal form the key uses, so a date the
-				// sheet writes "2024-1-5" is not reported as a change against a
-				// stored "2024-01-05".
-				newVal := rowKeyValue(cell, radioMap, fid)
-				storedNorm := rowKeyValue(stored, radioMap, fid)
-				if storedNorm == newVal {
-					continue
-				}
-				diffs = append(diffs, Row{
-					"field_id":   fid,
-					"field_name": asStr(fieldByID[fid]["field_name"]),
-					"old_value":  stored,
-					"new_value":  newVal,
-				})
-			}
-			candidates = append(candidates, Row{"item_id": m.itemID, "fields": diffs})
-		}
-		rows = append(rows, Row{"row": ri, "candidates": candidates})
-	}
-
-	return Row{"updates": updates, "creates": creates, "rows": rows}
 }
 
 // parseJSDate approximates `new Date(s).getTime()` for the common shapes:
