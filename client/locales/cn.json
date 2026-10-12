@@ -96,7 +96,19 @@
         "MatchFound": "匹配 {matched}/{total} 列",
         "MatchNone": "无匹配字段，请选择其他表单",
         "NotImported": "不导入",
-        "SaveIntoForm": "导入到此表单"
+        "SaveIntoForm": "导入到此表单",
+        "DedupKey": "判重主键",
+        "DedupKeyHint": "选择后，键值相同的行会更新已有记录而不是新增",
+        "Previewing": "正在计算…",
+        "PreviewCreates": "新增 {count} 条",
+        "PreviewUpdates": "更新 {count} 条",
+        "KeepAllOld": "全部保留旧值",
+        "KeepOld": "保留旧值",
+        "UseNew": "使用新值",
+        "ConflictRow": "第 {row} 行 · {count} 个字段不同",
+        "ConflictAmbiguous": "匹配到 {count} 条记录",
+        "ChooseRecord": "选择要更新的记录",
+        "EmptyValue": "(空)"
     },
     "FormAddBtn": {
         "CreateNewForm": "新建表单",
