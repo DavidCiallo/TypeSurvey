@@ -53,7 +53,9 @@ const Component = () => {
         const item_id = localStorage.getItem("item_id") || undefined;
         const { success, data, message } = await RecordRouter.history({ id, code, item_id });
         if (!success || !data) {
-            toast({ title: message });
+            // The server words the deadline itself; keep its message so the
+            // reason shown is the one that actually rejected the request.
+            toast({ title: message === "链接已过期" ? locale.LinkExpired : message, color: "danger" });
             setCode("");
             setPass(false);
             return;
@@ -78,9 +80,9 @@ const Component = () => {
             return [...prev, { id: "", item_id, field_id, field_value, create_time: 0, update_time: 0 }];
         });
 
-        const { success } = await RecordRouter.submit({ item_id, field_id, field_value });
+        const { success, message } = await RecordRouter.submit({ item_id, field_id, field_value });
         if (!success) {
-            toast({ title: locale.ToastErrorSubmit, color: "danger" });
+            toast({ title: message === "链接已过期" ? locale.LinkExpired : message || locale.ToastErrorSubmit, color: "danger" });
         }
     }, [locale]);
 

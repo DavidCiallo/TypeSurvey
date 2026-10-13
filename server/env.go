@@ -58,11 +58,14 @@ func envBool(key string, fallback bool) bool {
 }
 
 var (
-	repoRoot  string
-	dataDir   string
-	distDir   string
+	repoRoot   string
+	dataDir    string
+	distDir    string
 	uploadsDir string
-	port      int
+	port       int
+	// linkExpireDays is how long a fill link stays writable. Overridable so a
+	// deployment can shorten or lengthen the default week.
+	linkExpireDays int64 = 7
 )
 
 func initPaths() {
@@ -81,6 +84,9 @@ func initPaths() {
 	distDir = envStr("DIST_DIR", filepath.Join(repoRoot, "dist"))
 	uploadsDir = envStr("UPLOADS_DIR", filepath.Join(dataDir, "uploads"))
 	port = envInt("SERVER_PORT", 3300)
+	if days := envInt("LINK_EXPIRE_DAYS", 7); days > 0 {
+		linkExpireDays = int64(days)
+	}
 	os.MkdirAll(dataDir, 0o755)
 	os.MkdirAll(uploadsDir, 0o755)
 }

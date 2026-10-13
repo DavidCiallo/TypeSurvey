@@ -17,11 +17,53 @@ func getRecords(itemID string) []Row {
 
 func submitRecord(record Row) bool {
 	itemID, fieldID := record["item_id"], record["field_id"]
+	if expireTime := itemExpireTime(asStr(itemID)); expireTime > 0 && nowMillis() > expireTime {
+		return false
+	}
 	if exist := selectOne("records", Row{"item_id": itemID, "field_id": fieldID}); exist != nil {
 		return updateRows("records", Row{"id": exist["id"]}, Row{"field_value": record["field_value"]})
 	}
 	insertRow("records", record)
 	return true
+}
+
+// linkExpireWindow is how long a fill link stays writable after it is first
+// opened. A link without a stamped expire_time is treated as open-ended so
+// records created before this feature keep working.
+func linkExpireWindow() int64 {
+	return linkExpireDays * 24 * 60 * 60 * 1000
+}
+
+// stampLinkExpiry records when a link stops accepting writes. It only writes
+// the first time, so reopening a link does not extend its deadline.
+func stampLinkExpiry(itemID string) {
+	if itemID == "" {
+		return
+	}
+	for _, row := range getRecords(itemID) {
+		if asInt64(row["expire_time"]) > 0 {
+			return
+		}
+	}
+	selectEach("records", Row{"item_id": itemID}, func(row Row) {
+		updateRows("records", Row{"id": asStr(row["id"])}, Row{"expire_time": nowMillis() + linkExpireWindow()})
+	})
+}
+
+// itemExpireTime returns 0 when the link has no deadline.
+func itemExpireTime(itemID string) int64 {
+	var found int64
+	selectEach("records", Row{"item_id": itemID}, func(row Row) {
+		if t := asInt64(row["expire_time"]); t > found {
+			found = t
+		}
+	})
+	return found
+}
+
+func linkExpired(itemID string) bool {
+	t := itemExpireTime(itemID)
+	return t > 0 && nowMillis() > t
 }
 
 func insertRecords(records []Row) bool {
@@ -187,6 +229,10 @@ func recordHistory(c *Ctx) (any, error) {
 		if code == "" || code != codeGenerate(id) {
 			return nil, throwErr("鉴权失败")
 		}
+		if linkExpired(asStr(itemID)) {
+			return nil, throwErr("链接已过期")
+		}
+		stampLinkExpiry(asStr(itemID))
 		return Row{"form_name": formName, "item_id": itemID, "code": code,
 			"fields": getFieldList(formName), "records": records}, nil
 	}
@@ -202,13 +248,18 @@ func recordHistory(c *Ctx) (any, error) {
 		draft := getRecords(storedItemID)
 		sameForm := len(draft) > 0 && getFormNameByField(asStr(draft[0]["field_id"])) == urlFormName
 		if sameForm {
+			if linkExpired(storedItemID) {
+				return nil, throwErr("链接已过期")
+			}
+			stampLinkExpiry(storedItemID)
 			return Row{"form_name": urlFormName, "item_id": storedItemID, "code": code,
 				"fields": getFieldList(urlFormName), "records": draft}, nil
 		}
 	}
 
-	// 3. 否则：新记录
+	// 3. 否则：新记录。首次打开即盖上有效期，之后重开不会顺延。
 	itemID := nanoID(6)
+	stampLinkExpiry(itemID)
 	return Row{"form_name": urlFormName, "item_id": itemID, "code": codeGenerate(itemID),
 		"fields": getFieldList(urlFormName), "records": []Row{}}, nil
 }
@@ -221,6 +272,9 @@ func recordSubmit(c *Ctx) (any, error) {
 	}
 	if jsUtf16Len(text) > 0x3e8 {
 		return nil, throwErr("内容过长")
+	}
+	if linkExpired(c.Str("item_id")) {
+		return nil, throwErr("链接已过期")
 	}
 	submitRecord(Row{
 		"item_id": c.Str("item_id"), "field_id": c.Str("field_id"), "field_value": value,

@@ -96,8 +96,9 @@ const Component = () => {
     }
 
     async function createRecordLink(data?: { field_index: number; field_value: string }) {
+        const formName = focusForm || "";
         if (!data) {
-            copytext(baseurl + fieldList[0].id);
+            copytext(`【${formName}】${baseurl + fieldList[0].id}`);
             toast({ title: locale.ToastCopySuccess, color: "success" });
             return;
         }
@@ -112,7 +113,11 @@ const Component = () => {
         }
         const { item_id, code } = existData;
         RecordRouter.submit({ field_id, field_value, item_id });
-        copytext(`${baseurl + item_id}#code:${code}`);
+        // A named link is handed out in batches, so the label carries the form
+        // and the person it belongs to; an anonymous link carries only the form.
+        const fieldName = fieldList[field_index]?.field_name ?? "";
+        const label = fieldName ? `${formName}-${fieldName}${field_value}` : formName;
+        copytext(`【${label}】${baseurl + item_id}#code:${code}`);
         toast({ title: locale.ToastCopySuccess, color: "success" });
     }
 

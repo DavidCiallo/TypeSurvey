@@ -200,6 +200,7 @@
     "FillPage": {
         "ToastErrorSubmit": "提交失败，可能是格式错误",
         "ToastErrorParam": "参数错误",
+        "LinkExpired": "链接已过期，有效期 7 天",
         "FormSelectPlaceholder": "请选择",
         "ButtonNext": "继续",
         "ButtonPrev": "上一页",
