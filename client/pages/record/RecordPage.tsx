@@ -274,26 +274,7 @@ const Component = () => {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    [
-                                        <TableRow key="record-note">
-                                            <TableCell className="text-center align-top text-muted-foreground">
-                                                {locale.RecordNoteRowLabel}
-                                            </TableCell>
-                                            <TableCell className="text-left align-top" colSpan={2}>
-                                                <div className="text-sm break-all whitespace-pre-wrap">
-                                                    {chosen?.note || <span className="text-muted-foreground/50">-</span>}
-                                                </div>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="mt-1"
-                                                    onClick={() => itemChoose && openNote({ item_id: itemChoose, label: locale.RecordNoteRowLabel })}
-                                                >
-                                                    {chosen?.note ? locale.NoteEditButton : locale.NoteAddButton}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>,
-                                        ...fieldList.map(({ id: field_id, field_name, radios }) => {
+                                    fieldList.map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
@@ -373,16 +354,32 @@ const Component = () => {
                                                 </TableCell>
                                             </TableRow>
                                         );
-                                        }),
-                                    ]
+                                    })
                                 )}
                             </TableBody>
                         </Table>
                         </div>
-                        <div className="flex justify-end pt-3">
+                        <div className="flex items-start justify-between gap-4 pt-3">
+                            <div className="min-w-0 flex-1">
+                                {chosen?.note ? (
+                                    <div className="rounded bg-muted/60 px-2 py-1 text-xs break-all whitespace-pre-wrap text-muted-foreground">
+                                        {locale.FieldNotePrefix}{chosen.note}
+                                    </div>
+                                ) : null}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-1"
+                                    disabled={!itemChoose}
+                                    onClick={() => itemChoose && openNote({ item_id: itemChoose, label: locale.RecordNoteRowLabel })}
+                                >
+                                    {chosen?.note ? locale.NoteEditButton : locale.NoteAddButton}
+                                </Button>
+                            </div>
                             <Button
                                 variant="destructive"
                                 size="sm"
+                                className="shrink-0"
                                 disabled={!itemChoose}
                                 onClick={() => setDeleteTarget(itemChoose)}
                             >
