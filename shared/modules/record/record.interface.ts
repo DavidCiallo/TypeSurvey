@@ -135,11 +135,13 @@ export class RecordAllResponse implements BaseResponse<{
     records: Array<{
         item_id: string;
         code: string;
+        note: string;
         data: Array<{
             id: string;
             item_id: string;
             field_id: string;
             field_value: number | string | boolean;
+            note: string;
             create_time: number;
             update_time: number | null;
         }>;
@@ -152,11 +154,13 @@ export class RecordAllResponse implements BaseResponse<{
         records: Array<{
             item_id: string;
             code: string;
+            note: string;
             data: Array<{
                 id: string;
                 item_id: string;
                 field_id: string;
                 field_value: number | string | boolean;
+                note: string;
                 create_time: number;
                 update_time: number | null;
             }>;
@@ -164,6 +168,41 @@ export class RecordAllResponse implements BaseResponse<{
         total: number;
     };
     constructor(origin: RecordAllResponse) {
+        this.success = origin.success;
+        this.message = origin.message;
+        this.data = origin.data;
+    }
+}
+
+export class RecordNoteRequest implements BaseRequest {
+    public auth?: string;
+    public item_id: string;
+    public field_id?: string;
+    public note: string;
+
+    constructor(origin: Partial<RecordNoteRequest>) {
+        if (!origin.item_id) throw new Error("Item ID is required");
+        if (!origin.note) throw new Error("Note is required");
+        origin.auth && (this.auth = origin.auth);
+        this.item_id = origin.item_id;
+        this.field_id = origin.field_id;
+        this.note = origin.note;
+    }
+
+    static self(unsafe: RecordNoteRequest) {
+        return new RecordNoteRequest(unsafe);
+    }
+}
+
+export class RecordNoteResponse implements BaseResponse<{
+    item_id: string;
+    field_id: string;
+    note: string;
+}> {
+    public success: boolean;
+    public message?: string;
+    public data?: { item_id: string; field_id: string; note: string };
+    constructor(origin: RecordNoteResponse) {
         this.success = origin.success;
         this.message = origin.message;
         this.data = origin.data;

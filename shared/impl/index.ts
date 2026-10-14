@@ -51,6 +51,7 @@ export class RecordImpl
     item_id: string;
     field_id: string;
     field_value: number | string | boolean;
+    note?: string;
     create_time: number;
     update_time: number | null;
     constructor(record: RecordEntity) {
@@ -58,6 +59,7 @@ export class RecordImpl
         this.item_id = record.item_id;
         this.field_id = record.field_id;
         this.field_value = record.field_value;
+        if (record.note) this.note = record.note;
         this.create_time = record.create_time;
         this.update_time = record.update_time;
     }

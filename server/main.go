@@ -43,6 +43,7 @@ func registerRoutes() {
 	route("/api/record/submit", policyPublic, true, recordSubmit)
 	route("/api/record/all", policyUser, true, recordAll)
 	route("/api/record/del", policyUser, false, recordDel)
+	route("/api/record/note", policyUser, false, recordNote)
 
 	// file (file.router.ts) — authenticated: these parse uploads and write
 	// records into the database.

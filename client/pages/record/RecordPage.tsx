@@ -3,6 +3,7 @@ import { Button } from "@/client/components/ui/button";
 import { Card, CardContent } from "@/client/components/ui/card";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Input } from "@/client/components/ui/input";
+import { Textarea } from "@/client/components/ui/textarea";
 import { Label } from "@/client/components/ui/label";
 import { Pagination } from "@/client/components/ui/pagination";
 import {
@@ -44,7 +45,7 @@ const Component = () => {
     const [fieldList, setFieldList] = useState<Array<FormFieldImpl>>([]);
     const [fieldChoose, setFieldChoose] = useState<FormFieldImpl | null>(null);
 
-    const [recordList, setRecordList] = useState<Array<{ item_id: string; code: string; data: RecordImpl[] }>>([]);
+    const [recordList, setRecordList] = useState<Array<{ item_id: string; code: string; note: string; data: RecordImpl[] }>>([]);
     const [itemChoose, setItemChoose] = useState<string | null>(null);
 
     const [userpage, setPage] = useState(1);
@@ -55,6 +56,31 @@ const Component = () => {
     const [_, setFieldTotal] = useState(1);
 
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+    const [noteTarget, setNoteTarget] = useState<{ item_id: string; field_id?: string; label: string } | null>(null);
+    const [noteDraft, setNoteDraft] = useState("");
+
+    const chosen = recordList.find((i) => i.item_id === itemChoose);
+
+    function openNote(target: { item_id: string; field_id?: string; label: string }) {
+        const item = recordList.find((i) => i.item_id === target.item_id);
+        const current = target.field_id
+            ? item?.data.find((r) => r.field_id === target.field_id)?.note || ""
+            : item?.note || "";
+        setNoteTarget(target);
+        setNoteDraft(current);
+    }
+
+    async function saveNote() {
+        if (!noteTarget) return;
+        const note = noteDraft.trim();
+        if (!note) return toast({ title: locale.NoteEmptyToast, color: "danger" });
+        const { success, message } = await RecordRouter.note({ item_id: noteTarget.item_id, field_id: noteTarget.field_id, note });
+        if (!success) return toast({ title: message || locale.NoteSaveFailed, color: "danger" });
+        toast({ title: locale.NoteSaveSuccess, color: "success" });
+        setNoteTarget(null);
+        loadUserPage(userpage);
+    }
 
     const [wrapText, setWrapText] = useState(() => localStorage.getItem("record-wrap-text") === "true");
 
@@ -172,12 +198,18 @@ const Component = () => {
                                 {recordList.map((i) => {
                                     const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
                                     const record = i.data[index] || null;
+                                    const hasNote = !!i.note || i.data.some((r) => !!r.note);
                                     const raw = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
                                     const time = `${String(raw.getMonth() + 1).padStart(2, "0")}-${String(raw.getDate()).padStart(2, "0")} ${String(raw.getHours()).padStart(2, "0")}:${String(raw.getMinutes()).padStart(2, "0")}`;
                                     return (
                                         <TableRow key={i.item_id}>
                                             <TableCell className="min-w-24 text-center">
                                                 {record?.field_value}
+                                                {hasNote && (
+                                                    <span className="text-muted-foreground ml-1 text-xs" title={locale.NoteMarkTitle}>
+                                                        {locale.NoteMark}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="min-w-24 text-center">
                                                 {time}
@@ -242,7 +274,26 @@ const Component = () => {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    fieldList.map(({ id: field_id, field_name, radios }) => {
+                                    [
+                                        <TableRow key="record-note">
+                                            <TableCell className="text-center align-top text-muted-foreground">
+                                                {locale.RecordNoteRowLabel}
+                                            </TableCell>
+                                            <TableCell className="text-left align-top" colSpan={2}>
+                                                <div className="text-sm break-all whitespace-pre-wrap">
+                                                    {chosen?.note || <span className="text-muted-foreground/50">-</span>}
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-1"
+                                                    onClick={() => itemChoose && openNote({ item_id: itemChoose, label: locale.RecordNoteRowLabel })}
+                                                >
+                                                    {chosen?.note ? locale.NoteEditButton : locale.NoteAddButton}
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>,
+                                        ...fieldList.map(({ id: field_id, field_name, radios }) => {
                                         const record = recordList
                                             ?.find((i) => i.item_id === itemChoose)
                                             ?.data.find((r) => r.field_id == field_id);
@@ -292,8 +343,14 @@ const Component = () => {
                                                     ) : (
                                                         <span className="text-muted-foreground/50">-</span>
                                                     )}
+                                                    {record?.note ? (
+                                                        <div className="mt-1 rounded bg-muted/60 px-2 py-1 text-left text-xs break-all whitespace-pre-wrap text-muted-foreground">
+                                                            {locale.FieldNotePrefix}{record.note}
+                                                        </div>
+                                                    ) : null}
                                                 </TableCell>
                                                 <TableCell className="text-center">
+                                                    <div className="flex flex-wrap justify-center gap-1">
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -303,12 +360,21 @@ const Component = () => {
                                                             toast({ title: "已复制到剪贴板", color: "success" });
                                                         }}
                                                     >
-                                                        复制
+                                                        {locale.RecordCopyButton}
                                                     </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => openNote({ item_id: itemChoose!, field_id, label: field_name })}
+                                                    >
+                                                        {record?.note ? locale.NoteEditButton : locale.NoteAddButton}
+                                                    </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         );
-                                    })
+                                        }),
+                                    ]
                                 )}
                             </TableBody>
                         </Table>
@@ -353,6 +419,30 @@ const Component = () => {
                             }}
                         >
                             {Locale("Common").ButtonConfirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={!!noteTarget} onOpenChange={(open) => !open && setNoteTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{locale.NoteDialogTitle}</DialogTitle>
+                        <DialogDescription>
+                            {noteTarget?.label ? `${locale.NoteDialogTarget}${noteTarget.label}` : ""}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        placeholder={locale.NotePlaceholder}
+                        className="min-h-32"
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNoteTarget(null)}>
+                            {Locale("Common").ButtonCancel}
+                        </Button>
+                        <Button onClick={saveNote}>
+                            {Locale("Common").ButtonSave}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
