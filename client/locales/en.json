@@ -184,8 +184,6 @@
         "RecordCopyButton": "Copy",
         "RecordNoteRowLabel": "Record note",
         "FieldNotePrefix": "Note: ",
-        "NoteMark": "✎",
-        "NoteMarkTitle": "This record has notes",
         "NoteAddButton": "Note",
         "NoteDialogTitle": "Edit note",
         "NoteDialogTarget": "Applies to: ",

@@ -198,18 +198,12 @@ const Component = () => {
                                 {recordList.map((i) => {
                                     const index = i.data.findIndex((r) => r.field_id === fieldChoose?.id);
                                     const record = i.data[index] || null;
-                                    const hasNote = !!i.note || i.data.some((r) => !!r.note);
                                     const raw = new Date(i.data[0]?.update_time || i.data[0]?.create_time);
                                     const time = `${String(raw.getMonth() + 1).padStart(2, "0")}-${String(raw.getDate()).padStart(2, "0")} ${String(raw.getHours()).padStart(2, "0")}:${String(raw.getMinutes()).padStart(2, "0")}`;
                                     return (
                                         <TableRow key={i.item_id}>
                                             <TableCell className="min-w-24 text-center">
                                                 {record?.field_value}
-                                                {hasNote && (
-                                                    <span className="text-muted-foreground ml-1 text-xs" title={locale.NoteMarkTitle}>
-                                                        {locale.NoteMark}
-                                                    </span>
-                                                )}
                                             </TableCell>
                                             <TableCell className="min-w-24 text-center">
                                                 {time}
