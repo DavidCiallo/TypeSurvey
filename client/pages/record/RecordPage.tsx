@@ -79,13 +79,13 @@ const Component = () => {
         if (!success) return toast({ title: message || locale.NoteSaveFailed, color: "danger" });
         toast({ title: locale.NoteSaveSuccess, color: "success" });
         setNoteTarget(null);
-        loadUserPage(userpage);
+        loadUserPage(userpage, true);
     }
 
     const [wrapText, setWrapText] = useState(() => localStorage.getItem("record-wrap-text") === "true");
 
-    async function loadUserPage(page: number = 1) {
-        setItemChoose(null);
+    async function loadUserPage(page: number = 1, keepChoose = false) {
+        if (!keepChoose) setItemChoose(null);
         const form_name = localStorage.getItem("formname") || "";
         const { data } = await RecordRouter.all({ form_name, page, search });
         if (!data) {
@@ -348,7 +348,7 @@ const Component = () => {
                                                         size="sm"
                                                         onClick={() => openNote({ item_id: itemChoose!, field_id, label: field_name })}
                                                     >
-                                                        {record?.note ? locale.NoteEditButton : locale.NoteAddButton}
+                                                        {locale.NoteAddButton}
                                                     </Button>
                                                     </div>
                                                 </TableCell>
@@ -373,7 +373,7 @@ const Component = () => {
                                     disabled={!itemChoose}
                                     onClick={() => itemChoose && openNote({ item_id: itemChoose, label: locale.RecordNoteRowLabel })}
                                 >
-                                    {chosen?.note ? locale.NoteEditButton : locale.NoteAddButton}
+                                    {locale.NoteAddButton}
                                 </Button>
                             </div>
                             <Button

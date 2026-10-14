@@ -195,7 +195,6 @@
         "NoteMark": "✎",
         "NoteMarkTitle": "这条记录有备注",
         "NoteAddButton": "备注",
-        "NoteEditButton": "改备注",
         "NoteDialogTitle": "编辑备注",
         "NoteDialogTarget": "备注对象：",
         "NotePlaceholder": "写点什么，比如这条数据为什么特殊",
