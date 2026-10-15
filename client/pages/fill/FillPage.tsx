@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/client/components/ui/button";
-import { Pagination } from "@/client/components/ui/pagination";
 import { FormFieldImpl, RecordImpl } from "../../../shared/impl";
 import { RecordRouter } from "../../api/instance";
 import CheckModal from "./CheckModal";
@@ -28,20 +27,11 @@ const Component = () => {
         }
     }
 
-    const [total, setTotal] = useState<number>(1);
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
-    const [pageKey, setPageKey] = useState(Math.random());
-    const prePage = useRef(1);
-    const [submitting, setSubmitting] = useState(false);
-
-    const submitBtn = useRef<HTMLButtonElement>(null);
-    const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const timers = useRef<{ [field_id: string]: ReturnType<typeof setTimeout> }>({});
 
     function setAuthData(form_name: string, fields: FormFieldImpl[], records: RecordImpl[]) {
         setFormName(form_name);
         setFieldList(fields);
-        setTotal(fields.length);
         setRecords([...records]);
         setPass(true);
         if (form_name) document.title = form_name;
@@ -115,84 +105,97 @@ const Component = () => {
         if (formName) document.title = formName;
     }, [formName]);
 
+    // Every field is on one page now, so the whole form renders at once and
+    // the progress line is the only navigation the page needs.
+    const enabledFields = useMemo(() => fieldList.filter((i) => !i.disabled), [fieldList]);
+
+    const filledCount = useMemo(
+        () => enabledFields.filter((f) => {
+            const v = records.find((r) => r.field_id === f.id)?.field_value;
+            return v !== undefined && v !== null && String(v) !== "";
+        }).length,
+        [enabledFields, records]
+    );
+
+    const percent = enabledFields.length ? Math.round((filledCount / enabledFields.length) * 100) : 0;
+
+    const isFilled = useCallback(
+        (field: FormFieldImpl) => {
+            const v = records.find((r) => r.field_id === field.id)?.field_value;
+            return v !== undefined && v !== null && String(v) !== "";
+        },
+        [records]
+    );
+
+    // The next unfilled field at or below the top of the viewport, so repeated
+    // clicks walk down the form instead of restarting from the top.
+    function jumpToNextUnfilled() {
+        const anchor = window.scrollY + 8;
+        const next = enabledFields.find(
+            (f) => !isFilled(f) && (document.getElementById(`field-${f.id}`)?.offsetTop ?? 0) >= anchor
+        ) || enabledFields.find((f) => !isFilled(f));
+        if (!next) {
+            toast({ title: locale.AllFilledToast, color: "success" });
+            return;
+        }
+        document.getElementById(`field-${next.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    if (!pass) return <CheckModal value={code} change={changeCode} />;
+    if (!formName) return null;
+
     return (
-        <div className="mx-auto w-full max-w-sm px-4">
+        <div className="mx-auto w-full max-w-2xl px-4 pb-16">
+            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 -mx-4 border-b px-4 py-4 backdrop-blur">
+                <h1 className="text-lg font-bold">{formName}</h1>
+                <div className="text-muted-foreground mt-0.5 flex items-center justify-between text-xs">
+                    <span>{locale.ProgressLabel.replace("{filled}", String(filledCount)).replace("{total}", String(enabledFields.length))}</span>
+                    <span>{percent}%</span>
+                </div>
+                <div className="bg-secondary mt-2 h-1 w-full overflow-hidden rounded-full">
+                    <div
+                        className="bg-primary h-full rounded-full transition-all duration-300"
+                        style={{ width: `${percent}%` }}
+                    />
+                </div>
+            </div>
+
             <form
-                onSubmit={async (e) => {
+                className="flex flex-col gap-1 pt-2"
+                onSubmit={(e) => {
                     e.preventDefault();
-                    setSubmitting(true);
-                    try {
-                        await new Promise((r) => setTimeout(r, 300));
-                        const isLastPage = page >= Math.ceil(total / pageSize);
-                        if (isLastPage) {
-                            toast({ title: locale.ButtonSubmit, color: "success" });
-                        } else {
-                            setPage(Number(prePage.current));
-                        }
-                    } finally {
-                        setSubmitting(false);
+                    // Required fields gate nothing server-side; this only walks
+                    // the user to the first one they left empty.
+                    const missing = enabledFields.find((f) => f.required && !isFilled(f));
+                    if (missing) {
+                        toast({ title: locale.RequiredMissingToast, color: "danger" });
+                        document.getElementById(`field-${missing.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        return;
                     }
+                    toast({ title: locale.ButtonSubmit, color: "success" });
                 }}
             >
-                <div className="flex w-full flex-col py-2">
-                    <div className="mx-auto py-4 text-lg font-bold">{formName}</div>
-                    <div className="flex flex-col">
-                        {fieldList
-                            .filter((i) => !i.disabled)
-                            .slice((page - 1) * pageSize, page * pageSize)
-                            .map((field) => {
-                                return (
-                                    <div className="flex w-full flex-row flex-wrap pt-3" key={field.id}>
-                                        {renderControl(records, field, (fid, val) => submitRecord(fid, val, field.field_type))}
-                                    </div>
-                                );
-                            })}
+                {enabledFields.map((field) => (
+                    <div className="pt-3" id={`field-${field.id}`} key={field.id}>
+                        {renderControl(records, field, (fid, val) => submitRecord(fid, val, field.field_type))}
                     </div>
+                ))}
+
+                <div className="flex justify-end pt-6">
+                    <Button className="px-8" type="submit">
+                        {locale.ButtonSubmit}
+                    </Button>
                 </div>
-                <button ref={submitBtn} type="submit" className="hidden" />
             </form>
-            {total > 0 && (
-                <div className="flex flex-col items-center gap-2 py-4">
-                    <Pagination
-                        key={pageKey}
-                        page={page}
-                        total={Math.ceil(total / pageSize)}
-                        onChange={(changePage) => {
-                            prePage.current = changePage;
-                            if (prePage.current > page) {
-                                submitBtn.current?.click();
-                            } else {
-                                setPage(prePage.current);
-                            }
-                            submitRecord("", "");
-                        }}
-                    />
-                    <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            className="px-6"
-                            disabled={page <= 1}
-                            onClick={() => {
-                                prePage.current = page - 1;
-                                setPage(page - 1);
-                            }}
-                        >
-                            {locale.ButtonPrev || "上一页"}
-                        </Button>
-                        <Button
-                            className="px-6"
-                            disabled={submitting}
-                            onClick={() => {
-                                prePage.current = page + 1;
-                                submitBtn.current?.click();
-                            }}
-                        >
-                            {page >= Math.ceil(total / pageSize) ? locale.ButtonSubmit : locale.ButtonNext || "下一页"}
-                        </Button>
-                    </div>
-                </div>
+
+            {filledCount >= 10 && (
+                <Button
+                    className="fixed right-6 bottom-6 z-40 shadow-lg"
+                    onClick={jumpToNextUnfilled}
+                >
+                    {locale.JumpNextButton}
+                </Button>
             )}
-            {!pass && <CheckModal value={code} change={changeCode} />}
         </div>
     );
 };
