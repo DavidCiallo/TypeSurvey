@@ -3,6 +3,7 @@ import {
     RecordSubmitRequest, RecordSubmitResponse,
     RecordAllRequest, RecordAllResponse,
     RecordDeleteRequest, RecordDeleteResponse,
+    RecordNoteRequest, RecordNoteResponse,
 } from "./record.interface";
 
 export const recordRoutes = {
@@ -12,4 +13,5 @@ export const recordRoutes = {
     submit: { path: "/submit", request: {} as RecordSubmitRequest, response: {} as RecordSubmitResponse, apikey: true },
     all: { path: "/all", request: {} as RecordAllRequest, response: {} as RecordAllResponse, apikey: true },
     del: { path: "/del", request: {} as RecordDeleteRequest, response: {} as RecordDeleteResponse },
+    note: { path: "/note", request: {} as RecordNoteRequest, response: {} as RecordNoteResponse },
 } as const;

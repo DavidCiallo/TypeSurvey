@@ -4,4 +4,5 @@ export interface RecordEntity extends BaseEntity {
     item_id: string;
     field_id: string;
     field_value: number | string | boolean;
+    note?: string;
 }

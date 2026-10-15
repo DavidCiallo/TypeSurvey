@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { Checkbox } from "@/client/components/ui/checkbox";
 import { Badge } from "@/client/components/ui/badge";
@@ -10,6 +11,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/client/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from "@/client/components/ui/dropdown-menu";
 import {
     Select,
     SelectContent,
@@ -26,10 +33,10 @@ import {
     TableRow,
 } from "@/client/components/ui/table";
 import { Locale } from "../../methods/locale";
-import { XlsxHeader, ImportConflictRow, ImportDecision } from "../../../shared/modules/file/file.interface";
+import { XlsxHeader } from "../../../shared/modules/file/file.interface";
 import { FieldTypeList } from "./types";
 import { FieldType } from "../../../shared/impl/field";
-import { FieldRouter, FileRouter } from "../../api/instance";
+import { FieldRouter } from "../../api/instance";
 
 // Sentinel for "create a new form"; form names are user text, so it cannot
 // collide with a real one the way an empty value would.
@@ -72,13 +79,10 @@ type props = {
         timeFieldIndex?: number,
         targetForm?: string,
         keyFields?: number[],
-        decisions?: ImportDecision[],
     ) => void;
-    /** Upload id the backend is holding the parsed sheet under. */
-    tempid: string;
 };
 
-const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChange, onSubmit, tempid }: props) => {
+const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChange, onSubmit }: props) => {
     const [checks, setChecks] = useState<boolean[]>([]);
     const [fields, setFields] = useState<string[]>([]);
     const [types, setTypes] = useState<FieldType[]>([]);
@@ -86,12 +90,8 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
     const [targetForm, setTargetForm] = useState<string>(newFormValue);
     const [targetFields, setTargetFields] = useState<string[]>([]);
     // Dedup key: the sheet columns whose values identify an existing record.
+    // A row whose key matches an existing record is skipped, keeping its data.
     const [keyFields, setKeyFields] = useState<number[]>([]);
-    const [preview, setPreview] = useState<{ updates: number; creates: number; rows: ImportConflictRow[] } | null>(null);
-    const [previewing, setPreviewing] = useState(false);
-    // row -> item_id, plus field_id -> take the new value.
-    const [decisions, setDecisions] = useState<Record<number, ImportDecision>>({});
-    const [expanded, setExpanded] = useState<number | null>(null);
 
     useEffect(() => {
         if (header.length > 0) {
@@ -142,43 +142,11 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
 
     function resetDedup() {
         setKeyFields([]);
-        setPreview(null);
-        setDecisions({});
-        setExpanded(null);
     }
 
     function chooseTargetForm(name: string) {
         setTargetForm(name);
         resetDedup();
-    }
-
-    async function runPreview(keys: number[]) {
-        if (targetForm === newFormValue || keys.length === 0) {
-            setPreview(null);
-            return;
-        }
-        setPreviewing(true);
-        try {
-            const { success, data } = await FileRouter.preview({
-                tempid,
-                form_name: targetForm,
-                key_fields: keys,
-            });
-            if (success && data) {
-                setPreview({ updates: data.updates, creates: data.creates, rows: data.rows });
-                // Default to the new value everywhere; the user narrows it.
-                const next: Record<number, ImportDecision> = {};
-                for (const row of data.rows) {
-                    if (row.candidates.length === 0) continue;
-                    const fieldsChoice: Record<string, boolean> = {};
-                    for (const f of row.candidates[0].fields) fieldsChoice[f.field_id] = true;
-                    next[row.row] = { row: row.row, item_id: row.candidates[0].item_id, fields: fieldsChoice };
-                }
-                setDecisions(next);
-            }
-        } finally {
-            setPreviewing(false);
-        }
     }
 
     const handleSubmit = (usedata: boolean) => {
@@ -188,14 +156,7 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
             type: types[index],
         }));
         const tfi = timeFieldIndex === "none" ? undefined : Number(timeFieldIndex);
-        onSubmit(
-            fieldData,
-            usedata,
-            tfi,
-            targetForm === newFormValue ? undefined : targetForm,
-            keyFields,
-            Object.values(decisions),
-        );
+        onSubmit(fieldData, usedata, tfi, targetForm === newFormValue ? undefined : targetForm, keyFields);
     };
 
     return (
@@ -327,172 +288,43 @@ const FormImport = ({ isOpen, header, formList, matchForm, matchNum, onOpenChang
                 </div>
                 {targetForm !== newFormValue && keyCandidates.length > 0 && (
                     <div className="flex flex-col gap-2 border-t pt-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-muted-foreground text-sm whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground w-16 shrink-0 text-sm whitespace-nowrap">
                                 {locale.DedupKey}
                             </span>
-                            <div className="flex flex-wrap gap-2">
-                                {keyCandidates.map((index) => {
-                                    const on = keyFields.includes(index);
-                                    return (
-                                        <Button
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    className="border-input focus-visible:ring-ring/50 data-[state=open]:ring-ring/50 flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none data-[state=open]:ring-[3px]"
+                                >
+                                    <span className="truncate">
+                                        {keyFields.length > 0
+                                            ? keyFields.map((i) => fields[i] || header[i].field).join(" + ")
+                                            : locale.DedupKeyHint}
+                                    </span>
+                                    <ChevronDown className="text-muted-foreground size-4 shrink-0 opacity-50" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="start"
+                                    className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+                                >
+                                    {keyCandidates.map((index) => (
+                                        <DropdownMenuCheckboxItem
                                             key={index}
-                                            size="sm"
-                                            variant={on ? "default" : "outline"}
-                                            className="h-7 text-xs"
-                                            onClick={() => {
-                                                const next = on
+                                            checked={keyFields.includes(index)}
+                                            onSelect={(e) => e.preventDefault()}
+                                            onCheckedChange={() => {
+                                                const next = keyFields.includes(index)
                                                     ? keyFields.filter((i) => i !== index)
                                                     : [...keyFields, index];
                                                 setKeyFields(next);
-                                                setPreview(null);
-                                                setDecisions({});
-                                                if (next.length > 0) runPreview(next);
                                             }}
                                         >
                                             {fields[index] || header[index].field}
-                                        </Button>
-                                    );
-                                })}
-                            </div>
-                            {keyFields.length === 0 && (
-                                <span className="text-muted-foreground/60 text-xs">
-                                    {locale.DedupKeyHint}
-                                </span>
-                            )}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                        {previewing && (
-                            <span className="text-muted-foreground text-xs">{locale.Previewing}</span>
-                        )}
-                        {preview && !previewing && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="secondary">
-                                        {locale.PreviewCreates.replace("{count}", String(preview.creates))}
-                                    </Badge>
-                                    <Badge variant={preview.updates > 0 ? "default" : "outline"}>
-                                        {locale.PreviewUpdates.replace("{count}", String(preview.updates))}
-                                    </Badge>
-                                    {preview.updates > 0 && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-7 text-xs"
-                                            onClick={() => {
-                                                const next: Record<number, ImportDecision> = {};
-                                                for (const row of preview.rows) {
-                                                    if (row.candidates.length === 0) continue;
-                                                    const choice: Record<string, boolean> = {};
-                                                    for (const f of row.candidates[0].fields) choice[f.field_id] = false;
-                                                    next[row.row] = {
-                                                        row: row.row,
-                                                        item_id: row.candidates[0].item_id,
-                                                        fields: choice,
-                                                    };
-                                                }
-                                                setDecisions(next);
-                                            }}
-                                        >
-                                            {locale.KeepAllOld}
-                                        </Button>
-                                    )}
-                                </div>
-                                {preview.rows.map((row) => (
-                                    <div key={row.row} className="rounded border text-xs">
-                                        <button
-                                            type="button"
-                                            className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left"
-                                            onClick={() => setExpanded(expanded === row.row ? null : row.row)}
-                                        >
-                                            <span>
-                                                {locale.ConflictRow
-                                                    .replace("{row}", String(row.row + 1))
-                                                    .replace("{count}", String(row.candidates[0]?.fields.length ?? 0))}
-                                                {row.candidates.length > 1 &&
-                                                    ` · ${locale.ConflictAmbiguous.replace("{count}", String(row.candidates.length))}`}
-                                            </span>
-                                            <span className="text-muted-foreground">{expanded === row.row ? "▲" : "▼"}</span>
-                                        </button>
-                                        {expanded === row.row && (
-                                            <div className="flex flex-col gap-2 border-t px-2 py-2">
-                                                {row.candidates.length > 1 && (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-muted-foreground">
-                                                            {locale.ChooseRecord}
-                                                        </span>
-                                                        {row.candidates.map((c) => (
-                                                            <Button
-                                                                key={c.item_id}
-                                                                size="sm"
-                                                                variant={
-                                                                    decisions[row.row]?.item_id === c.item_id
-                                                                        ? "default"
-                                                                        : "outline"
-                                                                }
-                                                                className="h-6 text-xs"
-                                                                onClick={() => {
-                                                                    const choice: Record<string, boolean> = {};
-                                                                    for (const f of c.fields) {
-                                                                        choice[f.field_id] =
-                                                                            decisions[row.row]?.fields?.[f.field_id] ?? true;
-                                                                    }
-                                                                    setDecisions((prev) => ({
-                                                                        ...prev,
-                                                                        [row.row]: { row: row.row, item_id: c.item_id, fields: choice },
-                                                                    }));
-                                                                }}
-                                                            >
-                                                                {c.item_id}
-                                                            </Button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {row.candidates[0]?.fields.map((f) => (
-                                                    <div key={f.field_id} className="flex flex-wrap items-center gap-2">
-                                                        <span className="w-24 shrink-0 truncate font-medium">
-                                                            {f.field_name}
-                                                        </span>
-                                                        <span className="text-muted-foreground line-through">
-                                                            {f.old_value || locale.EmptyValue}
-                                                        </span>
-                                                        <span>→</span>
-                                                        <span className="font-medium">{f.new_value}</span>
-                                                        <Button
-                                                            size="sm"
-                                                            variant={
-                                                                decisions[row.row]?.fields?.[f.field_id] === false
-                                                                    ? "default"
-                                                                    : "outline"
-                                                            }
-                                                            className="ml-auto h-6 text-xs"
-                                                            onClick={() => {
-                                                                const cur = decisions[row.row];
-                                                                if (!cur) return;
-                                                                setDecisions((prev) => ({
-                                                                    ...prev,
-                                                                    [row.row]: {
-                                                                        ...cur,
-                                                                        fields: {
-                                                                            ...cur.fields,
-                                                                            [f.field_id]:
-                                                                                prev[row.row]?.fields?.[f.field_id] === false,
-                                                                        },
-                                                                    },
-                                                                }));
-                                                            }}
-                                                        >
-                                                            {decisions[row.row]?.fields?.[f.field_id] === false
-                                                                ? locale.KeepOld
-                                                                : locale.UseNew}
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 )}
                 <DialogFooter>

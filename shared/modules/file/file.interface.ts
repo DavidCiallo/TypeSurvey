@@ -71,8 +71,6 @@ export class FileConfirmRequest implements BaseRequest {
     public target_form?: string;
     /** Sheet column indexes that form the dedup key (empty = append only). */
     public key_fields?: number[];
-    /** Per-row choices from the conflict dialog. */
-    public decisions?: ImportDecision[];
 
     constructor(origin: Partial<FileConfirmRequest>) {
         if (!origin.tempid) throw new Error("Temp ID is required");
@@ -84,7 +82,6 @@ export class FileConfirmRequest implements BaseRequest {
         this.time_field_index = origin.time_field_index;
         this.target_form = origin.target_form;
         this.key_fields = origin.key_fields;
-        this.decisions = origin.decisions;
     }
 
     static self(unsafe: FileConfirmRequest) {
@@ -92,64 +89,22 @@ export class FileConfirmRequest implements BaseRequest {
     }
 }
 
-/** One conflicting row: which existing record it hits and what to do. */
-export type ImportDecision = {
-    /** Sheet row index. */
-    row: number;
-    /** item_id of the existing record the user chose. */
-    item_id: string;
-    /** field_id -> true means take the new value, false keeps the old. */
-    fields: Record<string, boolean>;
+/** What the import actually did, so the caller can report it. */
+export type FileConfirmResult = {
+    /** Rows written as new records. */
+    inserted: number;
+    /** Rows skipped because their key already existed. */
+    skipped: number;
+    /** Records the target form held before the import. */
+    before: number;
+    /** Records it holds now. */
+    total: number;
 };
 
-export type ImportConflictField = {
-    field_id: string;
-    field_name: string;
-    old_value: string;
-    new_value: string;
-};
-
-export type ImportConflictRow = {
-    row: number;
-    candidates: Array<{ item_id: string; fields: ImportConflictField[] }>;
-};
-
-export class FilePreviewRequest implements BaseRequest {
-    public auth?: string;
-    public tempid: string;
-    public form_name: string;
-    public key_fields: number[];
-
-    constructor(origin: Partial<FilePreviewRequest>) {
-        if (!origin.tempid) throw new Error("Temp ID is required");
-        if (!origin.form_name) throw new Error("Form name is required");
-        origin.auth && (this.auth = origin.auth);
-        this.tempid = origin.tempid;
-        this.form_name = origin.form_name;
-        this.key_fields = origin.key_fields || [];
-    }
-
-    static self(unsafe: FilePreviewRequest) {
-        return new FilePreviewRequest(unsafe);
-    }
-}
-
-export class FilePreviewResponse
-    implements BaseResponse<{ updates: number; creates: number; rows: ImportConflictRow[] }> {
+export class FileConfirmResponse implements BaseResponse<FileConfirmResult> {
     public success: boolean;
     public message?: string;
-    public data?: { updates: number; creates: number; rows: ImportConflictRow[] };
-    constructor(origin: FilePreviewResponse) {
-        this.success = origin.success;
-        this.message = origin.message;
-        this.data = origin.data;
-    }
-}
-
-export class FileConfirmResponse implements BaseResponse<{}> {
-    public success: boolean;
-    public message?: string;
-    public data?: {};
+    public data?: FileConfirmResult;
     constructor(origin: FileConfirmResponse) {
         this.success = origin.success;
         this.message = origin.message;

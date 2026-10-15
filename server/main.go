@@ -43,12 +43,12 @@ func registerRoutes() {
 	route("/api/record/submit", policyPublic, true, recordSubmit)
 	route("/api/record/all", policyUser, true, recordAll)
 	route("/api/record/del", policyUser, false, recordDel)
+	route("/api/record/note", policyUser, false, recordNote)
 
 	// file (file.router.ts) — authenticated: these parse uploads and write
 	// records into the database.
 	route("/api/file/readxlsx", policyUser, false, fileReadXlsx)
 	route("/api/file/confirm", policyUser, false, fileConfirm)
-	route("/api/file/preview", policyUser, false, filePreview)
 	route("/api/file/upload", policyUser, false, fileUpload)
 
 	// settings + app (settings.router.ts) — admin only.

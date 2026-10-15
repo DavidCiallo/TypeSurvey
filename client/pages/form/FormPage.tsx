@@ -10,7 +10,7 @@ import FormList from "./FormList";
 import FormAddBtn from "./FormAddBtn";
 import { copytext } from "../../methods/text";
 import FormImport from "./FormImport";
-import { FieldCache, XlsxHeader, ImportDecision } from "../../../shared/modules/file/file.interface";
+import { FieldCache, XlsxHeader } from "../../../shared/modules/file/file.interface";
 
 const Component = () => {
     const locale = Locale("FormPage");
@@ -96,8 +96,9 @@ const Component = () => {
     }
 
     async function createRecordLink(data?: { field_index: number; field_value: string }) {
+        const formName = focusForm || "";
         if (!data) {
-            copytext(baseurl + fieldList[0].id);
+            copytext(`【${formName}】${baseurl + fieldList[0].id}`);
             toast({ title: locale.ToastCopySuccess, color: "success" });
             return;
         }
@@ -112,7 +113,11 @@ const Component = () => {
         }
         const { item_id, code } = existData;
         RecordRouter.submit({ field_id, field_value, item_id });
-        copytext(`${baseurl + item_id}#code:${code}`);
+        // A named link is handed out in batches, so the label carries the form
+        // and the person it belongs to; an anonymous link carries only the form.
+        const fieldName = fieldList[field_index]?.field_name ?? "";
+        const label = fieldName ? `${formName}-${fieldName}${field_value}` : formName;
+        copytext(`【${label}】${baseurl + item_id}#code:${code}`);
         toast({ title: locale.ToastCopySuccess, color: "success" });
     }
 
@@ -147,22 +152,30 @@ const Component = () => {
         timeFieldIndex?: number,
         targetForm?: string,
         keyFields?: number[],
-        decisions?: ImportDecision[],
     ) {
-        const { success } = await FileRouter.confirm({
+        const { success, data } = await FileRouter.confirm({
             fields,
             usedata,
             tempid,
             time_field_index: timeFieldIndex,
             target_form: targetForm,
             key_fields: keyFields,
-            decisions,
         });
-        if (success) {
-            toast({ title: Locale("Common").ToastSuccess, color: "success" });
-        } else {
+        if (!success) {
             toast({ title: Locale("Common").ToastFailed, color: "danger" });
+            setImportOpen(false);
+            return;
         }
+        const locale = Locale("FormImport");
+        const r = data ?? { inserted: 0, skipped: 0, before: 0, total: 0 };
+        // The notify wrapper forwards only the title, so the whole summary has
+        // to fit on one line.
+        toast({
+            title: r.skipped > 0
+                ? `${locale.ImportDone.replace("{inserted}", String(r.inserted))}，${locale.ImportSkipped.replace("{skipped}", String(r.skipped))}，${locale.ImportTotal.replace("{total}", String(r.total))}`
+                : `${locale.ImportDone.replace("{inserted}", String(r.inserted))}，${locale.ImportTotal.replace("{total}", String(r.total))}`,
+            color: "success",
+        });
         setImportOpen(false);
         {
             const { success, data, message } = await FormRouter.list({ page: 1 });
@@ -217,7 +230,6 @@ const Component = () => {
                 matchForm={importMatch.form_name}
                 matchNum={importMatch.num}
                 onSubmit={comfirmImport}
-                tempid={tempid}
             />
             <CreateRecordModal
                 isOpen={isNewRecordOpen}
